@@ -9,6 +9,9 @@ __pycache__/
 # Generated reports
 nhl_toolkit/reports/
 
+# Cron run logs
+nhl_toolkit/logs/
+
 # Secrets
 .env
 

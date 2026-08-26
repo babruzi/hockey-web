@@ -64,6 +64,62 @@ def latest_consensus_spread(
     return sum(spreads) / len(spreads) if spreads else None
 
 
+def home_opener_note(conn: sqlite3.Connection, home_team: str, game_date: str) -> Optional[str]:
+    """Flag whether this is the home team's first home game in the data we've fetched.
+
+    Only as reliable as the fetched schedule window -- if `games` doesn't go
+    back to the actual season start, this reports the first home game *we
+    know about*, not necessarily the true season opener.
+
+    :param conn: Open connection to the schedule database.
+    :param home_team: The home team's abbreviation.
+    :param game_date: This game's date, as YYYY-MM-DD.
+    :returns: "Home opener" if no earlier home game is on record, else None.
+    """
+    earlier_home_games = conn.execute(
+        """
+        SELECT COUNT(*) FROM schedule_context sc
+        JOIN games g ON g.game_id = sc.game_id
+        WHERE sc.team_id = ? AND sc.is_home = 1 AND g.game_date < ?
+        """,
+        (home_team, game_date),
+    ).fetchone()[0]
+    return "Home opener" if earlier_home_games == 0 else None
+
+
+def back_to_back_notes(conn: sqlite3.Connection, game_id: int) -> list[str]:
+    """List which team(s), if any, are playing this game on zero days of rest.
+
+    :param conn: Open connection to the schedule database.
+    :param game_id: The game to check.
+    :returns: One note per team on a back-to-back, e.g. ["PHI on a back-to-back"].
+    """
+    rows = conn.execute(
+        "SELECT team_id FROM schedule_context WHERE game_id = ? AND back_to_back = 1",
+        (game_id,),
+    ).fetchall()
+    return [f"{team_id} on a back-to-back" for (team_id,) in rows]
+
+
+def build_game_notes(
+    conn: sqlite3.Connection, game_id: int, home_team: str, game_date: str
+) -> list[str]:
+    """Collect special-context notes for a game (home opener, back-to-back, ...).
+
+    :param conn: Open connection to the schedule database.
+    :param game_id: The game to annotate.
+    :param home_team: The home team's abbreviation.
+    :param game_date: This game's date, as YYYY-MM-DD.
+    :returns: Short note strings, e.g. ["Home opener", "PHI on a back-to-back"].
+    """
+    notes = []
+    opener_note = home_opener_note(conn, home_team, game_date)
+    if opener_note:
+        notes.append(opener_note)
+    notes.extend(back_to_back_notes(conn, game_id))
+    return notes
+
+
 def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
     """Rank each game by score gap and pick the higher-scoring side.
 
@@ -73,7 +129,7 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
     """
     rows = conn.execute(
         """
-        SELECT ds.game_id, ds.team_id, ds.total_score, g.home_team, g.away_team
+        SELECT ds.game_id, ds.team_id, ds.total_score, g.home_team, g.away_team, g.game_date
         FROM daily_scores ds
         JOIN games g ON g.game_id = ds.game_id
         WHERE ds.date = ?
@@ -82,9 +138,15 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
     ).fetchall()
 
     scores_by_game: dict[int, dict] = {}
-    for game_id, team_id, total_score, home_team, away_team in rows:
+    for game_id, team_id, total_score, home_team, away_team, game_date in rows:
         game = scores_by_game.setdefault(
-            game_id, {"home_team": home_team, "away_team": away_team, "scores": {}}
+            game_id,
+            {
+                "home_team": home_team,
+                "away_team": away_team,
+                "game_date": game_date,
+                "scores": {},
+            },
         )
         game["scores"][team_id] = total_score
 
@@ -100,17 +162,29 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
         picks.append(
             {
                 "game_id": game_id,
+                "home_team": game["home_team"],
+                "away_team": game["away_team"],
                 "pick": pick_team,
-                "opponent": game["away_team"]
-                if pick_team == game["home_team"]
-                else game["home_team"],
+                "pick_is_home": pick_team == game["home_team"],
                 "predicted_edge": predicted_edge,
                 "spread_at_pick": latest_consensus_spread(conn, game_id, pick_team),
+                "notes": build_game_notes(conn, game_id, game["home_team"], game["game_date"]),
             }
         )
 
     picks.sort(key=lambda pick: pick["predicted_edge"], reverse=True)
     return picks
+
+
+CSV_FIELDNAMES = [
+    "game_id",
+    "away_team",
+    "home_team",
+    "pick",
+    "predicted_edge",
+    "spread_at_pick",
+    "notes",
+]
 
 
 def write_csv(target_date: str, picks: list[dict]) -> Path:
@@ -123,11 +197,12 @@ def write_csv(target_date: str, picks: list[dict]) -> Path:
     REPORTS_DIR.mkdir(exist_ok=True)
     path = REPORTS_DIR / f"picks_{target_date}.csv"
     with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(
-            f, fieldnames=["game_id", "pick", "opponent", "predicted_edge", "spread_at_pick"]
-        )
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDNAMES)
         writer.writeheader()
-        writer.writerows(picks)
+        for pick in picks:
+            row = {key: pick[key] for key in CSV_FIELDNAMES if key != "notes"}
+            row["notes"] = "; ".join(pick["notes"])
+            writer.writerow(row)
     return path
 
 
@@ -167,6 +242,7 @@ tr:nth-child(even) td { background: var(--row-alt); }
 th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
 .rank { color: var(--muted); width: 2rem; }
 .edge { font-variant-numeric: tabular-nums; }
+.notes { color: var(--muted); font-size: 0.85rem; }
 a { color: var(--accent); }
 .disclaimer { color: var(--muted); font-size: 0.85rem; margin-top: 2rem; }
 """
@@ -185,14 +261,24 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
     def format_spread(pick: dict) -> str:
         return f"{pick['spread_at_pick']:+.1f}" if pick["spread_at_pick"] is not None else "n/a"
 
+    def format_matchup(pick: dict) -> str:
+        away = pick["away_team"]
+        home = pick["home_team"]
+        away_html = away if pick["pick_is_home"] else f"<strong>{away}</strong>"
+        home_html = f"<strong>{home}</strong>" if pick["pick_is_home"] else home
+        return f"{away_html} @ {home_html}"
+
+    def format_notes(pick: dict) -> str:
+        return "; ".join(pick["notes"]) if pick["notes"] else "&mdash;"
+
     rows = "\n".join(
         f"""
         <tr>
             <td class="rank">{i}</td>
-            <td>{pick["pick"]}</td>
-            <td>{pick["opponent"]}</td>
+            <td>{format_matchup(pick)}</td>
             <td class="edge">{pick["predicted_edge"]:.3f}</td>
             <td>{format_spread(pick)}</td>
+            <td class="notes">{format_notes(pick)}</td>
         </tr>"""
         for i, pick in enumerate(picks, start=1)
     )
@@ -208,10 +294,13 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 <body>
 <p><a href="../index.html">&larr; All reports</a></p>
 <h1>Top {len(picks)} Picks</h1>
-<p class="subtitle">{pretty_date} &middot; generated by the NHL paper-betting toolkit</p>
+<p class="subtitle">
+{pretty_date} &middot; generated by the NHL paper-betting toolkit &middot;
+bolded team is the pick, format is Away @ Home
+</p>
 <table>
 <thead>
-<tr><th>#</th><th>Pick</th><th>Opponent</th><th>Edge</th><th>Spread</th></tr>
+<tr><th>#</th><th>Matchup</th><th>Edge</th><th>Spread</th><th>Notes</th></tr>
 </thead>
 <tbody>{rows}
 </tbody>
@@ -299,12 +388,15 @@ def print_report(target_date: str, picks: list[dict]) -> None:
     :param target_date: Date the report covers, as YYYY-MM-DD.
     :param picks: Picks to display, already limited to the top 10.
     """
-    print(f"\nTop {len(picks)} picks for {target_date}\n" + "-" * 60)
+    print(f"\nTop {len(picks)} picks for {target_date}\n" + "-" * 70)
     for i, pick in enumerate(picks, start=1):
         spread = f"{pick['spread_at_pick']:+.1f}" if pick["spread_at_pick"] is not None else "n/a"
+        site = "home" if pick["pick_is_home"] else "away"
+        matchup = f"{pick['away_team']} @ {pick['home_team']}"
+        notes = f" [{'; '.join(pick['notes'])}]" if pick["notes"] else ""
         print(
-            f"{i:>2}. {pick['pick']} vs {pick['opponent']:<4} "
-            f"edge={pick['predicted_edge']:.3f} spread={spread}"
+            f"{i:>2}. PICK {pick['pick']} ({site}) -- {matchup:<9} "
+            f"edge={pick['predicted_edge']:.3f} spread={spread}{notes}"
         )
 
 
@@ -318,11 +410,14 @@ def build_report(target_date: str, top_n: int = 10) -> None:
     conn = get_connection()
     with conn:
         picks = build_picks(conn, target_date)[:top_n]
-        if not picks:
-            print(f"No scored games found for {target_date}. Run score.py first.")
-            conn.close()
-            return
-        log_picks(conn, target_date, picks)
+        if picks:
+            log_picks(conn, target_date, picks)
+
+    if not picks:
+        print(f"No scored games found for {target_date}. Run score.py first.")
+        conn.close()
+        return
+
     print_report(target_date, picks)
     csv_path = write_csv(target_date, picks)
     html_path = render_html_report(target_date, picks)

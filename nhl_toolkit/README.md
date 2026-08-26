@@ -22,6 +22,35 @@ python run_daily.py --date 2026-10-01
 Runs every step below in order for that date and writes the report (console
 table, CSV, and an HTML page under `../docs/reports/`). Safe to re-run.
 
+`nhl.db` is meant to keep growing all season — nothing here resets it, `games`
+only gets upserted into, and `schedule_context`/`metric_values` are rebuilt
+from all the games on record each run, not just the ones just fetched. If
+you're starting mid-season, backfill once, then let `run_daily.py` keep it
+current day to day:
+
+```bash
+python fetch_schedule.py --start 2026-10-01 --end 2026-10-31   # one-time backfill
+python run_daily.py --date 2026-10-15                           # then daily going forward
+```
+
+`run_daily.py` also re-fetches a trailing `--lookback-days` window (default 3)
+so recently-finished games get their final score upserted even after they're
+no longer "today."
+
+### Running it on a schedule (cron)
+
+`run_daily.sh` is a cron-safe wrapper — it uses absolute paths (not your
+shell's `$PATH`/cwd), sources `.env`, and logs to `nhl_toolkit/logs/`
+(gitignored). Add a line like this via `crontab -e`:
+
+```
+0 9 * * * /Users/babruzi/Documents/VSCODE/GITHUB/hockey-web/nhl_toolkit/run_daily.sh
+```
+
+That runs it every day at 9am for "today." Adjust the time, or add a second
+line with an explicit `--date`/older date if you want a second daily catch-up
+run.
+
 ### Step by step
 
 1. Initialize the DB (also runs automatically from every script below):
@@ -84,6 +113,7 @@ table, CSV, and an HTML page under `../docs/reports/`). Safe to re-run.
 - `score.py` — normalizes metric values and applies `policy.yaml` to produce `daily_scores`
 - `report.py` — ranks games by score gap, prints/writes the Top-10 CSV + HTML, and logs picks
 - `run_daily.py` — runs every step above in order for one date
+- `run_daily.sh` — cron-safe wrapper around `run_daily.py`
 
 ## Next up (Phase 3+)
 - `injuries` table (deferred as the messiest data source — likely needs scraping)

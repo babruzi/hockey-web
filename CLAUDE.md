@@ -38,6 +38,23 @@ python report.py --date 2026-10-01                     # rank by score gap, prin
 
 `report.py` writes three outputs: a local CSV (`nhl_toolkit/reports/`, gitignored), a static HTML page (`docs/reports/picks_{date}.html`, git-tracked), and a regenerated `docs/index.html` linking every report newest-first. The `docs/` folder is meant to be served via GitHub Pages (repo root or `/docs` on `main`) — Pages itself isn't enabled yet since this repo is currently private and Pages sites are public by default on the free plan; enable it in repo Settings → Pages once you're ready to publish (or upgrade/make the repo public first).
 
+### Running this daily / accumulating a season's data
+
+`nhl.db` is meant to be a long-lived, ever-growing local database, not something reset between runs — nothing in this pipeline drops or replaces the whole DB (`*.db` is gitignored deliberately; GitHub is for code backup only, not data). One-time backfill for a season already in progress, then run daily from there:
+
+```bash
+python fetch_schedule.py --start 2026-10-01 --end 2026-10-31   # backfill however far the season has gotten
+python run_daily.py --date 2026-10-01                           # then run_daily.py daily going forward
+```
+
+`run_daily.py` re-fetches a trailing `--lookback-days` window (default 3) behind `--date` in addition to that date's game-week, so games that finished in the last few days get their final score upserted even after they're no longer "today" — without this, a game played yesterday would stay stuck at its pre-game state forever once `--date` moves past it. If you ever miss several days of runs, re-run the backfill command above to close the gap (upserts are idempotent, so overlapping ranges are harmless).
+
+For unattended daily runs, `run_daily.sh` is a cron-safe wrapper (absolute paths, sources `.env`, logs to `nhl_toolkit/logs/`, both gitignored):
+
+```
+0 9 * * * /Users/babruzi/Documents/VSCODE/GITHUB/hockey-web/nhl_toolkit/run_daily.sh
+```
+
 ## Python Tools
 
 Configured in root `pyproject.toml`, target Python 3.9+ (matches the installed `python3`):
@@ -68,7 +85,8 @@ Data flows through a pipeline of scripts, each its own file, all sharing one SQL
 6. **`policy.yaml`** — the only file you edit to change scoring: a `policy_version` plus a `metrics:` map of `{weight, normalize}` per metric name. `normalize` is one of `minmax` / `zscore` / `linear` / `none` (`linear` and `none` are currently the same pass-through — kept as separate labels for documentation intent).
 7. **`score.py`** — loads `policy.yaml`, syncs it into `policy_weights` (replacing any existing rows for that `policy_version`), then for a given date normalizes each metric's values **across that date's slate only** (not the whole season) before applying weights, and writes one summed `total_score` row per `(game_id, team_id)` to `daily_scores`. Missing metric values (e.g. a team's first game of the season has no `rest_days`) simply don't contribute to the sum rather than erroring.
 8. **`report.py`** — for each game, whichever team's `daily_scores.total_score` is higher is "the pick"; games are ranked by the score gap between the two teams (not by raw score), the top N are printed as a table, written to CSV + HTML (see above), and logged into `picks_log` (spread pulled from `odds` as an average across bookmakers' latest quote per source). Re-running for a date replaces that date's *ungraded* `picks_log` rows only, so grading results already recorded aren't clobbered.
-9. **`run_daily.py`** — orchestrates steps 2–8 for one date by importing and calling each script's entrypoint function directly (no subprocesses). Since every stage is either an upsert or a full rebuild, there's no "only run what's needed" logic — it just runs everything every time, which is simpler and still cheap.
+9. **`run_daily.py`** — orchestrates steps 2–8 for one date by importing and calling each script's entrypoint function directly (no subprocesses). Since every stage is either an upsert or a full rebuild, there's no "only run what's needed" logic — it just runs everything every time, which is simpler and still cheap. Its schedule fetch uses a `--lookback-days` window (default 3) behind the target date so recently-completed games' final scores get upserted even after they've aged out of being "today."
+10. **`run_daily.sh`** — cron-safe wrapper around `run_daily.py` for unattended daily runs (absolute paths, sources `.env`, logs to `nhl_toolkit/logs/`).
 
 `arenas.py` is static reference data (lat/lon + IANA timezone per team, keyed by the 3-letter abbrev the NHL API uses), plus `TEAM_NAME_TO_ABBREV`, a reverse lookup built from that same data for feeds (like odds) that identify teams by full name. Note the ARI→UTA relocation: `ARENAS["ARI"]` is aliased to the same record as `ARENAS["UTA"]` so historical pre-2024-25 data still resolves.
 
