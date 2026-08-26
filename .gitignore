@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local SQLite databases
+*.db
+
+# Generated reports
+nhl_toolkit/reports/
+
+# Secrets
+.env
+
+# macOS
+.DS_Store

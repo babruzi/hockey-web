@@ -1,0 +1,31 @@
+# Config-driven scoring policy. Add/remove/reweight metrics here without
+# touching score.py or the database schema -- see nhl-betting-toolkit-design.md
+# section 6. `normalize` must be one of: minmax, zscore, linear, none
+# (linear and none are both a pass-through of the raw value; the distinction
+# is documentation only until a metric needs different scaling behavior).
+policy_version: "2026-08-v1"
+metrics:
+  rest_days:
+    weight: 0.15
+    normalize: minmax
+  games_last_7:
+    weight: -0.10
+    normalize: zscore
+  games_last_14:
+    weight: -0.08
+    normalize: zscore
+  games_last_30:
+    weight: -0.05
+    normalize: zscore
+  distance_traveled_km:
+    weight: -0.05
+    normalize: zscore
+  timezones_crossed:
+    weight: -0.12
+    normalize: linear
+  back_to_back:
+    weight: -0.20
+    normalize: none
+  home_ice:
+    weight: 0.10
+    normalize: none
