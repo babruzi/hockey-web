@@ -165,3 +165,12 @@ Because every score and every actual result is logged, you can later:
 7. Grading script + ROI dashboard
 
 Injuries can slot in as a Phase 2 add-on since it's the messiest data source (may require scraping).
+
+---
+
+## 10. Future Directions (noted, not yet designed)
+
+Beyond the phases above, two bigger directions have come up that would each need their own design pass before building:
+
+- **Player-level stats via MoneyPuck.com** — a free, well-regarded advanced-stats site in the open-source hockey analytics community, with strong goalie data (e.g. goals saved above expected) and individual skater data (xG, on-ice impact) that the NHL API doesn't surface. This would slot in as a new data source alongside odds/injuries, but player-level stats mean a schema step up from today's team-level-only tables — likely a `players` table plus a `player_game_stats` or similar, distinct from the team-level `metrics`/`metric_values` schema (or an extension of it, keyed by player_id instead of team_id). Worth it mainly for starting-goalie quality, which is probably the single highest-signal metric currently missing (see the metrics catalog gap noted in section 5 and the toolkit's roadmap).
+- **Real bets, not just paper picks** — everything in this design is explicitly paper-trading analysis (see section 1's goal and every report's disclaimer). Actually placing or tracking real wagers is a materially different feature: it would mean bet placement/tracking, bankroll management, and probably per-sportsbook account integration, none of which this design has addressed. This is a scope expansion to think through separately whenever it's actually tackled, not an extension of the current `picks_log`/grading design.

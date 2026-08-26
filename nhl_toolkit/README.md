@@ -141,3 +141,5 @@ run.
 - Grading script (mark `picks_log` results win/loss/push from final scores) + ROI dashboard — worth waiting on until there are a few weeks of real picks to grade
 - A weight-tuning/backtest tool: regress actual results against each game's `metric_values` to see which metrics are actually predictive vs. dead weight in `policy.yaml`. No new data needed — everything already joins on `game_id`
 - Head-to-head record and starting-goalie quality, feeding into the same generic `metrics` schema
+
+Further out (see `../betting-toolkit-design.md` section 10, not yet designed): player-level stats from MoneyPuck.com (especially goalie data), and eventually tracking/placing real bets rather than just paper picks.

@@ -106,4 +106,6 @@ Per `nhl_toolkit/README.md` and `betting-toolkit-design.md`, only the design's f
 - A weight-tuning/backtest tool: regress actual outcomes (final score margin or spread cover) against each game's `metric_values` to see which metrics are actually predictive versus dead weight in the current `policy.yaml`. Needs no new data — `metric_values`, `daily_scores`, `picks_log`, and `games.home_score`/`away_score` already join cleanly on `game_id`; it's purely an analysis script over what's already being collected.
 - Head-to-head record and starting-goalie quality — the generic `metrics`/`metric_values` schema already supports adding these without touching `score.py`, but nothing populates them yet. (`recent_form`/`goal_differential` are now implemented, in `form_metrics.py`.)
 
+Further out, not yet designed — see `betting-toolkit-design.md` section 10: player-level stats sourced from MoneyPuck.com (especially goalie data), which would need a schema step up from today's team-level-only tables; and eventually tracking/placing real bets, a materially different feature from the current paper-trading `picks_log`/grading design.
+
 Don't assume any of this exists — check the actual code before referencing it.
