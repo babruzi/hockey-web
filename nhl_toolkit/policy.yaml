@@ -1,9 +1,9 @@
 # Config-driven scoring policy. Add/remove/reweight metrics here without
-# touching score.py or the database schema -- see nhl-betting-toolkit-design.md
+# touching score.py or the database schema -- see betting-toolkit-design.md
 # section 6. `normalize` must be one of: minmax, zscore, linear, none
 # (linear and none are both a pass-through of the raw value; the distinction
 # is documentation only until a metric needs different scaling behavior).
-policy_version: "2026-08-v1"
+policy_version: "2026-08-v2"
 metrics:
   rest_days:
     weight: 0.15
@@ -29,3 +29,9 @@ metrics:
   home_ice:
     weight: 0.10
     normalize: none
+  recent_form:
+    weight: 0.20
+    normalize: minmax
+  goal_differential:
+    weight: 0.15
+    normalize: zscore

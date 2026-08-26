@@ -78,7 +78,16 @@ run.
    ```
    Re-run this after every travel_metrics.py run.
 
-5. Pull current NHL odds (moneyline, puck line, totals) from The Odds API:
+5. Rebuild recent form (win % over the last 10 completed games) and goal
+   differential, straight from `games` scores:
+   ```bash
+   python form_metrics.py
+   ```
+   Only completed games (`game_state = "OFF"`) update the trailing window;
+   future/in-progress games still get a value computed from games already
+   played, so upcoming games can be scored too.
+
+6. Pull current NHL odds (moneyline, puck line, totals) from The Odds API:
    ```bash
    source .env
    python fetch_odds.py
@@ -86,12 +95,12 @@ run.
    Each run appends a new snapshot per (game, bookmaker) rather than
    overwriting — safe, and expected, to re-run often to track line movement.
 
-6. Score a date's games against `policy.yaml`:
+7. Score a date's games against `policy.yaml`:
    ```bash
    python score.py --date 2026-10-01
    ```
 
-7. Build the Top-10 picks report (console table + CSV + HTML) and log picks for backtesting:
+8. Build the Top-10 picks report (console table + CSV + HTML) and log picks for backtesting:
    ```bash
    python report.py --date 2026-10-01
    ```
@@ -102,7 +111,7 @@ run.
    → Pages) — the repo is currently private and Pages sites are public by
    default on the free plan.
 
-8. Regenerate the policy reference page (every metric's weight, normalization
+9. Regenerate the policy reference page (every metric's weight, normalization
    method, and description in one place — handy while tuning weights):
    ```bash
    python policy_page.py
@@ -118,6 +127,7 @@ run.
 - `fetch_schedule.py` — pulls from the NHL Web API (`api-web.nhle.com/v1/schedule/{date}`)
 - `travel_metrics.py` — derives rest/travel/timezone metrics from the raw schedule
 - `metrics.py` — seeds the metrics catalog and populates `metric_values` from `schedule_context`
+- `form_metrics.py` — computes `recent_form`/`goal_differential` from `games` scores
 - `fetch_odds.py` — pulls odds from The Odds API and matches events to `games` rows
 - `policy.yaml` — the weighted scoring config; edit this to reweight or add/drop metrics
 - `score.py` — normalizes metric values and applies `policy.yaml` to produce `daily_scores`
@@ -129,4 +139,4 @@ run.
 ## Next up (Phase 3+)
 - `injuries` table (deferred as the messiest data source — likely needs scraping)
 - Grading script (mark `picks_log` results win/loss/push from final scores) + ROI dashboard
-- Recent-form and head-to-head metrics feeding into the same generic `metrics` schema
+- Head-to-head record and starting-goalie quality, feeding into the same generic `metrics` schema

@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS games (
     away_team       TEXT NOT NULL,
     home_score      INTEGER,
     away_score      INTEGER,
-    game_state      TEXT,                  -- 'FUT', 'LIVE', 'FINAL', etc.
+    game_state      TEXT,                  -- 'FUT', 'LIVE', 'OFF' (completed), etc.
     venue           TEXT
 );
 

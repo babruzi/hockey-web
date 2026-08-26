@@ -29,6 +29,7 @@ from datetime import timedelta
 from db import init_db
 from fetch_odds import fetch_and_store_odds
 from fetch_schedule import fetch_range
+from form_metrics import rebuild_form_metrics
 from metrics import rebuild_schedule_metrics
 from policy_page import build_policy_page
 from report import build_report
@@ -56,6 +57,9 @@ def run_daily(target_date: str, top_n: int = 10, lookback_days: int = 3) -> None
 
     print("== Rebuilding generic metric_values ==")
     rebuild_schedule_metrics()
+
+    print("== Rebuilding recent form / goal differential ==")
+    rebuild_form_metrics()
 
     if os.environ.get("ODDS_API_KEY"):
         print("== Fetching odds ==")
