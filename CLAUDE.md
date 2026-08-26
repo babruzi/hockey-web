@@ -102,7 +102,8 @@ SQLite was chosen deliberately for zero-config local development; the schema is 
 Per `nhl_toolkit/README.md` and `betting-toolkit-design.md`, only the design's final build-order step is still design-only:
 
 - An `injuries` table (deferred as the messiest data source — likely needs scraping) and injury-derived metrics.
-- A grading script that marks `picks_log.result` (win/loss/push) from final scores, plus an ROI dashboard/backtesting analysis.
+- A grading script that marks `picks_log.result` (win/loss/push) from final scores, plus an ROI dashboard/backtesting analysis. Worth waiting on until there are a few weeks of real `picks_log` history to grade.
+- A weight-tuning/backtest tool: regress actual outcomes (final score margin or spread cover) against each game's `metric_values` to see which metrics are actually predictive versus dead weight in the current `policy.yaml`. Needs no new data — `metric_values`, `daily_scores`, `picks_log`, and `games.home_score`/`away_score` already join cleanly on `game_id`; it's purely an analysis script over what's already being collected.
 - Head-to-head record and starting-goalie quality — the generic `metrics`/`metric_values` schema already supports adding these without touching `score.py`, but nothing populates them yet. (`recent_form`/`goal_differential` are now implemented, in `form_metrics.py`.)
 
 Don't assume any of this exists — check the actual code before referencing it.

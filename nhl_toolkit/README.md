@@ -138,5 +138,6 @@ run.
 
 ## Next up (Phase 3+)
 - `injuries` table (deferred as the messiest data source — likely needs scraping)
-- Grading script (mark `picks_log` results win/loss/push from final scores) + ROI dashboard
+- Grading script (mark `picks_log` results win/loss/push from final scores) + ROI dashboard — worth waiting on until there are a few weeks of real picks to grade
+- A weight-tuning/backtest tool: regress actual results against each game's `metric_values` to see which metrics are actually predictive vs. dead weight in `policy.yaml`. No new data needed — everything already joins on `game_id`
 - Head-to-head record and starting-goalie quality, feeding into the same generic `metrics` schema
