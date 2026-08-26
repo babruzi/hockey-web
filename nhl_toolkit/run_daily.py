@@ -30,6 +30,7 @@ from db import init_db
 from fetch_odds import fetch_and_store_odds
 from fetch_schedule import fetch_range
 from metrics import rebuild_schedule_metrics
+from policy_page import build_policy_page
 from report import build_report
 from score import score_date
 from travel_metrics import rebuild_schedule_context
@@ -67,6 +68,9 @@ def run_daily(target_date: str, top_n: int = 10, lookback_days: int = 3) -> None
 
     print(f"== Building report for {target_date} ==")
     build_report(target_date, top_n)
+
+    print("== Updating policy page ==")
+    build_policy_page()
 
 
 if __name__ == "__main__":

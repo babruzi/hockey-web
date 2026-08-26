@@ -102,6 +102,16 @@ run.
    → Pages) — the repo is currently private and Pages sites are public by
    default on the free plan.
 
+8. Regenerate the policy reference page (every metric's weight, normalization
+   method, and description in one place — handy while tuning weights):
+   ```bash
+   python policy_page.py
+   ```
+   Writes `../docs/policy.html`, linked from the reports index. Reads
+   straight from `policy.yaml`, so it always reflects the current config —
+   there's nothing to keep in sync manually. `run_daily.py` regenerates it
+   automatically each run.
+
 ## Files
 - `arenas.py` — static reference table: 32 teams, arena lat/lon, IANA timezone, and a full-team-name → abbrev lookup for odds feeds
 - `db.py` — SQLite schema (`games`, `schedule_context`, `odds`, `metrics`, `metric_values`, `policy_weights`, `daily_scores`, `picks_log`)
@@ -112,7 +122,8 @@ run.
 - `policy.yaml` — the weighted scoring config; edit this to reweight or add/drop metrics
 - `score.py` — normalizes metric values and applies `policy.yaml` to produce `daily_scores`
 - `report.py` — ranks games by score gap, prints/writes the Top-10 CSV + HTML, and logs picks
-- `run_daily.py` — runs every step above in order for one date
+- `policy_page.py` — renders `docs/policy.html`, a reference page of every metric's weight/normalize/description
+- `run_daily.py` — runs every step above (including the policy page) in order for one date
 - `run_daily.sh` — cron-safe wrapper around `run_daily.py`
 
 ## Next up (Phase 3+)

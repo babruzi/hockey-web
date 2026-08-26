@@ -216,6 +216,7 @@ HTML_STYLE = """
     --row-alt: #f9fafb;
     --accent: #1d4ed8;
     --pick: #15803d;
+    --negative: #b91c1c;
 }
 @media (prefers-color-scheme: dark) {
     :root {
@@ -226,6 +227,7 @@ HTML_STYLE = """
         --row-alt: #1c1f26;
         --accent: #60a5fa;
         --pick: #4ade80;
+        --negative: #f87171;
     }
 }
 body {
@@ -246,6 +248,8 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: 
 .edge { font-variant-numeric: tabular-nums; }
 .notes { color: var(--muted); font-size: 0.85rem; }
 .pick { color: var(--pick); }
+.positive { color: var(--pick); font-variant-numeric: tabular-nums; }
+.negative { color: var(--negative); font-variant-numeric: tabular-nums; }
 a { color: var(--accent); }
 .disclaimer { color: var(--muted); font-size: 0.85rem; margin-top: 2rem; }
 """
@@ -347,6 +351,7 @@ def update_index() -> Path:
 <body>
 <h1>NHL Paper Betting Picks</h1>
 <p class="subtitle">Daily Top-10 reports from the policy-driven scoring engine.</p>
+<p><a href="policy.html">Current scoring policy &amp; weights &rarr;</a></p>
 <ul>
 {links}
 </ul>
