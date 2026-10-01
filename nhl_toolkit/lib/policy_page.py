@@ -8,7 +8,7 @@ score.py to actually change scoring.
 Regenerated automatically by run_daily.py, or run standalone:
 
 Usage:
-    python policy_page.py
+    python lib/policy_page.py
 """
 
 import sqlite3

@@ -8,8 +8,8 @@ and logs each pick to `picks_log` for later grading/backtesting.
 Run this after score.py has scored the target date.
 
 Usage:
-    python report.py --date 2026-10-05
-    python report.py                      # defaults to today
+    python lib/report.py --date 2026-10-05
+    python lib/report.py                      # defaults to today
 """
 
 import argparse
@@ -22,11 +22,11 @@ from typing import Optional
 
 from db import get_connection, init_db
 
-REPORTS_DIR = Path(__file__).parent / "reports"
+REPORTS_DIR = Path(__file__).parent.parent / "reports"
 
-# docs/ lives at the repo root (one level up from nhl_toolkit/), since
+# docs/ lives at the repo root (two levels up from lib/), since
 # GitHub Pages serves a repo from either the root or a /docs folder.
-DOCS_DIR = Path(__file__).parent.parent / "docs"
+DOCS_DIR = Path(__file__).parent.parent.parent / "docs"
 DOCS_REPORTS_DIR = DOCS_DIR / "reports"
 
 
@@ -129,7 +129,8 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
     """
     rows = conn.execute(
         """
-        SELECT ds.game_id, ds.team_id, ds.total_score, g.home_team, g.away_team, g.game_date
+        SELECT ds.game_id, ds.team_id, ds.total_score, g.home_team, g.away_team,
+               g.game_date, g.home_score, g.away_score
         FROM daily_scores ds
         JOIN games g ON g.game_id = ds.game_id
         WHERE ds.date = ?
@@ -138,17 +139,36 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
     ).fetchall()
 
     scores_by_game: dict[int, dict] = {}
-    for game_id, team_id, total_score, home_team, away_team, game_date in rows:
+    for (
+        game_id,
+        team_id,
+        total_score,
+        home_team,
+        away_team,
+        game_date,
+        final_home_score,
+        final_away_score,
+    ) in rows:
         game = scores_by_game.setdefault(
             game_id,
             {
                 "home_team": home_team,
                 "away_team": away_team,
                 "game_date": game_date,
+                "final_home_score": final_home_score,
+                "final_away_score": final_away_score,
                 "scores": {},
             },
         )
         game["scores"][team_id] = total_score
+
+    grading_by_game = {
+        game_id: (result, straight_up_result)
+        for game_id, result, straight_up_result in conn.execute(
+            "SELECT game_id, result, straight_up_result FROM picks_log WHERE date = ?",
+            (target_date,),
+        ).fetchall()
+    }
 
     picks = []
     for game_id, game in scores_by_game.items():
@@ -159,6 +179,7 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
 
         pick_team = game["home_team"] if home_score >= away_score else game["away_team"]
         predicted_edge = abs(home_score - away_score)
+        result, straight_up_result = grading_by_game.get(game_id, (None, None))
         picks.append(
             {
                 "game_id": game_id,
@@ -169,6 +190,10 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
                 "predicted_edge": predicted_edge,
                 "spread_at_pick": latest_consensus_spread(conn, game_id, pick_team),
                 "notes": build_game_notes(conn, game_id, game["home_team"], game["game_date"]),
+                "final_home_score": game["final_home_score"],
+                "final_away_score": game["final_away_score"],
+                "result": result,
+                "straight_up_result": straight_up_result,
             }
         )
 
@@ -278,6 +303,29 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
     def format_notes(pick: dict) -> str:
         return "; ".join(pick["notes"]) if pick["notes"] else "&mdash;"
 
+    def format_final_score(pick: dict) -> str:
+        if pick["final_home_score"] is None or pick["final_away_score"] is None:
+            return '<span class="notes">&mdash;</span>'
+        return f"{pick['final_away_score']}&ndash;{pick['final_home_score']}"
+
+    def format_outcome(value: Optional[str]) -> str:
+        if value == "win":
+            return '<span class="positive">Win</span>'
+        if value == "loss":
+            return '<span class="negative">Loss</span>'
+        if value == "push":
+            return '<span class="notes">Push</span>'
+        return '<span class="notes">&mdash;</span>'
+
+    def format_ats(pick: dict) -> str:
+        if pick["result"] is not None:
+            return format_outcome(pick["result"])
+        # Game is final but there was never a spread to grade against --
+        # distinct from "not played yet", which falls through to the dash.
+        if pick["final_home_score"] is not None and pick["spread_at_pick"] is None:
+            return '<span class="notes">n/a</span>'
+        return format_outcome(None)
+
     rows = "\n".join(
         f"""
         <tr>
@@ -285,6 +333,9 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
             <td>{format_matchup(pick)}</td>
             <td class="edge">{pick["predicted_edge"]:.3f}</td>
             <td>{format_spread(pick)}</td>
+            <td class="edge">{format_final_score(pick)}</td>
+            <td>{format_outcome(pick["straight_up_result"])}</td>
+            <td>{format_ats(pick)}</td>
             <td class="notes">{format_notes(pick)}</td>
         </tr>"""
         for i, pick in enumerate(picks, start=1)
@@ -304,10 +355,14 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 <p class="subtitle">
 {pretty_date} &middot; generated by the NHL paper-betting toolkit &middot;
 the <strong class="pick">green, bolded</strong> team is the pick, format is Away @ Home
+(Score column is also Away&ndash;Home) &middot; Straight Up/Vs. Spread show once the game is final
 </p>
 <table>
 <thead>
-<tr><th>#</th><th>Matchup</th><th>Edge</th><th>Spread</th><th>Notes</th></tr>
+<tr>
+    <th>#</th><th>Matchup</th><th>Edge</th><th>Spread</th><th>Score</th>
+    <th>Straight Up</th><th>Vs. Spread</th><th>Notes</th>
+</tr>
 </thead>
 <tbody>{rows}
 </tbody>
@@ -365,17 +420,39 @@ def update_index() -> Path:
 
 
 def log_picks(conn: sqlite3.Connection, target_date: str, picks: list[dict]) -> None:
-    """Record the day's picks in picks_log for later grading, replacing any ungraded entries.
+    """Record the day's picks in picks_log, upserting by (date, game_id).
+
+    An upsert (rather than delete-then-insert) is required here because
+    build_report() gets re-run for already-graded past dates too, to refresh
+    their published HTML with final scores -- a plain delete-then-insert would
+    either wipe out recorded `result`/`straight_up_result`/`graded_at` values,
+    or (since the old delete only matched ungraded rows) insert a duplicate
+    row for an already-graded game. The upsert updates only the
+    pick/edge/spread columns and leaves grading columns untouched. Ungraded
+    rows for games no longer in `picks` (e.g. a dropped-out top-N game) are
+    still pruned, same as before.
 
     :param conn: Open connection to the schedule database.
     :param target_date: Date the picks were made, as YYYY-MM-DD.
     :param picks: Picks as returned by :func:`build_picks`.
     """
-    conn.execute("DELETE FROM picks_log WHERE date = ? AND result IS NULL", (target_date,))
+    game_ids = [pick["game_id"] for pick in picks]
+    placeholders = ",".join("?" * len(game_ids))
+    conn.execute(
+        f"""
+        DELETE FROM picks_log
+        WHERE date = ? AND result IS NULL AND game_id NOT IN ({placeholders})
+        """,
+        [target_date, *game_ids],
+    )
     conn.executemany(
         """
         INSERT INTO picks_log (date, game_id, pick, predicted_edge, spread_at_pick)
         VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(date, game_id) DO UPDATE SET
+            pick = excluded.pick,
+            predicted_edge = excluded.predicted_edge,
+            spread_at_pick = excluded.spread_at_pick
         """,
         [
             (

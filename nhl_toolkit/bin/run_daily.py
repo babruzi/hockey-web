@@ -1,9 +1,11 @@
 """
 Runs the full Phase 1 + Phase 2 pipeline for one date: fetches the
 schedule (including a trailing lookback window to pick up final scores
-for recently-completed games), rebuilds travel metrics and the generic
-metrics schema, pulls current odds, scores the slate, and builds the
-Top-N report (CSV + HTML + picks_log).
+for recently-completed games), grades any picks_log rows those final
+scores make gradeable, re-renders the lookback window's past HTML
+reports so they show the final score/grading, rebuilds travel metrics
+and the generic metrics schema, pulls current odds, scores the slate,
+and builds the Top-N report (CSV + HTML + picks_log).
 
 Every step is cheap and idempotent (upsert or full-rebuild-on-run), so
 running the whole chain is simpler and safer than trying to detect
@@ -16,25 +18,30 @@ as long as you keep running it. Odds are optional: if ODDS_API_KEY
 isn't set, that step is skipped with a warning and the rest of the
 pipeline still runs (picks just won't have a spread).
 
-Usage:
-    python run_daily.py --date 2026-10-05
-    python run_daily.py                      # defaults to today
+Usage (from nhl_toolkit/):
+    python bin/run_daily.py --date 2026-10-05
+    python bin/run_daily.py                      # defaults to today
 """
 
 import argparse
 import os
+import sys
 from datetime import date as date_cls
 from datetime import timedelta
+from pathlib import Path
 
-from db import init_db
-from fetch_odds import fetch_and_store_odds
-from fetch_schedule import fetch_range
-from form_metrics import rebuild_form_metrics
-from metrics import rebuild_schedule_metrics
-from policy_page import build_policy_page
-from report import build_report
-from score import score_date
-from travel_metrics import rebuild_schedule_context
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+
+from db import init_db  # noqa: E402
+from fetch_odds import fetch_and_store_odds  # noqa: E402
+from fetch_schedule import fetch_range  # noqa: E402
+from form_metrics import rebuild_form_metrics  # noqa: E402
+from grade import grade_all  # noqa: E402
+from metrics import rebuild_schedule_metrics  # noqa: E402
+from policy_page import build_policy_page  # noqa: E402
+from report import build_report  # noqa: E402
+from score import score_date  # noqa: E402
+from travel_metrics import rebuild_schedule_context  # noqa: E402
 
 
 def run_daily(target_date: str, top_n: int = 10, lookback_days: int = 3) -> None:
@@ -51,6 +58,15 @@ def run_daily(target_date: str, top_n: int = 10, lookback_days: int = 3) -> None
     fetch_anchor = (date_cls.fromisoformat(target_date) - timedelta(days=lookback_days)).isoformat()
     print(f"== Fetching schedule from {fetch_anchor} through {target_date}'s game-week ==")
     fetch_range(fetch_anchor, target_date)
+
+    print("== Grading completed picks ==")
+    grade_all()
+
+    print(f"== Refreshing past reports for {fetch_anchor}..{target_date} with final scores ==")
+    refresh_date = date_cls.fromisoformat(fetch_anchor)
+    while refresh_date < date_cls.fromisoformat(target_date):
+        build_report(refresh_date.isoformat(), top_n)
+        refresh_date += timedelta(days=1)
 
     print("== Rebuilding travel/rest metrics ==")
     rebuild_schedule_context()

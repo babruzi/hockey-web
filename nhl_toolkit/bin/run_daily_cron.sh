@@ -4,7 +4,7 @@
 # instead of relying on inherited PATH/cwd.
 #
 # Install with `crontab -e` and a line like:
-#   0 9 * * * /Users/babruzi/Documents/VSCODE/GITHUB/hockey-web/nhl_toolkit/run_daily.sh
+#   0 9 * * * /Users/babruzi/Documents/VSCODE/GITHUB/hockey-web/nhl_toolkit/bin/run_daily_cron.sh
 set -euo pipefail
 
 REPO_ROOT="/Users/babruzi/Documents/VSCODE/GITHUB/hockey-web"
@@ -18,4 +18,4 @@ if [ -f "$REPO_ROOT/.env" ]; then
     source "$REPO_ROOT/.env"
 fi
 
-"$REPO_ROOT/.venv/bin/python" run_daily.py >> "$LOG_FILE" 2>&1
+"$REPO_ROOT/.venv/bin/python" bin/run_daily.py >> "$LOG_FILE" 2>&1

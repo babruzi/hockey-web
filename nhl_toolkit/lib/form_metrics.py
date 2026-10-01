@@ -18,7 +18,7 @@ metric builders, it fully deletes and rebuilds the metric_values rows
 it owns each run (idempotent).
 
 Usage:
-    python form_metrics.py
+    python lib/form_metrics.py
 """
 
 import sqlite3

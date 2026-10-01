@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NHL Paper Betting Picks</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --row-alt: #f9fafb;
+    --accent: #1d4ed8;
+    --pick: #15803d;
+    --negative: #b91c1c;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #16181d;
+        --fg: #e6e6e6;
+        --muted: #9ca3af;
+        --border: #2c2f36;
+        --row-alt: #1c1f26;
+        --accent: #60a5fa;
+        --pick: #4ade80;
+        --negative: #f87171;
+    }
+}
+body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    max-width: 760px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+.subtitle { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+tr:nth-child(even) td { background: var(--row-alt); }
+th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
+.rank { color: var(--muted); width: 2rem; }
+.edge { font-variant-numeric: tabular-nums; }
+.notes { color: var(--muted); font-size: 0.85rem; }
+.pick { color: var(--pick); }
+.positive { color: var(--pick); font-variant-numeric: tabular-nums; }
+.negative { color: var(--negative); font-variant-numeric: tabular-nums; }
+a { color: var(--accent); }
+.disclaimer { color: var(--muted); font-size: 0.85rem; margin-top: 2rem; }
+</style>
+</head>
+<body>
+<h1>NHL Paper Betting Picks</h1>
+<p class="subtitle">Daily Top-10 reports from the policy-driven scoring engine.</p>
+<p><a href="policy.html">Current scoring policy &amp; weights &rarr;</a></p>
+<ul>
+<li><a href="reports/picks_2026-10-01.html">October 01, 2026</a></li>
+<li><a href="reports/picks_2026-09-30.html">September 30, 2026</a></li>
+</ul>
+</body>
+</html>

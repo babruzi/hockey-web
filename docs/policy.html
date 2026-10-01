@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NHL Scoring Policy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --row-alt: #f9fafb;
+    --accent: #1d4ed8;
+    --pick: #15803d;
+    --negative: #b91c1c;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #16181d;
+        --fg: #e6e6e6;
+        --muted: #9ca3af;
+        --border: #2c2f36;
+        --row-alt: #1c1f26;
+        --accent: #60a5fa;
+        --pick: #4ade80;
+        --negative: #f87171;
+    }
+}
+body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    max-width: 760px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+.subtitle { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+tr:nth-child(even) td { background: var(--row-alt); }
+th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
+.rank { color: var(--muted); width: 2rem; }
+.edge { font-variant-numeric: tabular-nums; }
+.notes { color: var(--muted); font-size: 0.85rem; }
+.pick { color: var(--pick); }
+.positive { color: var(--pick); font-variant-numeric: tabular-nums; }
+.negative { color: var(--negative); font-variant-numeric: tabular-nums; }
+a { color: var(--accent); }
+.disclaimer { color: var(--muted); font-size: 0.85rem; margin-top: 2rem; }
+</style>
+</head>
+<body>
+<p><a href="index.html">&larr; All reports</a></p>
+<h1>Scoring Policy</h1>
+<p class="subtitle">
+Version <strong>2026-08-v2</strong> &middot;
+edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
+</p>
+<table>
+<thead>
+<tr><th>Metric</th><th>Description</th><th>Unit</th><th>Weight</th><th>Normalize</th></tr>
+</thead>
+<tbody>
+        <tr>
+            <td>rest_days</td>
+            <td class="notes">Days of rest since the team's previous game</td>
+            <td class="notes">days</td>
+            <td><span class="positive">+0.15</span></td>
+            <td>minmax</td>
+        </tr>
+
+        <tr>
+            <td>games_last_7</td>
+            <td class="notes">Games played in the trailing 7 days</td>
+            <td class="notes">count</td>
+            <td><span class="negative">-0.10</span></td>
+            <td>zscore</td>
+        </tr>
+
+        <tr>
+            <td>games_last_14</td>
+            <td class="notes">Games played in the trailing 14 days</td>
+            <td class="notes">count</td>
+            <td><span class="negative">-0.08</span></td>
+            <td>zscore</td>
+        </tr>
+
+        <tr>
+            <td>games_last_30</td>
+            <td class="notes">Games played in the trailing 30 days</td>
+            <td class="notes">count</td>
+            <td><span class="negative">-0.05</span></td>
+            <td>zscore</td>
+        </tr>
+
+        <tr>
+            <td>distance_traveled_km</td>
+            <td class="notes">Distance traveled since the previous game</td>
+            <td class="notes">km</td>
+            <td><span class="negative">-0.05</span></td>
+            <td>zscore</td>
+        </tr>
+
+        <tr>
+            <td>timezones_crossed</td>
+            <td class="notes">Timezone shift since the previous game</td>
+            <td class="notes">hours</td>
+            <td><span class="negative">-0.12</span></td>
+            <td>linear</td>
+        </tr>
+
+        <tr>
+            <td>back_to_back</td>
+            <td class="notes">Playing on zero days of rest</td>
+            <td class="notes">bool</td>
+            <td><span class="negative">-0.20</span></td>
+            <td>none</td>
+        </tr>
+
+        <tr>
+            <td>home_ice</td>
+            <td class="notes">Playing at home</td>
+            <td class="notes">bool</td>
+            <td><span class="positive">+0.10</span></td>
+            <td>none</td>
+        </tr>
+
+        <tr>
+            <td>recent_form</td>
+            <td class="notes">Win percentage over the last 10 completed games</td>
+            <td class="notes">win_pct</td>
+            <td><span class="positive">+0.20</span></td>
+            <td>minmax</td>
+        </tr>
+
+        <tr>
+            <td>goal_differential</td>
+            <td class="notes">Average goal margin over the last 10 completed games</td>
+            <td class="notes">goals</td>
+            <td><span class="positive">+0.15</span></td>
+            <td>zscore</td>
+        </tr>
+</tbody>
+</table>
+<p class="disclaimer">
+Positive weights push a team's score up; negative weights pull it down.
+Each metric's raw value is normalized (see the Normalize column) across
+that day's slate before the weight is applied, so metrics on different
+scales combine fairly.
+</p>
+</body>
+</html>

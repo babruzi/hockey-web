@@ -10,10 +10,10 @@ expected; it's just more snapshots, not duplicates in the upsert sense.
 Requires an API key from https://the-odds-api.com (free tier available)
 set as the ODDS_API_KEY environment variable, e.g.:
     source .env  # if you stored it there as `export ODDS_API_KEY=...`
-    python fetch_odds.py
+    python lib/fetch_odds.py
 
 Usage:
-    python fetch_odds.py
+    python lib/fetch_odds.py
 """
 
 import os

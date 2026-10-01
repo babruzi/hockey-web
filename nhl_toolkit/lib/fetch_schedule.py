@@ -8,8 +8,8 @@ once per week to stay current -- but calling it daily is cheap and
 keeps scores/status fresh as games go final.
 
 Usage:
-    python fetch_schedule.py --start 2026-10-01 --end 2026-10-31
-    python fetch_schedule.py                      # defaults to today's game week
+    python lib/fetch_schedule.py --start 2026-10-01 --end 2026-10-31
+    python lib/fetch_schedule.py                      # defaults to today's game week
 """
 
 import argparse

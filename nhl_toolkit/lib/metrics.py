@@ -11,7 +11,7 @@ that script, it fully deletes and rebuilds the metric_values rows it
 owns each run (idempotent).
 
 Usage:
-    python metrics.py
+    python lib/metrics.py
 """
 
 import sqlite3

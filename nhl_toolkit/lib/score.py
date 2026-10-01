@@ -9,8 +9,8 @@ date. Rescoring a date is idempotent -- it deletes and rewrites that
 date+policy_version's daily_scores rows.
 
 Usage:
-    python score.py --date 2026-10-05
-    python score.py                      # defaults to today
+    python lib/score.py --date 2026-10-05
+    python lib/score.py                      # defaults to today
 """
 
 import argparse
@@ -23,7 +23,7 @@ from typing import Optional
 import yaml
 from db import get_connection, init_db
 
-POLICY_PATH = Path(__file__).parent / "policy.yaml"
+POLICY_PATH = Path(__file__).parent.parent / "policy.yaml"
 
 
 def load_policy(path: Path = POLICY_PATH) -> dict:

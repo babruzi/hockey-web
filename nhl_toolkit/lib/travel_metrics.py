@@ -9,7 +9,7 @@ Run this after fetch_schedule.py has populated `games`. It rebuilds
 single season's worth of games).
 
 Usage:
-    python travel_metrics.py
+    python lib/travel_metrics.py
 """
 
 import sqlite3

@@ -8,7 +8,7 @@ rewrite.
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent / "nhl.db"
+DB_PATH = Path(__file__).parent.parent / "nhl.db"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS games (
@@ -98,7 +98,8 @@ CREATE TABLE IF NOT EXISTS picks_log (
     pick            TEXT NOT NULL,     -- team abbrev picked
     predicted_edge  REAL,              -- score gap between the two teams
     spread_at_pick  REAL,              -- picked team's spread when logged
-    result          TEXT,              -- 'win' | 'loss' | 'push', NULL until graded
+    result              TEXT,          -- 'win'|'loss'|'push' vs spread; NULL if ungraded/no spread
+    straight_up_result  TEXT,          -- 'win'|'loss' -- picked team won outright, ignoring spread
     graded_at       TEXT,
     FOREIGN KEY (game_id) REFERENCES games (game_id)
 );
@@ -109,6 +110,7 @@ CREATE INDEX IF NOT EXISTS idx_odds_game ON odds (game_id);
 CREATE INDEX IF NOT EXISTS idx_metric_values_metric ON metric_values (metric_id);
 CREATE INDEX IF NOT EXISTS idx_daily_scores_date ON daily_scores (date);
 CREATE INDEX IF NOT EXISTS idx_picks_log_date ON picks_log (date);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_picks_log_date_game ON picks_log (date, game_id);
 """
 
 
@@ -123,10 +125,17 @@ def get_connection() -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """Create the database file and apply the schema if not already present."""
+    """Create the database file, apply the schema, and add any columns a prior
+    schema version is missing (SQLite's CREATE TABLE IF NOT EXISTS won't add
+    columns to an already-existing table, so new columns need an explicit,
+    idempotent ALTER TABLE here).
+    """
     conn = get_connection()
     with conn:
         conn.executescript(SCHEMA)
+        existing_columns = {row[1] for row in conn.execute("PRAGMA table_info(picks_log)")}
+        if "straight_up_result" not in existing_columns:
+            conn.execute("ALTER TABLE picks_log ADD COLUMN straight_up_result TEXT")
     conn.close()
     print(f"Database ready at {DB_PATH}")
 
