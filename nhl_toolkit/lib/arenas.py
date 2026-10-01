@@ -22,7 +22,7 @@ ARENAS = {
         "tz": "America/Los_Angeles",
     },
     "UTA": {
-        "team": "Utah Hockey Club",
+        "team": "Utah Mammoth",
         "city": "Salt Lake City, UT",
         "lat": 40.7683,
         "lon": -111.9011,
@@ -249,6 +249,11 @@ ARENAS["ARI"] = ARENAS["UTA"]
 TEAM_NAME_TO_ABBREV = {
     record["team"]: abbrev for abbrev, record in ARENAS.items() if abbrev != "ARI"
 }
+
+# Utah's inaugural-season (2024-25) placeholder name, before "Utah Mammoth"
+# became the permanent one -- kept as an alias in case any feed is still
+# using it, same spirit as the ARI->UTA aliasing above.
+TEAM_NAME_TO_ABBREV["Utah Hockey Club"] = "UTA"
 
 
 def get_abbrev_for_team_name(team_name: str) -> str:
