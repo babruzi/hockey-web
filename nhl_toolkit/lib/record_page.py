@@ -1,7 +1,7 @@
 """
-Renders docs/reports/record.html: picks_log's overall record (straight-up,
-against the spread, and moneyline ROI) across every policy_version, plus
-a per-policy_version breakdown for comparing before/after a weight
+Renders docs/reports/record.html: picks_log's overall record (moneyline,
+against the puck line, and moneyline ROI) across every policy_version,
+plus a per-policy_version breakdown for comparing before/after a weight
 change. This is the published, no-terminal-needed view of the same
 numbers backtest.py already prints to the console -- it reuses
 backtest.py's policy_performance() rather than re-deriving them.
@@ -126,15 +126,15 @@ def render_record_html(performance: list) -> Path:
 <p><a href="../index.html">&larr; All reports</a></p>
 <h1>Performance Record</h1>
 <p class="subtitle">
-picks_log's real record so far, straight-up and against the spread, plus
+picks_log's real record so far, moneyline and against the puck line, plus
 simulated moneyline ROI on a flat $100 stake per pick.
 </p>
 
 <table>
 <thead><tr><th></th><th>Record</th></tr></thead>
 <tbody>
-<tr><td>Straight Up</td><td>{overall_su}</td></tr>
-<tr><td>Vs. Spread</td><td>{overall_ats_pct}{overall_ats_total_note}</td></tr>
+<tr><td>Moneyline</td><td>{overall_su}</td></tr>
+<tr><td>Vs. Puck Line</td><td>{overall_ats_pct}{overall_ats_total_note}</td></tr>
 <tr><td>Moneyline ROI</td><td class="{overall_roi_class}">{overall_roi_str}</td></tr>
 </tbody>
 </table>
@@ -142,7 +142,7 @@ simulated moneyline ROI on a flat $100 stake per pick.
 <h2>By Policy Version</h2>
 <table>
 <thead>
-<tr><th>Version</th><th>Straight Up</th><th>Vs. Spread</th><th>Moneyline ROI</th></tr>
+<tr><th>Version</th><th>Moneyline</th><th>Vs. Puck Line</th><th>Moneyline ROI</th></tr>
 </thead>
 <tbody>{version_rows}
 </tbody>

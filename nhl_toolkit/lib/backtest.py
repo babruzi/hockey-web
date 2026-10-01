@@ -4,7 +4,7 @@ the `metrics` table, correlates that metric's home-minus-away
 differential against the actual goal margin across every completed
 game, to see which metrics the data actually supports and which are
 dead weight in policy.yaml. Also reports picks_log's real record
-(straight-up and against the spread) per policy_version that's
+(moneyline and against the puck line) per policy_version that's
 actually been scored.
 
 This never hardcodes a metric name -- it reads whatever rows exist in
@@ -129,7 +129,7 @@ def metric_report(conn: sqlite3.Connection) -> list:
 
 
 def policy_performance(conn: sqlite3.Connection) -> list:
-    """picks_log's real record, straight-up and against the spread, per policy_version.
+    """picks_log's real record, moneyline and against the puck line, per policy_version.
 
     Joined through daily_scores (picks_log itself doesn't store policy_version)
     so that comparing performance before/after a policy.yaml weight change is
@@ -239,7 +239,7 @@ def print_backtest_report(report: list, performance: list, min_n: int) -> None:
             roi_note = f" | moneyline ROI {profit:+.2f} on {bet_count} bets ({roi_pct:+.1f}%)"
         else:
             roi_note = " | moneyline ROI n/a (no odds on any graded pick)"
-        print(f"{row['policy_version']}: straight-up {su} | vs. spread {ats}{push_note}{roi_note}")
+        print(f"{row['policy_version']}: moneyline {su} | vs. puck line {ats}{push_note}{roi_note}")
 
 
 def build_backtest_report(min_n: int = DEFAULT_MIN_N) -> None:
