@@ -29,6 +29,7 @@ import sqlite3
 from typing import Optional
 
 from db import get_connection, init_db
+from grade import STAKE
 from score import load_policy
 
 DEFAULT_MIN_N = 10
@@ -146,8 +147,8 @@ def policy_performance(conn: sqlite3.Connection) -> list:
                SUM(CASE WHEN p.result = 'win' THEN 1 ELSE 0 END),
                SUM(CASE WHEN p.result = 'loss' THEN 1 ELSE 0 END),
                SUM(CASE WHEN p.result = 'push' THEN 1 ELSE 0 END),
-               SUM(p.profit_100),
-               SUM(CASE WHEN p.profit_100 IS NOT NULL THEN 1 ELSE 0 END)
+               SUM(p.profit_10),
+               SUM(CASE WHEN p.profit_10 IS NOT NULL THEN 1 ELSE 0 END)
         FROM picks_log p
         JOIN daily_scores ds
           ON ds.date = p.date AND ds.game_id = p.game_id AND ds.team_id = p.pick
@@ -163,7 +164,7 @@ def policy_performance(conn: sqlite3.Connection) -> list:
             "ats_wins": ats_wins,
             "ats_losses": ats_losses,
             "ats_pushes": ats_pushes,
-            "total_profit_100": total_profit_100,
+            "total_profit": total_profit,
             "graded_bet_count": graded_bet_count,
         }
         for (
@@ -173,7 +174,7 @@ def policy_performance(conn: sqlite3.Connection) -> list:
             ats_wins,
             ats_losses,
             ats_pushes,
-            total_profit_100,
+            total_profit,
             graded_bet_count,
         ) in rows
     ]
@@ -234,8 +235,8 @@ def print_backtest_report(report: list, performance: list, min_n: int) -> None:
         push_note = f", {row['ats_pushes']} push" if row["ats_pushes"] else ""
         bet_count = row["graded_bet_count"]
         if bet_count:
-            profit = row["total_profit_100"]
-            roi_pct = 100 * profit / (100 * bet_count)
+            profit = row["total_profit"]
+            roi_pct = 100 * profit / (STAKE * bet_count)
             roi_note = f" | moneyline ROI {profit:+.2f} on {bet_count} bets ({roi_pct:+.1f}%)"
         else:
             roi_note = " | moneyline ROI n/a (no odds on any graded pick)"

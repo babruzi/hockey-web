@@ -16,6 +16,7 @@ from pathlib import Path
 
 from backtest import policy_performance
 from db import get_connection
+from grade import STAKE
 from report import DOCS_DIR, HTML_STYLE, generation_timestamp
 
 RECORD_PATH = DOCS_DIR / "reports" / "record.html"
@@ -33,7 +34,7 @@ def combine_performance(performance: list) -> dict:
         "ats_wins": 0,
         "ats_losses": 0,
         "ats_pushes": 0,
-        "total_profit_100": 0.0,
+        "total_profit": 0.0,
         "graded_bet_count": 0,
     }
     for row in performance:
@@ -57,18 +58,18 @@ def format_record_pct(wins: int, losses: int) -> str:
     return f"{wins}-{losses} ({100 * wins / total:.1f}%)"
 
 
-def format_roi(total_profit_100: float, bet_count: int) -> tuple:
-    """Dollar P&L and ROI% on a flat $100-per-pick moneyline stake.
+def format_roi(total_profit: float, bet_count: int) -> tuple:
+    """Dollar P&L and ROI% on a flat $STAKE-per-pick moneyline stake.
 
-    :param total_profit_100: Summed profit_100 across graded picks with odds.
+    :param total_profit: Summed profit_10 across graded picks with odds.
     :param bet_count: How many graded picks had a moneyline to bet against.
     :returns: (display string, css class) -- class is "positive"/"negative"/"notes".
     """
     if not bet_count:
         return "n/a (no odds on any graded pick)", "notes"
-    roi_pct = 100 * total_profit_100 / (100 * bet_count)
-    css_class = "positive" if total_profit_100 >= 0 else "negative"
-    return f"{total_profit_100:+.2f} on {bet_count} bets ({roi_pct:+.1f}%)", css_class
+    roi_pct = 100 * total_profit / (STAKE * bet_count)
+    css_class = "positive" if total_profit >= 0 else "negative"
+    return f"{total_profit:+.2f} on {bet_count} bets ({roi_pct:+.1f}%)", css_class
 
 
 def render_record_html(performance: list) -> Path:
@@ -90,7 +91,7 @@ def render_record_html(performance: list) -> Path:
         else f"{overall['ats_wins']}-{overall['ats_losses']}-{overall['ats_pushes']} (n/a)"
     )
     overall_roi_str, overall_roi_class = format_roi(
-        overall["total_profit_100"], overall["graded_bet_count"]
+        overall["total_profit"], overall["graded_bet_count"]
     )
     overall_ats_total_note = f" ({overall_ats_total} graded)" if overall_ats_total else ""
 
@@ -105,8 +106,8 @@ def render_record_html(performance: list) -> Path:
                 if (row["ats_wins"] + row["ats_losses"])
                 else f"{row['ats_wins']}-{row['ats_losses']}-{row['ats_pushes']} (n/a)"
             }</td>
-            <td class="{format_roi(row["total_profit_100"] or 0.0, row["graded_bet_count"])[1]}">
-                {format_roi(row["total_profit_100"] or 0.0, row["graded_bet_count"])[0]}
+            <td class="{format_roi(row["total_profit"] or 0.0, row["graded_bet_count"])[1]}">
+                {format_roi(row["total_profit"] or 0.0, row["graded_bet_count"])[0]}
             </td>
         </tr>"""
         for row in performance
@@ -127,7 +128,7 @@ def render_record_html(performance: list) -> Path:
 <h1>Performance Record</h1>
 <p class="subtitle">
 picks_log's real record so far, moneyline and against the puck line, plus
-simulated moneyline ROI on a flat $100 stake per pick.
+simulated moneyline ROI on a flat ${STAKE:.0f} stake per pick.
 </p>
 
 <table>
@@ -149,9 +150,9 @@ simulated moneyline ROI on a flat $100 stake per pick.
 </table>
 
 <p class="disclaimer">
-Moneyline ROI assumes a flat $100 stake per pick at the consensus moneyline
-recorded when the pick was made, and only counts picks that had odds on
-record. Paper-trading analysis only, not betting advice.
+Moneyline ROI assumes a flat ${STAKE:.0f} stake per pick at the consensus
+moneyline recorded when the pick was made, and only counts picks that had
+odds on record. Paper-trading analysis only, not betting advice.
 </p>
 <p class="updated">Last updated {generation_timestamp()}</p>
 </body>

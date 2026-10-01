@@ -3,11 +3,11 @@ Grades completed picks_log rows against final scores: `result` ('win' /
 'loss' / 'push') against the puck-line spread recorded at pick time in
 `spread_at_pick`, `straight_up_result` ('win' / 'loss') for whether the
 picked team won the game outright regardless of the spread, and
-`profit_100` -- the $ profit or loss a flat $100 moneyline bet on the
+`profit_10` -- the $ profit or loss a flat $STAKE moneyline bet on the
 pick would have made, using the moneyline recorded at pick time in
 `moneyline_at_pick`.
 
-Tracking result/straight_up_result/profit_100 separately matters
+Tracking result/straight_up_result/profit_10 separately matters
 because `spread_at_pick`/`moneyline_at_pick` are often NULL (no odds
 fetched for that game, or ODDS_API_KEY unset that day) -- those rows
 can still get a straight_up_result, which is also the cleaner signal
@@ -15,7 +15,7 @@ for judging the scoring engine's own picks independent of the betting
 market's line. A win/loss record alone doesn't tell you whether these
 picks would have been profitable -- a string of favorites can go
 win-heavy and still lose money, and vice versa for underdogs -- so
-profit_100 is what backtest.py sums for an actual ROI figure.
+profit_10 is what backtest.py sums for an actual ROI figure.
 
 Only grades rows for games the NHL Web API marks 'OFF' (final; see
 form_metrics.py for why not 'FINAL') with both scores present, and only
@@ -30,27 +30,29 @@ from typing import Optional
 
 from db import get_connection, init_db
 
+STAKE = 10.0
+
 
 def moneyline_profit(moneyline: Optional[int], won: bool) -> Optional[float]:
-    """Dollar profit/loss on a flat $100 moneyline stake on the pick.
+    """Dollar profit/loss on a flat $STAKE moneyline bet on the pick.
 
     :param moneyline: The picked team's American moneyline at pick time, or
         None if no odds were on record.
     :param won: Whether the pick won straight up.
-    :returns: Profit (positive) or loss (negative) on a $100 stake, or None
+    :returns: Profit (positive) or loss (negative) on a $STAKE bet, or None
         if there was no moneyline to grade against.
     """
     if moneyline is None:
         return None
     if not won:
-        return -100.0
+        return -STAKE
     if moneyline > 0:
-        return float(moneyline)
-    return 100.0 * 100.0 / abs(moneyline)
+        return STAKE * moneyline / 100.0
+    return STAKE * 100.0 / abs(moneyline)
 
 
 def grade_pending_picks(conn) -> int:
-    """Fill in result/straight_up_result/profit_100 for any gradeable picks_log rows.
+    """Fill in result/straight_up_result/profit_10 for any gradeable picks_log rows.
 
     :param conn: Open connection to the schedule database.
     :returns: Number of picks_log rows graded.
@@ -64,7 +66,7 @@ def grade_pending_picks(conn) -> int:
         WHERE g.game_state = 'OFF'
           AND g.home_score IS NOT NULL
           AND g.away_score IS NOT NULL
-          AND (p.result IS NULL OR p.straight_up_result IS NULL OR p.profit_100 IS NULL)
+          AND (p.result IS NULL OR p.straight_up_result IS NULL OR p.profit_10 IS NULL)
         """
     ).fetchall()
 
@@ -92,15 +94,15 @@ def grade_pending_picks(conn) -> int:
             covered = margin + spread
             result = "win" if covered > 0 else ("loss" if covered < 0 else "push")
 
-        profit_100 = moneyline_profit(moneyline, won)
+        profit_10 = moneyline_profit(moneyline, won)
 
         conn.execute(
             """
             UPDATE picks_log
-            SET result = ?, straight_up_result = ?, profit_100 = ?, graded_at = ?
+            SET result = ?, straight_up_result = ?, profit_10 = ?, graded_at = ?
             WHERE pick_id = ?
             """,
-            (result, straight_up_result, profit_100, graded_at, pick_id),
+            (result, straight_up_result, profit_10, graded_at, pick_id),
         )
 
     return len(rows)

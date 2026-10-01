@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS picks_log (
     moneyline_at_pick   INTEGER,       -- picked team's American moneyline odds when logged
     result              TEXT,          -- 'win'|'loss'|'push' vs spread; NULL if ungraded/no spread
     straight_up_result  TEXT,          -- 'win'|'loss' -- picked team won outright, ignoring spread
-    profit_100          REAL,          -- $ P&L on a flat $100 moneyline stake; NULL if no odds
+    profit_10           REAL,          -- $ P&L on a flat $10 moneyline stake; NULL if no odds
     graded_at       TEXT,
     FOREIGN KEY (game_id) REFERENCES games (game_id)
 );
@@ -140,8 +140,17 @@ def init_db() -> None:
             conn.execute("ALTER TABLE picks_log ADD COLUMN straight_up_result TEXT")
         if "moneyline_at_pick" not in existing_columns:
             conn.execute("ALTER TABLE picks_log ADD COLUMN moneyline_at_pick INTEGER")
-        if "profit_100" not in existing_columns:
-            conn.execute("ALTER TABLE picks_log ADD COLUMN profit_100 REAL")
+        if "profit_10" not in existing_columns:
+            if "profit_100" in existing_columns:
+                # Bet size moved from a flat $100 stake to $10 -- profit scales
+                # linearly with stake size, so rename and rescale in place
+                # rather than wiping out already-graded history.
+                conn.execute("ALTER TABLE picks_log RENAME COLUMN profit_100 TO profit_10")
+                conn.execute(
+                    "UPDATE picks_log SET profit_10 = profit_10 * 0.1 WHERE profit_10 IS NOT NULL"
+                )
+            else:
+                conn.execute("ALTER TABLE picks_log ADD COLUMN profit_10 REAL")
     conn.close()
     print(f"Database ready at {DB_PATH}")
 

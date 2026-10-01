@@ -74,10 +74,11 @@ run.
    ```
    Fills in `result` ('win'/'loss'/'push' against the spread recorded at
    pick time), `straight_up_result` ('win'/'loss', ignoring the spread —
-   still gets filled in even on games with no odds), and `profit_100` ($
-   profit/loss a flat $100 moneyline bet on the pick would have made,
+   still gets filled in even on games with no odds), and `profit_10` ($
+   profit/loss a flat $10 moneyline bet on the pick would have made,
    settled on `straight_up_result` since that's how moneyline bets actually
-   pay out). Safe to re-run; only touches rows missing any of the three.
+   pay out -- the stake is `grade.py`'s `STAKE` constant, imported wherever
+   else it's needed). Safe to re-run; only touches rows missing any of the three.
 
 4. Compute rest days, game density, distance traveled, timezone shifts,
    and back-to-back flags for every team/game:
@@ -131,7 +132,7 @@ run.
    python lib/score.py --date 2026-10-01
    ```
 
-10. Build the Top-10 picks report (console table + CSV + HTML) and log picks for backtesting:
+10. Build the full picks report, every game ranked by edge (console table + CSV + HTML), and log picks for backtesting:
    ```bash
    python lib/report.py --date 2026-10-01
    ```
@@ -157,8 +158,8 @@ run.
     ```bash
     python lib/record_page.py
     ```
-    Writes `../docs/reports/record.html` -- picks_log's overall straight-up
-    and against-the-spread record plus moneyline ROI, both overall and
+    Writes `../docs/reports/record.html` -- picks_log's overall moneyline
+    and vs.-puck-line record plus moneyline ROI, both overall and
     broken down per `policy_version`, with percentages throughout. Reuses
     `backtest.py`'s `policy_performance()` rather than re-deriving the
     numbers. Linked from the reports index as "Performance record & ROI,"
@@ -178,8 +179,8 @@ reviewing `policy.yaml`. For every metric in the `metrics` table it
 correlates that metric's home-minus-away differential against the actual
 final goal margin across every completed game, and flags weights whose sign
 disagrees with the correlation. It also prints `picks_log`'s real
-straight-up/against-the-spread record *and* moneyline ROI (summed
-`profit_100` on a flat $100 stake per pick) per `policy_version`. Never
+moneyline/against-the-puck-line record *and* moneyline ROI (summed
+`profit_10` on a flat $10 stake per pick) per `policy_version`. Never
 writes to `policy.yaml` — correlation is a hint for hand-tuning, not an
 answer, and early in a season the sample sizes are too small to trust
 (that's what `--min-n` flags). It never hardcodes a metric name, so a future
@@ -195,7 +196,7 @@ moneyline), without touching `backtest.py` either time.
 - `lib/arenas.py` — static reference table: 32 teams, arena lat/lon, IANA timezone, and a full-team-name → abbrev lookup for odds feeds
 - `lib/db.py` — SQLite schema (`games`, `schedule_context`, `odds`, `metrics`, `metric_values`, `policy_weights`, `daily_scores`, `picks_log`)
 - `lib/fetch_schedule.py` — pulls from the NHL Web API (`api-web.nhle.com/v1/schedule/{date}`)
-- `lib/grade.py` — grades final games' `picks_log` rows: `result` (vs. the spread), `straight_up_result` (vs. the raw final score), and `profit_100` (moneyline ROI)
+- `lib/grade.py` — grades final games' `picks_log` rows: `result` (vs. the spread), `straight_up_result` (vs. the raw final score), and `profit_10` (moneyline ROI); owns the `STAKE` constant everything else imports
 - `lib/travel_metrics.py` — derives rest/travel/timezone metrics from the raw schedule
 - `lib/metrics.py` — seeds the metrics catalog and populates `metric_values` from `schedule_context`
 - `lib/form_metrics.py` — computes `recent_form`/`goal_differential` from `games` scores
@@ -203,7 +204,7 @@ moneyline), without touching `backtest.py` either time.
 - `lib/market_metrics.py` — derives `market_edge` (devigged implied win probability, from the moneyline) from `odds`, so the betting market is an actual weighted input to scoring, not just a display/grading detail
 - `policy.yaml` — the weighted scoring config; edit this to reweight or add/drop metrics
 - `lib/score.py` — normalizes metric values and applies `policy.yaml` to produce `daily_scores`
-- `lib/report.py` — ranks games by score gap, prints/writes the Top-10 CSV + HTML, and logs picks
+- `lib/report.py` — ranks every game by score gap, prints/writes CSV + HTML, and logs picks
 - `lib/policy_page.py` — renders `docs/reports/policies/policy.html`, a reference page of every metric's weight/normalize/description
 - `lib/backtest.py` — standalone diagnostic: correlates each metric against actual goal margin, prints picks_log's real record per policy_version
 - `lib/record_page.py` — renders `docs/reports/record.html`, the published overall straight-up/ATS record and moneyline ROI (reuses `backtest.py`'s numbers, not its own analysis)
