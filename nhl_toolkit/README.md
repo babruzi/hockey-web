@@ -117,21 +117,19 @@ run.
    python lib/report.py --date 2026-10-01
    ```
    Writes a local CSV (`reports/`, gitignored) and a static HTML page
-   (`../docs/reports/picks_{date}.html`, git-tracked) plus a regenerated
-   `../docs/index.html` linking every report. `docs/` is meant to be served
-   by GitHub Pages, though Pages itself isn't enabled yet (see repo Settings
-   → Pages) — the repo is currently private and Pages sites are public by
-   default on the free plan.
+   (`../docs/reports/picks/picks_{date}.html`, git-tracked) plus a regenerated
+   `../docs/index.html` linking every report. `docs/` is served live by
+   GitHub Pages at https://babruzi.github.io/hockey-web/.
 
 10. Regenerate the policy reference page (every metric's weight, normalization
     method, and description in one place — handy while tuning weights):
     ```bash
     python lib/policy_page.py
     ```
-    Writes `../docs/policy.html`, linked from the reports index. Reads
-    straight from `policy.yaml`, so it always reflects the current config —
-    there's nothing to keep in sync manually. `run_daily.py` regenerates it
-    automatically each run.
+    Writes `../docs/reports/policies/policy.html`, linked from the reports
+    index. Reads straight from `policy.yaml`, so it always reflects the
+    current config — there's nothing to keep in sync manually. `run_daily.py`
+    regenerates it automatically each run.
 
 ### Tuning weights: backtesting
 
@@ -166,7 +164,7 @@ as it has `metric_values`, with zero code changes to this script.
 - `policy.yaml` — the weighted scoring config; edit this to reweight or add/drop metrics
 - `lib/score.py` — normalizes metric values and applies `policy.yaml` to produce `daily_scores`
 - `lib/report.py` — ranks games by score gap, prints/writes the Top-10 CSV + HTML, and logs picks
-- `lib/policy_page.py` — renders `docs/policy.html`, a reference page of every metric's weight/normalize/description
+- `lib/policy_page.py` — renders `docs/reports/policies/policy.html`, a reference page of every metric's weight/normalize/description
 - `lib/backtest.py` — standalone diagnostic: correlates each metric against actual goal margin, prints picks_log's real record per policy_version
 
 ## Next up (Phase 3+)

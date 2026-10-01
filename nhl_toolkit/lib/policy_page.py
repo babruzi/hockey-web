@@ -1,9 +1,9 @@
 """
-Renders docs/policy.html: a quick-reference page showing every metric in
-policy.yaml, its weight, its normalization method, and (where available)
-its description/unit from the metrics catalog. This is a read-only view
-for tuning weights, not a data output -- edit policy.yaml and re-run
-score.py to actually change scoring.
+Renders docs/reports/policies/policy.html: a quick-reference page showing
+every metric in policy.yaml, its weight, its normalization method, and
+(where available) its description/unit from the metrics catalog. This is
+a read-only view for tuning weights, not a data output -- edit
+policy.yaml and re-run score.py to actually change scoring.
 
 Regenerated automatically by run_daily.py, or run standalone:
 
@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Optional
 
 from db import get_connection
-from report import DOCS_DIR, HTML_STYLE
+from report import DOCS_POLICIES_DIR, HTML_STYLE
 from score import POLICY_PATH, load_policy
 
 
@@ -41,7 +41,7 @@ def render_policy_html(policy: dict, metadata: dict[str, tuple]) -> Path:
     :param metadata: Metric name -> (description, unit), from :func:`load_metric_metadata`.
     :returns: Path to the written HTML file.
     """
-    DOCS_DIR.mkdir(parents=True, exist_ok=True)
+    DOCS_POLICIES_DIR.mkdir(parents=True, exist_ok=True)
 
     def format_weight(weight: float) -> str:
         css_class = "positive" if weight >= 0 else "negative"
@@ -68,7 +68,7 @@ def render_policy_html(policy: dict, metadata: dict[str, tuple]) -> Path:
 <style>{HTML_STYLE}</style>
 </head>
 <body>
-<p><a href="index.html">&larr; All reports</a></p>
+<p><a href="../../index.html">&larr; All reports</a></p>
 <h1>Scoring Policy</h1>
 <p class="subtitle">
 Version <strong>{policy["policy_version"]}</strong> &middot;
@@ -90,7 +90,7 @@ scales combine fairly.
 </body>
 </html>
 """
-    path = DOCS_DIR / "policy.html"
+    path = DOCS_POLICIES_DIR / "policy.html"
     with open(path, "w") as f:
         f.write(page)
     return path
