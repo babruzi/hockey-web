@@ -1,6 +1,8 @@
 """
 Derives one metric -- market_edge -- from the `odds` table: each team's
-devigged, market-implied win probability, from the moneyline.
+devigged, market-implied win probability, from DraftKings' moneyline
+(PRIMARY_BOOK) when it has posted a line, falling back to a cross-book
+average otherwise -- see compute_market_edge.
 
 This was originally built from the puck-line spread (the negative of a
 team's own spread), but that turned out to carry almost no signal: NHL
@@ -38,6 +40,11 @@ from collections import defaultdict
 from db import get_connection, init_db
 from metrics import seed_metrics
 
+# Kept in sync with report.py's PRIMARY_BOOK by hand rather than imported --
+# report.py imports american_to_probability from this module, so importing
+# the other way round would be circular.
+PRIMARY_BOOK = "draftkings"
+
 MARKET_METRICS = [
     (
         "market_edge",
@@ -59,21 +66,34 @@ def american_to_probability(odds: int) -> float:
     return 100 / (odds + 100)
 
 
-def compute_market_edge(conn: sqlite3.Connection) -> list:
-    """Average each bookmaker's latest moneyline quote per team, devigged.
+def _devig(home_ml: int, away_ml: int) -> tuple:
+    """Devig one bookmaker's pair of moneylines into (home_prob, away_prob).
 
-    Mirrors report.py's latest_consensus_spread (same "latest quote per
-    bookmaker, then average" logic), computed in bulk for both teams across
-    every game at once instead of one (game, team) pair at a time. A
-    bookmaker's quote only counts if it has both sides' moneylines --
-    devigging needs both to remove the overround.
+    :param home_ml: Home team's American moneyline.
+    :param away_ml: Away team's American moneyline.
+    :returns: (home_prob, away_prob), summing to exactly 1.0.
+    """
+    home_raw = american_to_probability(home_ml)
+    away_raw = american_to_probability(away_ml)
+    overround = home_raw + away_raw
+    return home_raw / overround, away_raw / overround
+
+
+def compute_market_edge(conn: sqlite3.Connection) -> list:
+    """DraftKings' own moneyline per team, devigged -- these are the lines
+    actually meant to be bet, so PRIMARY_BOOK's quote is used directly
+    rather than blended with others. Falls back to a cross-book average
+    (each bookmaker's latest quote devigged individually, then averaged)
+    only for a game DraftKings hasn't posted a line for yet. A bookmaker's
+    quote only counts if it has both sides' moneylines -- devigging needs
+    both to remove the overround.
 
     :param conn: Open connection to the schedule database.
     :returns: (game_id, team_id, market_edge) tuples, one per team with a quote.
     """
     rows = conn.execute(
         """
-        SELECT o.game_id, g.home_team, g.away_team, o.home_ml, o.away_ml
+        SELECT o.game_id, o.source, g.home_team, g.away_team, o.home_ml, o.away_ml
         FROM odds o
         JOIN games g ON g.game_id = o.game_id
         WHERE o.fetched_at = (
@@ -83,27 +103,25 @@ def compute_market_edge(conn: sqlite3.Connection) -> list:
         """
     ).fetchall()
 
-    home_probs: dict = defaultdict(list)
-    away_probs: dict = defaultdict(list)
-    teams_by_game: dict = {}
-    for game_id, home_team, away_team, home_ml, away_ml in rows:
-        if home_ml is None or away_ml is None:
-            continue
-        teams_by_game[game_id] = (home_team, away_team)
-        home_raw = american_to_probability(home_ml)
-        away_raw = american_to_probability(away_ml)
-        overround = home_raw + away_raw
-        home_probs[game_id].append(home_raw / overround)
-        away_probs[game_id].append(away_raw / overround)
+    quotes_by_game: dict = defaultdict(dict)
+    for game_id, source, home_team, away_team, home_ml, away_ml in rows:
+        if home_ml is not None and away_ml is not None:
+            quotes_by_game[game_id][source] = (home_team, away_team, home_ml, away_ml)
 
     values = []
-    for game_id, (home_team, away_team) in teams_by_game.items():
-        if home_probs[game_id]:
-            consensus = sum(home_probs[game_id]) / len(home_probs[game_id])
-            values.append((game_id, home_team, consensus))
-        if away_probs[game_id]:
-            consensus = sum(away_probs[game_id]) / len(away_probs[game_id])
-            values.append((game_id, away_team, consensus))
+    for game_id, quotes in quotes_by_game.items():
+        sources = [PRIMARY_BOOK] if PRIMARY_BOOK in quotes else list(quotes)
+
+        home_probs, away_probs = [], []
+        home_team = away_team = None
+        for source in sources:
+            home_team, away_team, home_ml, away_ml = quotes[source]
+            home_prob, away_prob = _devig(home_ml, away_ml)
+            home_probs.append(home_prob)
+            away_probs.append(away_prob)
+
+        values.append((game_id, home_team, sum(home_probs) / len(home_probs)))
+        values.append((game_id, away_team, sum(away_probs) / len(away_probs)))
     return values
 
 

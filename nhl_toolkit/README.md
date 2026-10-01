@@ -122,7 +122,10 @@ run.
    practice (every quote ever recorded here is exactly -1.5 or +1.5), so a
    spread-based version of this metric barely varies game to game -- the
    moneyline (e.g. -218/+180 vs. -115/-105) is where the market's actual
-   opinion about *how much* it favors a team lives. Works even without a
+   opinion about *how much* it favors a team lives. Uses DraftKings'
+   moneyline directly when it has one -- that's the book these picks are
+   actually meant to be bet on -- falling back to a cross-book average only
+   for a game DraftKings hasn't posted a line for yet. Works even without a
    fresh `fetch_odds.py` run this time, using whatever quotes are already
    saved; a team with no quote on record for a game just gets no value,
    same as any other metric.

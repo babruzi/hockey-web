@@ -36,19 +36,51 @@ DOCS_REPORTS_DIR = DOCS_DIR / "reports" / "picks"
 DOCS_POLICIES_DIR = DOCS_DIR / "reports" / "policies"
 
 
-def latest_consensus_spread(
-    conn: sqlite3.Connection, game_id: int, team_id: str
+PRIMARY_BOOK = "draftkings"
+
+
+def _dk_or_consensus(
+    conn: sqlite3.Connection, game_id: int, team_id: str, home_col: str, away_col: str
 ) -> Optional[float]:
-    """Average the most recent spread quote per bookmaker for one team in one game.
+    """One team's DraftKings quote, falling back to a cross-book average.
+
+    DraftKings (`PRIMARY_BOOK`) is the book these picks are actually meant to
+    be bet on, so its own line is used whenever it has one -- not a blend.
+    The cross-book average (each bookmaker's latest quote, averaged) only
+    kicks in on the rare game DraftKings hasn't posted a line for yet. That
+    average can look like a line no real book would ever offer when
+    bookmakers disagree about which side is favored (e.g. a near-50/50 game
+    where some books have the home team at -1.5 and others at +1.5 averages
+    out to something like -0.17) -- a real limitation worth knowing about,
+    but it only ever applies to that rare DraftKings-less fallback case.
 
     :param conn: Open connection to the schedule database.
     :param game_id: The game to look up odds for.
-    :param team_id: The team whose spread to return (its home or away line).
-    :returns: The consensus spread, or None if no odds have been fetched for this game.
+    :param team_id: The team whose line to return (its home or away side).
+    :param home_col: `odds` column to read for the home team (e.g. "home_spread").
+    :param away_col: `odds` column to read for the away team (e.g. "away_spread").
+    :returns: The value, or None if no odds have been fetched for this game at all.
     """
+    dk_row = conn.execute(
+        f"""
+        SELECT o.{home_col}, o.{away_col}, g.home_team
+        FROM odds o
+        JOIN games g ON g.game_id = o.game_id
+        WHERE o.game_id = ? AND o.source = ?
+        ORDER BY o.fetched_at DESC
+        LIMIT 1
+        """,
+        (game_id, PRIMARY_BOOK),
+    ).fetchone()
+    if dk_row:
+        home_value, away_value, home_team = dk_row
+        value = home_value if team_id == home_team else away_value
+        if value is not None:
+            return value
+
     rows = conn.execute(
-        """
-        SELECT o.home_spread, o.away_spread, g.home_team
+        f"""
+        SELECT o.{home_col}, o.{away_col}, g.home_team
         FROM odds o
         JOIN games g ON g.game_id = o.game_id
         WHERE o.game_id = ?
@@ -62,50 +94,43 @@ def latest_consensus_spread(
     if not rows:
         return None
 
-    spreads = [
-        home_spread if team_id == home_team else away_spread
-        for home_spread, away_spread, home_team in rows
-        if (home_spread if team_id == home_team else away_spread) is not None
+    values = [
+        home_value if team_id == home_team else away_value
+        for home_value, away_value, home_team in rows
+        if (home_value if team_id == home_team else away_value) is not None
     ]
-    return sum(spreads) / len(spreads) if spreads else None
+    return sum(values) / len(values) if values else None
+
+
+def latest_consensus_spread(
+    conn: sqlite3.Connection, game_id: int, team_id: str
+) -> Optional[float]:
+    """One team's puck-line spread: DraftKings' own quote, or a cross-book
+    average if DraftKings hasn't posted a line for this game (see
+    :func:`_dk_or_consensus`).
+
+    :param conn: Open connection to the schedule database.
+    :param game_id: The game to look up odds for.
+    :param team_id: The team whose spread to return (its home or away line).
+    :returns: The spread, or None if no odds have been fetched for this game.
+    """
+    return _dk_or_consensus(conn, game_id, team_id, "home_spread", "away_spread")
 
 
 def latest_consensus_moneyline(
     conn: sqlite3.Connection, game_id: int, team_id: str
 ) -> Optional[int]:
-    """Average the most recent moneyline quote per bookmaker for one team in one game.
-
-    A simple average of American odds, same approach as
-    :func:`latest_consensus_spread` -- not a probability-weighted average,
-    just a rough consensus price across books.
+    """One team's moneyline: DraftKings' own quote, or a cross-book average
+    if DraftKings hasn't posted a line for this game (see
+    :func:`_dk_or_consensus`).
 
     :param conn: Open connection to the schedule database.
     :param game_id: The game to look up odds for.
     :param team_id: The team whose moneyline to return (its home or away line).
-    :returns: The consensus moneyline, or None if no odds have been fetched for this game.
+    :returns: The moneyline, or None if no odds have been fetched for this game.
     """
-    rows = conn.execute(
-        """
-        SELECT o.home_ml, o.away_ml, g.home_team
-        FROM odds o
-        JOIN games g ON g.game_id = o.game_id
-        WHERE o.game_id = ?
-          AND o.fetched_at = (
-              SELECT MAX(o2.fetched_at) FROM odds o2
-              WHERE o2.game_id = o.game_id AND o2.source = o.source
-          )
-        """,
-        (game_id,),
-    ).fetchall()
-    if not rows:
-        return None
-
-    moneylines = [
-        home_ml if team_id == home_team else away_ml
-        for home_ml, away_ml, home_team in rows
-        if (home_ml if team_id == home_team else away_ml) is not None
-    ]
-    return round(sum(moneylines) / len(moneylines)) if moneylines else None
+    value = _dk_or_consensus(conn, game_id, team_id, "home_ml", "away_ml")
+    return round(value) if value is not None else None
 
 
 def devigged_win_probabilities(home_ml: Optional[int], away_ml: Optional[int]) -> tuple:
