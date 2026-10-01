@@ -10,8 +10,11 @@ Odds ingestion needs a free API key from https://the-odds-api.com. Store it
 as `export ODDS_API_KEY=...` in a repo-root `.env` (gitignored) and `source .env`
 before running `lib/fetch_odds.py`.
 
-Entry-point scripts you run directly live in `bin/`; everything they import
-lives in `lib/`. Run all commands below from `nhl_toolkit/`.
+Code is split across four sibling directories: `bin/` (entry-point scripts,
+also runnable standalone), `lib/` (schedule/travel/odds/metrics/scoring
+infrastructure), `picks/` (building, grading, and backtesting a day's picks),
+and `policies/` (the scoring config and its reference-page renderer). Run all
+commands below from `nhl_toolkit/`.
 
 ## Usage
 
@@ -70,7 +73,7 @@ run.
 
 3. Grade any `picks_log` rows whose game is now final:
    ```bash
-   python lib/grade.py
+   python picks/grade.py
    ```
    Fills in `result` ('win'/'loss'/'push' against the spread recorded at
    pick time) and `straight_up_result` ('win'/'loss', ignoring the spread —
@@ -107,14 +110,14 @@ run.
    Each run appends a new snapshot per (game, bookmaker) rather than
    overwriting — safe, and expected, to re-run often to track line movement.
 
-8. Score a date's games against `policy.yaml`:
+8. Score a date's games against `policies/policy.yaml`:
    ```bash
    python lib/score.py --date 2026-10-01
    ```
 
 9. Build the Top-10 picks report (console table + CSV + HTML) and log picks for backtesting:
    ```bash
-   python lib/report.py --date 2026-10-01
+   python picks/report.py --date 2026-10-01
    ```
    Writes a local CSV (`reports/`, gitignored) and a static HTML page
    (`../docs/reports/picks_{date}.html`, git-tracked) plus a regenerated
@@ -126,27 +129,27 @@ run.
 10. Regenerate the policy reference page (every metric's weight, normalization
     method, and description in one place — handy while tuning weights):
     ```bash
-    python lib/policy_page.py
+    python policies/policy_page.py
     ```
     Writes `../docs/policy.html`, linked from the reports index. Reads
-    straight from `policy.yaml`, so it always reflects the current config —
+    straight from `policies/policy.yaml`, so it always reflects the current config —
     there's nothing to keep in sync manually. `run_daily.py` regenerates it
     automatically each run.
 
 ### Tuning weights: backtesting
 
 ```bash
-python lib/backtest.py                 # defaults to flagging metrics with < 10 completed games
-python lib/backtest.py --min-n 20      # raise the sample-size bar for the "too thin" flag
+python picks/backtest.py                 # defaults to flagging metrics with < 10 completed games
+python picks/backtest.py --min-n 20      # raise the sample-size bar for the "too thin" flag
 ```
 
 Not part of `run_daily.py` — a manual, on-demand diagnostic for when you're
-reviewing `policy.yaml`. For every metric in the `metrics` table it
+reviewing `policies/policy.yaml`. For every metric in the `metrics` table it
 correlates that metric's home-minus-away differential against the actual
 final goal margin across every completed game, and flags weights whose sign
 disagrees with the correlation. It also prints `picks_log`'s real
 straight-up/against-the-spread record per `policy_version`. Never writes to
-`policy.yaml` — correlation is a hint for hand-tuning, not an answer, and
+`policies/policy.yaml` — correlation is a hint for hand-tuning, not an answer, and
 early in a season the sample sizes are too small to trust (that's what
 `--min-n` flags). It never hardcodes a metric name, so a future metric
 (injuries, head-to-head, goalie quality) appears here automatically as soon
@@ -158,20 +161,20 @@ as it has `metric_values`, with zero code changes to this script.
 - `lib/arenas.py` — static reference table: 32 teams, arena lat/lon, IANA timezone, and a full-team-name → abbrev lookup for odds feeds
 - `lib/db.py` — SQLite schema (`games`, `schedule_context`, `odds`, `metrics`, `metric_values`, `policy_weights`, `daily_scores`, `picks_log`)
 - `lib/fetch_schedule.py` — pulls from the NHL Web API (`api-web.nhle.com/v1/schedule/{date}`)
-- `lib/grade.py` — grades final games' `picks_log` rows: `result` (vs. the spread) and `straight_up_result` (vs. the raw final score)
 - `lib/travel_metrics.py` — derives rest/travel/timezone metrics from the raw schedule
 - `lib/metrics.py` — seeds the metrics catalog and populates `metric_values` from `schedule_context`
 - `lib/form_metrics.py` — computes `recent_form`/`goal_differential` from `games` scores
 - `lib/fetch_odds.py` — pulls odds from The Odds API and matches events to `games` rows
-- `policy.yaml` — the weighted scoring config; edit this to reweight or add/drop metrics
-- `lib/score.py` — normalizes metric values and applies `policy.yaml` to produce `daily_scores`
-- `lib/report.py` — ranks games by score gap, prints/writes the Top-10 CSV + HTML, and logs picks
-- `lib/policy_page.py` — renders `docs/policy.html`, a reference page of every metric's weight/normalize/description
-- `lib/backtest.py` — standalone diagnostic: correlates each metric against actual goal margin, prints picks_log's real record per policy_version
+- `policies/policy.yaml` — the weighted scoring config; edit this to reweight or add/drop metrics
+- `lib/score.py` — normalizes metric values and applies `policies/policy.yaml` to produce `daily_scores`
+- `picks/report.py` — ranks games by score gap, prints/writes the Top-10 CSV + HTML, and logs picks
+- `picks/grade.py` — grades final games' `picks_log` rows: `result` (vs. the spread) and `straight_up_result` (vs. the raw final score)
+- `picks/backtest.py` — standalone diagnostic: correlates each metric against actual goal margin, prints picks_log's real record per policy_version
+- `policies/policy_page.py` — renders `docs/policy.html`, a reference page of every metric's weight/normalize/description
 
 ## Next up (Phase 3+)
 - `injuries` table (deferred as the messiest data source — likely needs scraping)
-- An ROI dashboard over the now-graded `picks_log` (win/loss/push record, cumulative edge, streaks) — `lib/grade.py` populates `result`/`straight_up_result`, but nothing aggregates them into a report yet. (`lib/backtest.py` prints a bare win/loss summary per policy_version, but it's not its own report.)
+- An ROI dashboard over the now-graded `picks_log` (win/loss/push record, cumulative edge, streaks) — `picks/grade.py` populates `result`/`straight_up_result`, but nothing aggregates them into a report yet. (`picks/backtest.py` prints a bare win/loss summary per policy_version, but it's not its own report.)
 - Head-to-head record and starting-goalie quality, feeding into the same generic `metrics` schema
 
 Further out (see `../betting-toolkit-design.md` section 10, not yet designed): player-level stats from MoneyPuck.com (especially goalie data), and eventually tracking/placing real bets rather than just paper picks.

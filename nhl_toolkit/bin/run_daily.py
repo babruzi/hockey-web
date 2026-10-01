@@ -31,7 +31,10 @@ from datetime import date as date_cls
 from datetime import timedelta
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
+_NHL_TOOLKIT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_NHL_TOOLKIT_DIR / "lib"))
+sys.path.insert(0, str(_NHL_TOOLKIT_DIR / "picks"))
+sys.path.insert(0, str(_NHL_TOOLKIT_DIR / "policies"))
 
 from db import init_db  # noqa: E402
 from fetch_odds import fetch_and_store_odds  # noqa: E402
