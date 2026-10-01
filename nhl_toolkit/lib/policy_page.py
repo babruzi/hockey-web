@@ -7,22 +7,17 @@ score.py to actually change scoring.
 
 Regenerated automatically by run_daily.py, or run standalone:
 
-Usage (from nhl_toolkit/):
-    python policies/policy_page.py
+Usage:
+    python lib/policy_page.py
 """
 
 import sqlite3
-import sys
 from pathlib import Path
 from typing import Optional
 
-_NHL_TOOLKIT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_NHL_TOOLKIT_DIR / "lib"))
-sys.path.insert(0, str(_NHL_TOOLKIT_DIR / "picks"))
-
-from db import get_connection  # noqa: E402
-from report import DOCS_DIR, HTML_STYLE  # noqa: E402
-from score import POLICY_PATH, load_policy  # noqa: E402
+from db import get_connection
+from report import DOCS_DIR, HTML_STYLE
+from score import POLICY_PATH, load_policy
 
 
 def load_metric_metadata(conn: sqlite3.Connection) -> dict[str, tuple]:

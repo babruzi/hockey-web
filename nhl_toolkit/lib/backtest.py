@@ -19,21 +19,17 @@ its weight, not a verdict -- a metric correlating with goal margin and
 being correctly weighted *relative to every other metric* are different
 questions, and early-season sample sizes are small (see --min-n).
 
-Usage (from nhl_toolkit/):
-    python picks/backtest.py
-    python picks/backtest.py --min-n 20   # hide metrics below this sample size
+Usage:
+    python lib/backtest.py
+    python lib/backtest.py --min-n 20   # hide metrics below this sample size
 """
 
 import argparse
 import sqlite3
-import sys
-from pathlib import Path
 from typing import Optional
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
-
-from db import get_connection, init_db  # noqa: E402
-from score import load_policy  # noqa: E402
+from db import get_connection, init_db
+from score import load_policy
 
 DEFAULT_MIN_N = 10
 

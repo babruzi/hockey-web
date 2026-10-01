@@ -14,17 +14,13 @@ Only grades rows for games the NHL Web API marks 'OFF' (final; see
 form_metrics.py for why not 'FINAL') with both scores present, and only
 rows still missing a result -- safe to re-run as often as you like.
 
-Usage (from nhl_toolkit/):
-    python picks/grade.py
+Usage:
+    python lib/grade.py
 """
 
-import sys
 from datetime import datetime, timezone
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
-
-from db import get_connection, init_db  # noqa: E402
+from db import get_connection, init_db
 
 
 def grade_pending_picks(conn) -> int:

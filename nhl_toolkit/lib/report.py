@@ -7,23 +7,20 @@ and logs each pick to `picks_log` for later grading/backtesting.
 
 Run this after score.py has scored the target date.
 
-Usage (from nhl_toolkit/):
-    python picks/report.py --date 2026-10-05
-    python picks/report.py                      # defaults to today
+Usage:
+    python lib/report.py --date 2026-10-05
+    python lib/report.py                      # defaults to today
 """
 
 import argparse
 import csv
 import sqlite3
-import sys
 from datetime import date as date_cls
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
-
-from db import get_connection, init_db  # noqa: E402
+from db import get_connection, init_db
 
 REPORTS_DIR = Path(__file__).parent.parent / "reports"
 

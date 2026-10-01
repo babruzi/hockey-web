@@ -23,7 +23,7 @@ from typing import Optional
 import yaml
 from db import get_connection, init_db
 
-POLICY_PATH = Path(__file__).parent.parent / "policies" / "policy.yaml"
+POLICY_PATH = Path(__file__).parent.parent / "policy.yaml"
 
 
 def load_policy(path: Path = POLICY_PATH) -> dict:
