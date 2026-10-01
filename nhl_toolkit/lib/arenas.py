@@ -120,7 +120,7 @@ ARENAS = {
         "tz": "America/Chicago",
     },
     "MTL": {
-        "team": "Montreal Canadiens",
+        "team": "Montréal Canadiens",
         "city": "Montreal, QC",
         "lat": 45.4961,
         "lon": -73.5693,
@@ -254,6 +254,13 @@ TEAM_NAME_TO_ABBREV = {
 # became the permanent one -- kept as an alias in case any feed is still
 # using it, same spirit as the ARI->UTA aliasing above.
 TEAM_NAME_TO_ABBREV["Utah Hockey Club"] = "UTA"
+
+# Unaccented fallback: The Odds API spells it "Montréal Canadiens" (the
+# canonical form, used above), but some other feed or a copy-paste of this
+# file elsewhere could plausibly drop the accent -- every Canadiens game
+# silently got zero odds for the franchise's entire history here until this
+# exact-match mismatch was caught by querying the live feed directly.
+TEAM_NAME_TO_ABBREV["Montreal Canadiens"] = "MTL"
 
 
 def get_abbrev_for_team_name(team_name: str) -> str:
