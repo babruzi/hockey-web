@@ -2,8 +2,9 @@
 Runs the full Phase 1 + Phase 2 pipeline for one date: fetches the
 schedule (including a trailing lookback window to pick up final scores
 for recently-completed games), grades any picks_log rows those final
-scores make gradeable, re-renders the lookback window's past HTML
-reports so they show the final score/grading, rebuilds travel metrics
+scores make gradeable, re-renders every past HTML report (not just the
+lookback window -- a team's all-time ATS record can change any of its
+past reports, not only the most recent ones), rebuilds travel metrics
 and the generic metrics schema, pulls current odds, scores the slate,
 and builds the Top-N report (CSV + HTML + picks_log).
 
@@ -39,7 +40,7 @@ from form_metrics import rebuild_form_metrics  # noqa: E402
 from grade import grade_all  # noqa: E402
 from metrics import rebuild_schedule_metrics  # noqa: E402
 from policy_page import build_policy_page  # noqa: E402
-from report import build_report  # noqa: E402
+from report import all_report_dates, build_report  # noqa: E402
 from score import score_date  # noqa: E402
 from travel_metrics import rebuild_schedule_context  # noqa: E402
 
@@ -62,11 +63,10 @@ def run_daily(target_date: str, top_n: int = 10, lookback_days: int = 3) -> None
     print("== Grading completed picks ==")
     grade_all()
 
-    print(f"== Refreshing past reports for {fetch_anchor}..{target_date} with final scores ==")
-    refresh_date = date_cls.fromisoformat(fetch_anchor)
-    while refresh_date < date_cls.fromisoformat(target_date):
-        build_report(refresh_date.isoformat(), top_n)
-        refresh_date += timedelta(days=1)
+    print("== Refreshing every past report (scores/grading/team ATS records) ==")
+    for report_date in all_report_dates():
+        if report_date != target_date:
+            build_report(report_date, top_n)
 
     print("== Rebuilding travel/rest metrics ==")
     rebuild_schedule_context()
