@@ -1,11 +1,19 @@
 """
-Derives two performance metrics that nothing else in the pipeline
-captures: recent form (win percentage over a team's last N completed
-games) and goal differential (average goal margin over that same
-window). Unlike travel_metrics.py, there's no separate context table --
-these are simple trailing stats computed straight from `games` and
-written directly into metric_values, using the same
-seed-then-populate pattern as metrics.py.
+Derives performance metrics that nothing else in the pipeline captures,
+all as simple trailing stats over a team's last N completed games,
+computed straight from `games` and written directly into
+metric_values (no separate context table, unlike travel_metrics.py),
+using the same seed-then-populate pattern as metrics.py:
+
+- recent_form: win percentage
+- goal_differential: average goal margin (goals_for_avg - goals_against_avg)
+- goals_for_avg / goals_against_avg: average goals scored / allowed
+
+goals_for_avg/goals_against_avg exist to drive report.py's Over/Under
+recommendation (a projected game total compared against the market's
+own total line) -- they're not in policy.yaml, so they don't affect
+score.py's total_score/pick at all; score.py only applies weights for
+metric names explicitly listed there.
 
 Only completed games (game_state 'OFF', per the NHL Web API) update the
 rolling window, but a metric_values row is written for every game on
@@ -43,15 +51,26 @@ FORM_METRICS = [
         f"Average goal margin over the last {FORM_WINDOW} completed games",
         "goals",
     ),
+    (
+        "goals_for_avg",
+        f"Average goals scored over the last {FORM_WINDOW} completed games",
+        "goals",
+    ),
+    (
+        "goals_against_avg",
+        f"Average goals allowed over the last {FORM_WINDOW} completed games",
+        "goals",
+    ),
 ]
 
 
 def compute_for_team(conn: sqlite3.Connection, team_abbrev: str) -> list[tuple]:
-    """Compute recent_form and goal_differential for every game a team has on record.
+    """Compute recent_form/goal_differential/goals_for_avg/goals_against_avg for every game.
 
     :param conn: Open connection to the schedule database.
     :param team_abbrev: The team's 3-letter NHL API abbreviation.
-    :returns: (game_id, team_id, recent_form, goal_differential) rows, chronological.
+    :returns: (game_id, team_id, recent_form, goal_differential, goals_for_avg,
+        goals_against_avg) rows, chronological.
     """
     rows = conn.execute(
         """
@@ -64,49 +83,63 @@ def compute_for_team(conn: sqlite3.Connection, team_abbrev: str) -> list[tuple]:
     ).fetchall()
 
     results: deque = deque(maxlen=FORM_WINDOW)
-    goal_diffs: deque = deque(maxlen=FORM_WINDOW)
+    goals_for: deque = deque(maxlen=FORM_WINDOW)
+    goals_against: deque = deque(maxlen=FORM_WINDOW)
     output = []
 
     for game_id, home_team, _away_team, game_state, home_score, away_score in rows:
         is_home = home_team == team_abbrev
 
         recent_form: Optional[float] = sum(results) / len(results) if results else None
-        goal_differential: Optional[float] = (
-            sum(goal_diffs) / len(goal_diffs) if goal_diffs else None
+        goals_for_avg: Optional[float] = sum(goals_for) / len(goals_for) if goals_for else None
+        goals_against_avg: Optional[float] = (
+            sum(goals_against) / len(goals_against) if goals_against else None
         )
-        output.append((game_id, team_abbrev, recent_form, goal_differential))
+        goal_differential: Optional[float] = (
+            None if goals_for_avg is None else goals_for_avg - goals_against_avg
+        )
+        output.append(
+            (game_id, team_abbrev, recent_form, goal_differential, goals_for_avg, goals_against_avg)
+        )
 
         if game_state in COMPLETED_STATES and home_score is not None and away_score is not None:
             team_score = home_score if is_home else away_score
             opp_score = away_score if is_home else home_score
             results.append(1.0 if team_score > opp_score else 0.0)
-            goal_diffs.append(team_score - opp_score)
+            goals_for.append(team_score)
+            goals_against.append(opp_score)
 
     return output
 
 
 def rebuild_form_metrics() -> None:
-    """Seed the recent_form/goal_differential metrics and repopulate their values."""
+    """Seed the form metrics and repopulate their values."""
     init_db()
     conn = get_connection()
     with conn:
         metric_ids = seed_metrics(conn, FORM_METRICS)
-        form_metric_ids = (metric_ids["recent_form"], metric_ids["goal_differential"])
+        form_metric_ids = tuple(metric_ids[name] for name, _, _ in FORM_METRICS)
+        placeholders = ",".join("?" * len(form_metric_ids))
         conn.execute(
-            "DELETE FROM metric_values WHERE metric_id IN (?, ?)",
+            f"DELETE FROM metric_values WHERE metric_id IN ({placeholders})",
             form_metric_ids,
         )
 
         total = 0
         for team in all_team_abbrevs(conn):
             rows = compute_for_team(conn, team)
-            values_rows = [
-                (game_id, team_id, metric_ids["recent_form"], recent_form)
-                for game_id, team_id, recent_form, _goal_differential in rows
-            ] + [
-                (game_id, team_id, metric_ids["goal_differential"], goal_differential)
-                for game_id, team_id, _recent_form, goal_differential in rows
-            ]
+            values_rows = []
+            for row in rows:
+                game_id, team_id = row[0], row[1]
+                recent_form, goal_differential, goals_for_avg, goals_against_avg = row[2:]
+                values_rows.append((game_id, team_id, metric_ids["recent_form"], recent_form))
+                values_rows.append(
+                    (game_id, team_id, metric_ids["goal_differential"], goal_differential)
+                )
+                values_rows.append((game_id, team_id, metric_ids["goals_for_avg"], goals_for_avg))
+                values_rows.append(
+                    (game_id, team_id, metric_ids["goals_against_avg"], goals_against_avg)
+                )
             conn.executemany(
                 """
                 INSERT INTO metric_values (game_id, team_id, metric_id, value)
@@ -116,7 +149,10 @@ def rebuild_form_metrics() -> None:
             )
             total += len(values_rows)
     conn.close()
-    print(f"Wrote {total} metric_values rows for recent_form/goal_differential.")
+    print(
+        f"Wrote {total} metric_values rows for "
+        "recent_form/goal_differential/goals_for_avg/goals_against_avg."
+    )
 
 
 if __name__ == "__main__":

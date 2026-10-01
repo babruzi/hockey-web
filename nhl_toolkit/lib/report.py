@@ -305,6 +305,108 @@ def team_ats_records(conn: sqlite3.Connection) -> dict[str, tuple[int, int]]:
     return {team: (wins, losses) for team, wins, losses in rows}
 
 
+def team_metric_values(
+    conn: sqlite3.Connection, game_id: int, team_id: str, metric_names: list[str]
+) -> dict[str, float]:
+    """Look up a team's metric_values for a game, keyed by metric name.
+
+    :param conn: Open connection to the schedule database.
+    :param game_id: The game to look up.
+    :param team_id: The team's 3-letter abbreviation.
+    :param metric_names: Metric names to fetch (from the metrics catalog).
+    :returns: {metric_name: value}, missing a key if that metric has no value on record.
+    """
+    placeholders = ",".join("?" * len(metric_names))
+    rows = conn.execute(
+        f"""
+        SELECT m.name, mv.value
+        FROM metric_values mv JOIN metrics m ON m.metric_id = mv.metric_id
+        WHERE mv.game_id = ? AND mv.team_id = ? AND m.name IN ({placeholders})
+        """,
+        [game_id, team_id, *metric_names],
+    ).fetchall()
+    return dict(rows)
+
+
+FORM_METRIC_NAMES = ["goal_differential", "goals_for_avg", "goals_against_avg"]
+
+# Puck line is fixed at 1.5 goals in every quote this pipeline has ever
+# recorded (see market_metrics.py) -- so "covers" is simply "wins by more
+# than this many goals."
+PUCK_LINE = 1.5
+
+
+def puck_line_recommendation(
+    home_team: str,
+    away_team: str,
+    home_spread: Optional[float],
+    away_spread: Optional[float],
+    home_goal_diff: Optional[float],
+    away_goal_diff: Optional[float],
+) -> Optional[str]:
+    """Which team's puck line price projects as the better side to lay/take.
+
+    Unlike the Money Line pick (driven by policy.yaml's weighted total_score),
+    this only asks "who covers the fixed 1.5-goal line" -- a question about
+    margin of victory, not overall team strength. It projects this game's
+    margin as each team's own recent average goal differential (goal_differential,
+    from form_metrics.py) minus the other's, a simple straight-up comparison with
+    no further weighting, and checks whether that projected margin clears 1.5
+    in the favorite's direction.
+
+    :param home_team: Home team abbreviation.
+    :param away_team: Away team abbreviation.
+    :param home_spread: Home team's puck line (negative if favored).
+    :param away_spread: Away team's puck line (negative if favored).
+    :param home_goal_diff: Home team's recent average goal differential.
+    :param away_goal_diff: Away team's recent average goal differential.
+    :returns: The recommended team abbreviation, or None if there isn't enough data.
+    """
+    if home_goal_diff is None or away_goal_diff is None:
+        return None
+    projected_margin = home_goal_diff - away_goal_diff  # positive favors home
+    if home_spread is not None and home_spread < 0:
+        return home_team if projected_margin > PUCK_LINE else away_team
+    if away_spread is not None and away_spread < 0:
+        return away_team if -projected_margin > PUCK_LINE else home_team
+    return None
+
+
+def total_recommendation(
+    total: Optional[float],
+    home_goals_for: Optional[float],
+    home_goals_against: Optional[float],
+    away_goals_for: Optional[float],
+    away_goals_against: Optional[float],
+) -> Optional[str]:
+    """Project this game's total goals and compare it to the market's total line.
+
+    Each team's expected goals is the average of its own scoring rate and the
+    opponent's rate of allowing goals (goals_for_avg/goals_against_avg, from
+    form_metrics.py) -- a simple offense-vs-opponent-defense projection, not a
+    policy.yaml-weighted metric, since this compares against a fixed market
+    line rather than scoring one team against another.
+
+    :param total: The market's over/under line for this game.
+    :param home_goals_for: Home team's recent average goals scored.
+    :param home_goals_against: Home team's recent average goals allowed.
+    :param away_goals_for: Away team's recent average goals scored.
+    :param away_goals_against: Away team's recent average goals allowed.
+    :returns: "Over", "Under", or None if there isn't enough data (or it's a wash).
+    """
+    values = (total, home_goals_for, home_goals_against, away_goals_for, away_goals_against)
+    if any(v is None for v in values):
+        return None
+    projected_home_goals = (home_goals_for + away_goals_against) / 2
+    projected_away_goals = (away_goals_for + home_goals_against) / 2
+    projected_total = projected_home_goals + projected_away_goals
+    if projected_total > total:
+        return "Over"
+    if projected_total < total:
+        return "Under"
+    return None
+
+
 def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
     """Rank each game by score gap and pick the higher-scoring side.
 
@@ -387,6 +489,24 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
         total, over_odds, under_odds = latest_total(conn, game_id)
         over_pct, under_pct = devig_pair(over_odds, under_odds)
 
+        home_form = team_metric_values(conn, game_id, game["home_team"], FORM_METRIC_NAMES)
+        away_form = team_metric_values(conn, game_id, game["away_team"], FORM_METRIC_NAMES)
+        puck_line_pick = puck_line_recommendation(
+            game["home_team"],
+            game["away_team"],
+            home_spread,
+            away_spread,
+            home_form.get("goal_differential"),
+            away_form.get("goal_differential"),
+        )
+        total_pick = total_recommendation(
+            total,
+            home_form.get("goals_for_avg"),
+            home_form.get("goals_against_avg"),
+            away_form.get("goals_for_avg"),
+            away_form.get("goals_against_avg"),
+        )
+
         picks.append(
             {
                 "game_id": game_id,
@@ -413,6 +533,8 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
                 "under_odds": under_odds,
                 "over_pct": over_pct,
                 "under_pct": under_pct,
+                "puck_line_pick": puck_line_pick,
+                "total_pick": total_pick,
                 "notes": build_game_notes(conn, game_id, game["home_team"], game["game_date"]),
                 "final_home_score": game["final_home_score"],
                 "final_away_score": game["final_away_score"],
@@ -564,30 +686,40 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
     def format_team_name(team: str, is_pick: bool) -> str:
         return f'<strong class="pick">{team}</strong>' if is_pick else team
 
+    def wrap_if_pick(line: str, is_pick: bool) -> str:
+        return f'<strong class="pick">{line}</strong>' if is_pick else line
+
     def format_puck_line_cell(
-        spread: Optional[float], price: Optional[int], pct: Optional[float]
+        spread: Optional[float], price: Optional[int], pct: Optional[float], is_pick: bool
     ) -> str:
         if spread is None:
             return '<span class="notes">n/a</span>'
         parts = [f"{spread:+.1f}", format_price(price)]
         line = " ".join(p for p in parts if p)
-        return f"{line} ({pct:.1f}%)" if pct is not None else line
+        line = f"{line} ({pct:.1f}%)" if pct is not None else line
+        return wrap_if_pick(line, is_pick)
 
     def format_total_cell(
-        side_label: str, total: Optional[float], price: Optional[int], pct: Optional[float]
+        side_label: str,
+        total: Optional[float],
+        price: Optional[int],
+        pct: Optional[float],
+        is_pick: bool,
     ) -> str:
         if total is None:
             return '<span class="notes">n/a</span>'
         total_str = f"{total:g}"
         parts = [f"{side_label} {total_str}", format_price(price)]
         line = " ".join(p for p in parts if p)
-        return f"{line} ({pct:.1f}%)" if pct is not None else line
+        line = f"{line} ({pct:.1f}%)" if pct is not None else line
+        return wrap_if_pick(line, is_pick)
 
-    def format_ml_cell(moneyline: Optional[int], pct: Optional[float]) -> str:
+    def format_ml_cell(moneyline: Optional[int], pct: Optional[float], is_pick: bool) -> str:
         if moneyline is None:
             return '<span class="notes">n/a</span>'
         price = format_price(moneyline)
-        return f"{price} ({pct:.1f}%)" if pct is not None else price
+        line = f"{price} ({pct:.1f}%)" if pct is not None else price
+        return wrap_if_pick(line, is_pick)
 
     def format_notes(pick: dict) -> str:
         return "; ".join(pick["notes"]) if pick["notes"] else "&mdash;"
@@ -652,15 +784,31 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
     def render_game_rows(i: int, pick: dict) -> str:
         game_class = "game-even" if i % 2 == 0 else "game-odd"
         away_puck = format_puck_line_cell(
-            pick["away_spread"], pick["away_spread_price"], pick["away_cover_pct"]
+            pick["away_spread"],
+            pick["away_spread_price"],
+            pick["away_cover_pct"],
+            pick["puck_line_pick"] == pick["away_team"],
         )
         home_puck = format_puck_line_cell(
-            pick["home_spread"], pick["home_spread_price"], pick["home_cover_pct"]
+            pick["home_spread"],
+            pick["home_spread_price"],
+            pick["home_cover_pct"],
+            pick["puck_line_pick"] == pick["home_team"],
         )
-        over_cell = format_total_cell("O", pick["total"], pick["over_odds"], pick["over_pct"])
-        under_cell = format_total_cell("U", pick["total"], pick["under_odds"], pick["under_pct"])
-        away_ml = format_ml_cell(pick["away_moneyline"], pick["away_win_pct"])
-        home_ml = format_ml_cell(pick["home_moneyline"], pick["home_win_pct"])
+        over_cell = format_total_cell(
+            "O", pick["total"], pick["over_odds"], pick["over_pct"], pick["total_pick"] == "Over"
+        )
+        under_cell = format_total_cell(
+            "U",
+            pick["total"],
+            pick["under_odds"],
+            pick["under_pct"],
+            pick["total_pick"] == "Under",
+        )
+        away_ml = format_ml_cell(
+            pick["away_moneyline"], pick["away_win_pct"], not pick["pick_is_home"]
+        )
+        home_ml = format_ml_cell(pick["home_moneyline"], pick["home_win_pct"], pick["pick_is_home"])
 
         return f"""
         <tr class="{game_class}">
@@ -686,7 +834,7 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 
     rows = "\n".join(render_game_rows(i, pick) for i, pick in enumerate(picks, start=1))
 
-    winnings_header = '<th>Est. Winnings</th>' if is_today else ""
+    winnings_header = "<th>Est. Winnings</th>" if is_today else ""
     controls_html = (
         f"""
 <div class="controls">
@@ -742,9 +890,13 @@ function updateWinnings() {
 generated by the NHL paper-betting toolkit &middot; away team's row on top, home team's
 row below, same layout as a sportsbook board (Score column is also Away&ndash;Home, with
 whether the total went Over/Under in parens) &middot; the
-<strong class="pick">green, bolded</strong> team is the pick &middot; Puck Line/Over-Under/
-Money Line show each side's price and, in parens, the market's devigged implied
-probability for that side &middot; ML Result/Vs. Puck Line columns grade the pick once the
+<strong class="pick">green, bolded</strong> side in each column is that column's own
+recommendation &middot; Money Line is the overall pick (policy.yaml's weighted
+total_score) &middot; Puck Line and Over/Under are each a separate, simpler projection
+(recent average goal margin, and recent average goals for/against vs. the market's
+total) and so can recommend a different side than Money Line does &middot; each price
+is followed in parens by the market's devigged implied probability for that side
+&middot; ML Result/Vs. Puck Line columns grade the pick once the
 game is final &middot; Team ATS Record is the picked team's all-time record against the
 puck line across every graded pick so far
 </p>

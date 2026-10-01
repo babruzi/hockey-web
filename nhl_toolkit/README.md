@@ -93,14 +93,17 @@ run.
    ```
    Re-run this after every travel_metrics.py run.
 
-6. Rebuild recent form (win % over the last 10 completed games) and goal
-   differential, straight from `games` scores:
+6. Rebuild recent form (win % over the last 10 completed games), goal
+   differential, and average goals for/against, straight from `games` scores:
    ```bash
    python lib/form_metrics.py
    ```
    Only completed games (`game_state = "OFF"`) update the trailing window;
    future/in-progress games still get a value computed from games already
-   played, so upcoming games can be scored too.
+   played, so upcoming games can be scored too. `goals_for_avg`/
+   `goals_against_avg` feed `report.py`'s Over/Under recommendation (see
+   step 10) — they're never added to `policy.yaml`, so they don't affect
+   `score.py`'s Money Line pick.
 
 7. Pull current NHL odds (moneyline, puck line, totals) from The Odds API:
    ```bash
@@ -156,7 +159,18 @@ run.
    $10 bet on the pick for either market, recalculated instantly by a small
    inline script when you switch the dropdown -- the only JavaScript on the
    site, and only shown for today since it's a forward-looking "if this pick
-   wins" number that doesn't make sense once a date is already graded. Every
+   wins" number that doesn't make sense once a date is already graded. The
+   green highlight in each of the three columns is that column's own,
+   independent recommendation, not one pick repeated three times: Money Line
+   is the overall pick (policy.yaml's weighted `total_score`); Puck Line
+   projects each team's own recent average goal differential against the
+   other's to see whether the favorite's margin clears the fixed 1.5-goal
+   line, recommending the underdog (+1.5) instead when it doesn't;
+   Over/Under projects a total from each team's recent average goals
+   for/against (`goals_for_avg`/`goals_against_avg`) and compares it to the
+   market's own total. All three can (and often do) disagree on the same
+   game -- see `puck_line_recommendation()`/`total_recommendation()` in
+   `report.py`. Every
    page's "Last updated" footer is US Eastern (EDT/EST, auto-detected via
    `zoneinfo` -- not a hardcoded label), not UTC. `docs/` is served live by
    GitHub Pages at https://babruzi.github.io/hockey-web/.
