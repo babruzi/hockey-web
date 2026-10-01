@@ -16,7 +16,7 @@ import argparse
 import csv
 import sqlite3
 from datetime import date as date_cls
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -304,7 +304,16 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: 
 .negative { color: var(--negative); font-variant-numeric: tabular-nums; }
 a { color: var(--accent); }
 .disclaimer { color: var(--muted); font-size: 0.85rem; margin-top: 2rem; }
+.updated { color: var(--muted); font-size: 0.75rem; margin-top: 0.5rem; }
 """
+
+
+def generation_timestamp() -> str:
+    """The current time, formatted for a page's "last updated" footer.
+
+    :returns: e.g. "October 01, 2026 at 03:42 PM UTC".
+    """
+    return datetime.now(timezone.utc).strftime("%B %d, %Y at %I:%M %p UTC")
 
 
 def render_html_report(target_date: str, picks: list[dict]) -> Path:
@@ -412,6 +421,7 @@ the spread across every graded pick so far
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
+<p class="updated">Last updated {generation_timestamp()}</p>
 </body>
 </html>
 """
@@ -451,6 +461,7 @@ def update_index() -> Path:
 <ul>
 {links}
 </ul>
+<p class="updated">Last updated {generation_timestamp()}</p>
 </body>
 </html>
 """

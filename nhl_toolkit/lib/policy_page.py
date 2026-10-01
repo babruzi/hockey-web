@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Optional
 
 from db import get_connection
-from report import DOCS_POLICIES_DIR, HTML_STYLE
+from report import DOCS_POLICIES_DIR, HTML_STYLE, generation_timestamp
 from score import POLICY_PATH, load_policy
 
 
@@ -87,6 +87,7 @@ Each metric's raw value is normalized (see the Normalize column) across
 that day's slate before the weight is applied, so metrics on different
 scales combine fairly.
 </p>
+<p class="updated">Last updated {generation_timestamp()}</p>
 </body>
 </html>
 """
