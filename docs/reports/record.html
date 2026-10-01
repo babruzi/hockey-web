@@ -40,16 +40,19 @@ h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
 .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; }
 .table-scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+th, td { text-align: left; padding: 0.65rem 0.9rem; border: 1px solid var(--border); }
 td[rowspan] { vertical-align: middle; }
 tr:nth-child(even) td { background: var(--row-alt); }
 /* Picks report only: both rows of a game share one background, alternating
    per game rather than per physical row (each game is two rows -- away team
    on top, home team below -- so plain nth-child striping would just color
-   every home row, not every other game). Same specificity as the rule
-   above, placed after it so it wins for rows that have these classes. */
-.game-even td { background: var(--row-alt); }
-.game-odd td { background: var(--bg); }
+   every home row, not every other game). "tr.game-even"/"tr.game-odd" match
+   the nth-child rule's specificity (tr + class + td = tr + pseudo-class +
+   td) exactly, so source order decides and these, placed after, win --
+   a bare ".game-even td" is actually *less* specific than the nth-child
+   rule above and would silently lose to it. */
+tr.game-even td { background: var(--row-alt); }
+tr.game-odd td { background: var(--bg); }
 th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
 .rank { color: var(--muted); width: 2rem; }
 .edge { font-variant-numeric: tabular-nums; }
@@ -110,6 +113,6 @@ Moneyline ROI assumes a flat $10 stake per pick at the consensus
 moneyline recorded when the pick was made, and only counts picks that had
 odds on record. Paper-trading analysis only, not betting advice.
 </p>
-<p class="updated">Last updated October 01, 2026 at 01:19 PM EDT</p>
+<p class="updated">Last updated October 01, 2026 at 01:32 PM EDT</p>
 </body>
 </html>
