@@ -2,11 +2,12 @@
 Runs the full Phase 1 + Phase 2 pipeline for one date: fetches the
 schedule (including a trailing lookback window to pick up final scores
 for recently-completed games), grades any picks_log rows those final
-scores make gradeable, re-renders every past HTML report (not just the
-lookback window -- a team's all-time ATS record can change any of its
-past reports, not only the most recent ones), rebuilds travel/form
-metrics, pulls current odds and derives market_edge from them, scores
-the slate, and builds the Top-N report (CSV + HTML + picks_log).
+scores make gradeable, updates the overall performance/ROI record page,
+re-renders every past HTML report (not just the lookback window -- a
+team's all-time ATS record can change any of its past reports, not
+only the most recent ones), rebuilds travel/form metrics, pulls current
+odds and derives market_edge from them, scores the slate, and builds
+the Top-N report (CSV + HTML + picks_log).
 
 Every step is cheap and idempotent (upsert or full-rebuild-on-run), so
 running the whole chain is simpler and safer than trying to detect
@@ -44,6 +45,7 @@ from grade import grade_all  # noqa: E402
 from market_metrics import rebuild_market_metrics  # noqa: E402
 from metrics import rebuild_schedule_metrics  # noqa: E402
 from policy_page import build_policy_page  # noqa: E402
+from record_page import build_record_page  # noqa: E402
 from report import all_report_dates, build_report  # noqa: E402
 from score import score_date  # noqa: E402
 from travel_metrics import rebuild_schedule_context  # noqa: E402
@@ -66,6 +68,9 @@ def run_daily(target_date: str, top_n: int = 10, lookback_days: int = 3) -> None
 
     print("== Grading completed picks ==")
     grade_all()
+
+    print("== Updating performance record page ==")
+    build_record_page()
 
     print("== Refreshing every past report (scores/grading/team ATS records) ==")
     for report_date in all_report_dates():

@@ -494,6 +494,11 @@ def update_index() -> Path:
         if (DOCS_REPORTS_DIR / "current.html").exists()
         else ""
     )
+    record_link = (
+        '<p><a href="reports/record.html">Performance record &amp; ROI &rarr;</a></p>'
+        if (DOCS_DIR / "reports" / "record.html").exists()
+        else ""
+    )
 
     links = "\n".join(
         f'<li><a href="reports/picks/{path.name}">'
@@ -514,6 +519,7 @@ def update_index() -> Path:
 <h1>NHL Paper Betting Picks</h1>
 <p class="subtitle">Daily Top-10 reports from the policy-driven scoring engine.</p>
 {todays_picks_link}
+{record_link}
 <p><a href="reports/policies/policy.html">Current scoring policy &amp; weights &rarr;</a></p>
 <ul>
 {links}

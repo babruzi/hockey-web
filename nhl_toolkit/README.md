@@ -153,6 +153,19 @@ run.
     current config — there's nothing to keep in sync manually. `run_daily.py`
     regenerates it automatically each run.
 
+12. Regenerate the performance/ROI record page:
+    ```bash
+    python lib/record_page.py
+    ```
+    Writes `../docs/reports/record.html` -- picks_log's overall straight-up
+    and against-the-spread record plus moneyline ROI, both overall and
+    broken down per `policy_version`, with percentages throughout. Reuses
+    `backtest.py`'s `policy_performance()` rather than re-deriving the
+    numbers. Linked from the reports index as "Performance record & ROI,"
+    only once the page actually exists (same dead-link guard as "Today's
+    Picks"). `run_daily.py` regenerates it right after grading, before the
+    per-date report refresh runs.
+
 ### Tuning weights: backtesting
 
 ```bash
@@ -193,10 +206,11 @@ moneyline), without touching `backtest.py` either time.
 - `lib/report.py` — ranks games by score gap, prints/writes the Top-10 CSV + HTML, and logs picks
 - `lib/policy_page.py` — renders `docs/reports/policies/policy.html`, a reference page of every metric's weight/normalize/description
 - `lib/backtest.py` — standalone diagnostic: correlates each metric against actual goal margin, prints picks_log's real record per policy_version
+- `lib/record_page.py` — renders `docs/reports/record.html`, the published overall straight-up/ATS record and moneyline ROI (reuses `backtest.py`'s numbers, not its own analysis)
 
 ## Next up (Phase 3+)
 - `injuries` table (deferred as the messiest data source — likely needs scraping)
-- An ROI dashboard over the now-graded `picks_log` (win/loss/push record, cumulative edge, streaks) — `lib/grade.py` populates `result`/`straight_up_result`, but nothing aggregates them into a report yet. (`lib/backtest.py` prints a bare win/loss summary per policy_version, but it's not its own report.)
+- A cumulative-edge/streaks view over `picks_log` beyond the win/loss/ROI record `lib/record_page.py` now publishes -- e.g. a running bankroll chart, current streak, best/worst single pick
 - Head-to-head record and starting-goalie quality, feeding into the same generic `metrics` schema
 
 Further out (see `../betting-toolkit-design.md` section 10, not yet designed): player-level stats from MoneyPuck.com (especially goalie data), and eventually tracking/placing real bets rather than just paper picks.
