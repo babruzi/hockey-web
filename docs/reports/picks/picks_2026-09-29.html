@@ -63,6 +63,23 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: 
 a { color: var(--accent); }
 .disclaimer { color: var(--muted); font-size: 0.85rem; margin-top: 2rem; }
 .updated { color: var(--muted); font-size: 0.75rem; margin-top: 0.5rem; }
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+}
+.controls select {
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 0.3rem;
+    padding: 0.25rem 0.5rem;
+}
 </style>
 </head>
 <body>
@@ -79,11 +96,13 @@ probability for that side &middot; ML Result/Vs. Puck Line columns grade the pic
 game is final &middot; Team ATS Record is the picked team's all-time record against the
 puck line across every graded pick so far
 </p>
+
 <div class="table-scroll">
 <table>
 <thead>
 <tr>
     <th>#</th><th>Team</th><th>Puck Line</th><th>Over/Under</th><th>Money Line</th>
+    
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
     <th>Team ATS Record</th><th>Notes</th>
 </tr>
@@ -95,6 +114,7 @@ puck line across every graded pick so far
             <td><span class="notes">n/a</span></td>
             <td><span class="notes">n/a</span></td>
             <td><span class="notes">n/a</span></td>
+            
             <td class="edge" rowspan="2">1.064</td>
             <td class="edge" rowspan="2">3&ndash;2</td>
             <td rowspan="2"><span class="negative">Loss</span></td>
@@ -115,6 +135,7 @@ puck line across every graded pick so far
             <td>+1.5</td>
             <td>O 6.5 +105 (46.8%)</td>
             <td>+110 (45.7%)</td>
+            
             <td class="edge" rowspan="2">1.009</td>
             <td class="edge" rowspan="2">1&ndash;0 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
@@ -135,6 +156,7 @@ puck line across every graded pick so far
             <td>+1.5</td>
             <td>O 6.5 -115 (51.1%)</td>
             <td>+235 (28.6%)</td>
+            
             <td class="edge" rowspan="2">0.794</td>
             <td class="edge" rowspan="2">6&ndash;5 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
@@ -155,6 +177,7 @@ puck line across every graded pick so far
             <td>+1.5</td>
             <td>O 5.5 -135 (55.1%)</td>
             <td>+210 (30.9%)</td>
+            
             <td class="edge" rowspan="2">0.542</td>
             <td class="edge" rowspan="2">2&ndash;5 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
@@ -175,6 +198,7 @@ puck line across every graded pick so far
             <td>+1.5</td>
             <td>O 5.5 -130 (54.3%)</td>
             <td>-105 (48.9%)</td>
+            
             <td class="edge" rowspan="2">0.071</td>
             <td class="edge" rowspan="2">0&ndash;3 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
@@ -195,6 +219,7 @@ puck line across every graded pick so far
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 01, 2026 at 01:46 PM EDT</p>
+<p class="updated">Last updated October 01, 2026 at 02:00 PM EDT</p>
+
 </body>
 </html>

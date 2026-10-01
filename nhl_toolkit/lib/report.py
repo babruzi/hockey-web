@@ -23,6 +23,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 from db import get_connection, init_db
+from grade import STAKE
 from market_metrics import american_to_probability
 
 EASTERN = ZoneInfo("America/New_York")
@@ -205,6 +206,25 @@ def devig_pair(odds_a: Optional[int], odds_b: Optional[int]) -> tuple:
     return 100 * raw_a / overround, 100 * raw_b / overround
 
 
+def potential_payout(price: Optional[int], stake: float) -> Optional[float]:
+    """Profit on a $stake bet at American odds `price`, if it wins.
+
+    Not the same thing as grade.py's moneyline_profit(), which needs to know
+    whether the bet actually won -- this is the forward-looking "if this
+    pick hits, how much do I win" question for an *ungraded* pick, so there's
+    no loss case here.
+
+    :param price: American odds, e.g. -142 or +180, or None if no quote.
+    :param stake: Dollar amount wagered.
+    :returns: Profit in dollars if the bet wins, or None if there's no price.
+    """
+    if price is None:
+        return None
+    if price > 0:
+        return stake * price / 100
+    return stake * 100 / abs(price)
+
+
 def home_opener_note(conn: sqlite3.Connection, home_team: str, game_date: str) -> Optional[str]:
     """Flag whether this is the home team's first home game in the data we've fetched.
 
@@ -360,6 +380,9 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
             conn, game_id, game["away_team"], "home_spread_price", "away_spread_price"
         )
         home_cover_pct, away_cover_pct = devig_pair(home_spread_price, away_spread_price)
+        pick_spread_price = (
+            home_spread_price if pick_team == game["home_team"] else away_spread_price
+        )
 
         total, over_odds, under_odds = latest_total(conn, game_id)
         over_pct, under_pct = devig_pair(over_odds, under_odds)
@@ -374,6 +397,7 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
                 "predicted_edge": predicted_edge,
                 "spread_at_pick": latest_consensus_spread(conn, game_id, pick_team),
                 "moneyline_at_pick": latest_consensus_moneyline(conn, game_id, pick_team),
+                "pick_spread_price": pick_spread_price,
                 "home_moneyline": home_moneyline,
                 "away_moneyline": away_moneyline,
                 "home_win_pct": home_win_pct,
@@ -491,6 +515,23 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: 
 a { color: var(--accent); }
 .disclaimer { color: var(--muted); font-size: 0.85rem; margin-top: 2rem; }
 .updated { color: var(--muted); font-size: 0.75rem; margin-top: 0.5rem; }
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+}
+.controls select {
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 0.3rem;
+    padding: 0.25rem 0.5rem;
+}
 """
 
 
@@ -592,6 +633,22 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         pct = 100 * wins / (wins + losses)
         return f"{wins}-{losses} ({pct:.1f}%)"
 
+    is_today = target_date == date_cls.today().isoformat()
+
+    def format_winnings_cell(pick: dict) -> str:
+        if not is_today:
+            return ""
+        ml_price = pick["moneyline_at_pick"]
+        pl_price = pick["pick_spread_price"]
+        default_payout = potential_payout(ml_price, STAKE)
+        default_str = f"${default_payout:.2f}" if default_payout is not None else "&mdash;"
+        ml_attr = "" if ml_price is None else str(ml_price)
+        pl_attr = "" if pl_price is None else str(pl_price)
+        return (
+            f'<td class="edge winnings-cell" rowspan="2" data-ml="{ml_attr}" '
+            f'data-pl="{pl_attr}">{default_str}</td>'
+        )
+
     def render_game_rows(i: int, pick: dict) -> str:
         game_class = "game-even" if i % 2 == 0 else "game-odd"
         away_puck = format_puck_line_cell(
@@ -612,6 +669,7 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
             <td>{away_puck}</td>
             <td>{over_cell}</td>
             <td>{away_ml}</td>
+            {format_winnings_cell(pick)}
             <td class="edge" rowspan="2">{pick["predicted_edge"]:.3f}</td>
             <td class="edge" rowspan="2">{format_final_score(pick)}</td>
             <td rowspan="2">{format_outcome_colored(pick["straight_up_result"])}</td>
@@ -627,6 +685,46 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         </tr>"""
 
     rows = "\n".join(render_game_rows(i, pick) for i, pick in enumerate(picks, start=1))
+
+    winnings_header = '<th>Est. Winnings</th>' if is_today else ""
+    controls_html = (
+        f"""
+<div class="controls">
+<label for="odds-type">Show "Est. Winnings" using:</label>
+<select id="odds-type" onchange="updateWinnings()">
+<option value="ml" selected>Money Line</option>
+<option value="pl">Puck Line</option>
+</select>
+<span class="notes">(payout on a ${STAKE:.0f} bet on the pick, if it wins)</span>
+</div>"""
+        if is_today
+        else ""
+    )
+    winnings_script = (
+        """
+<script>
+function updateWinnings() {
+    var marketType = document.getElementById("odds-type").value;
+    var cells = document.querySelectorAll(".winnings-cell");
+    cells.forEach(function (cell) {
+        var attr = marketType === "ml" ? "data-ml" : "data-pl";
+        var raw = cell.getAttribute(attr);
+        if (!raw) {
+            cell.textContent = "\\u2014";
+            return;
+        }
+        var price = parseInt(raw, 10);
+        var stake = """
+        + f"{STAKE}"
+        + """;
+        var payout = price > 0 ? (stake * price) / 100 : (stake * 100) / Math.abs(price);
+        cell.textContent = "$" + payout.toFixed(2);
+    });
+}
+</script>"""
+        if is_today
+        else ""
+    )
 
     page = f"""<!doctype html>
 <html lang="en">
@@ -650,11 +748,13 @@ probability for that side &middot; ML Result/Vs. Puck Line columns grade the pic
 game is final &middot; Team ATS Record is the picked team's all-time record against the
 puck line across every graded pick so far
 </p>
+{controls_html}
 <div class="table-scroll">
 <table>
 <thead>
 <tr>
     <th>#</th><th>Team</th><th>Puck Line</th><th>Over/Under</th><th>Money Line</th>
+    {winnings_header}
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
     <th>Team ATS Record</th><th>Notes</th>
 </tr>
@@ -668,6 +768,7 @@ Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
 <p class="updated">Last updated {generation_timestamp()}</p>
+{winnings_script}
 </body>
 </html>
 """

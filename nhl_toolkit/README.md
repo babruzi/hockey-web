@@ -151,10 +151,15 @@ run.
    like a sportsbook board: two rows per game (away team on top, home team
    below), with **Puck Line / Over-Under / Money Line** columns for each
    side's price, each followed by its devigged implied probability in parens
-   (e.g. "-1.5 +154 (37.8%)"). Every page's "Last updated" footer is US
-   Eastern (EDT/EST, auto-detected via `zoneinfo` -- not a hardcoded label),
-   not UTC. `docs/` is served live by GitHub Pages at
-   https://babruzi.github.io/hockey-web/.
+   (e.g. "-1.5 +154 (37.8%)"). Only on today's page, an **Est. Winnings**
+   column plus a Money Line/Puck Line dropdown let you see the payout on a
+   $10 bet on the pick for either market, recalculated instantly by a small
+   inline script when you switch the dropdown -- the only JavaScript on the
+   site, and only shown for today since it's a forward-looking "if this pick
+   wins" number that doesn't make sense once a date is already graded. Every
+   page's "Last updated" footer is US Eastern (EDT/EST, auto-detected via
+   `zoneinfo` -- not a hardcoded label), not UTC. `docs/` is served live by
+   GitHub Pages at https://babruzi.github.io/hockey-web/.
 
 11. Regenerate the policy reference page (every metric's weight, normalization
     method, and description in one place — handy while tuning weights):

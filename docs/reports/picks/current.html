@@ -63,6 +63,23 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: 
 a { color: var(--accent); }
 .disclaimer { color: var(--muted); font-size: 0.85rem; margin-top: 2rem; }
 .updated { color: var(--muted); font-size: 0.75rem; margin-top: 0.5rem; }
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+}
+.controls select {
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 0.3rem;
+    padding: 0.25rem 0.5rem;
+}
 </style>
 </head>
 <body>
@@ -79,11 +96,21 @@ probability for that side &middot; ML Result/Vs. Puck Line columns grade the pic
 game is final &middot; Team ATS Record is the picked team's all-time record against the
 puck line across every graded pick so far
 </p>
+
+<div class="controls">
+<label for="odds-type">Show "Est. Winnings" using:</label>
+<select id="odds-type" onchange="updateWinnings()">
+<option value="ml" selected>Money Line</option>
+<option value="pl">Puck Line</option>
+</select>
+<span class="notes">(payout on a $10 bet on the pick, if it wins)</span>
+</div>
 <div class="table-scroll">
 <table>
 <thead>
 <tr>
     <th>#</th><th>Team</th><th>Puck Line</th><th>Over/Under</th><th>Money Line</th>
+    <th>Est. Winnings</th>
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
     <th>Team ATS Record</th><th>Notes</th>
 </tr>
@@ -95,6 +122,7 @@ puck line across every graded pick so far
             <td>+1.5 -185 (62.2%)</td>
             <td>O 5.5 -120 (52.2%)</td>
             <td>+142 (39.6%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-170" data-pl="154">$5.88</td>
             <td class="edge" rowspan="2">2.024</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -115,6 +143,7 @@ puck line across every graded pick so far
             <td>+1.5 -135 (55.1%)</td>
             <td>O 6.5 +114 (44.9%)</td>
             <td>+180 (34.3%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-218" data-pl="114">$4.59</td>
             <td class="edge" rowspan="2">1.740</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -133,8 +162,9 @@ puck line across every graded pick so far
             <td class="rank" rowspan="2">3</td>
             <td>FLA</td>
             <td>-1.5 +164 (36.3%)</td>
-            <td>O 6.5 +100 (47.8%)</td>
+            <td>O 6.5 -105 (48.9%)</td>
             <td>-148 (57.2%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="124" data-pl="-198">$12.40</td>
             <td class="edge" rowspan="2">1.123</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -145,7 +175,7 @@ puck line across every graded pick so far
         <tr class="game-odd">
             <td><strong class="pick">SJS</strong></td>
             <td>+1.5 -198 (63.7%)</td>
-            <td>U 6.5 -120 (52.2%)</td>
+            <td>U 6.5 -115 (51.1%)</td>
             <td>+124 (42.8%)</td>
         </tr>
 
@@ -155,6 +185,7 @@ puck line across every graded pick so far
             <td>-1.5 +180 (34.3%)</td>
             <td>O 5.5 -125 (53.2%)</td>
             <td>-148 (57.2%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-148" data-pl="180">$6.76</td>
             <td class="edge" rowspan="2">0.783</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -175,6 +206,7 @@ puck line across every graded pick so far
             <td>-1.5 +220 (30.0%)</td>
             <td>O 6.5 +114 (44.9%)</td>
             <td>-112 (50.4%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-108" data-pl="-270">$9.26</td>
             <td class="edge" rowspan="2">0.528</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -195,6 +227,7 @@ puck line across every graded pick so far
             <td>-1.5 +170 (35.5%)</td>
             <td>O 6.5 +114 (44.9%)</td>
             <td>-148 (57.2%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-148" data-pl="170">$6.76</td>
             <td class="edge" rowspan="2">0.458</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -215,6 +248,7 @@ puck line across every graded pick so far
             <td>-1.5 +110 (45.7%)</td>
             <td>O 6.5 -115 (51.1%)</td>
             <td>-218 (65.7%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-218" data-pl="110">$4.59</td>
             <td class="edge" rowspan="2">0.446</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -235,6 +269,7 @@ puck line across every graded pick so far
             <td>+1.5 -278 (70.5%)</td>
             <td>O 5.5 -125 (53.2%)</td>
             <td>-108 (49.6%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-112" data-pl="225">$8.93</td>
             <td class="edge" rowspan="2">0.142</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -255,6 +290,25 @@ puck line across every graded pick so far
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 01, 2026 at 01:46 PM EDT</p>
+<p class="updated">Last updated October 01, 2026 at 02:00 PM EDT</p>
+
+<script>
+function updateWinnings() {
+    var marketType = document.getElementById("odds-type").value;
+    var cells = document.querySelectorAll(".winnings-cell");
+    cells.forEach(function (cell) {
+        var attr = marketType === "ml" ? "data-ml" : "data-pl";
+        var raw = cell.getAttribute(attr);
+        if (!raw) {
+            cell.textContent = "\u2014";
+            return;
+        }
+        var price = parseInt(raw, 10);
+        var stake = 10.0;
+        var payout = price > 0 ? (stake * price) / 100 : (stake * 100) / Math.abs(price);
+        cell.textContent = "$" + payout.toFixed(2);
+    });
+}
+</script>
 </body>
 </html>
