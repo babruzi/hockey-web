@@ -141,8 +141,12 @@ run.
    `../docs/index.html` linking every report. If `--date` is today, also
    writes `../docs/reports/picks/current.html` -- a duplicate at a stable
    filename (not a symlink; GitHub Pages' build ignores those) so a
-   bookmarked URL always shows the latest picks. `docs/` is served live by
-   GitHub Pages at https://babruzi.github.io/hockey-web/.
+   bookmarked URL always shows the latest picks. Each team's name is
+   followed by its moneyline and devigged implied win probability (e.g.
+   "NJD (-166, 60.0%)"). Every page's "Last updated" footer is US Eastern
+   (EDT/EST, auto-detected via `zoneinfo` -- not a hardcoded label), not
+   UTC. `docs/` is served live by GitHub Pages at
+   https://babruzi.github.io/hockey-web/.
 
 11. Regenerate the policy reference page (every metric's weight, normalization
     method, and description in one place — handy while tuning weights):

@@ -20,8 +20,12 @@ from datetime import date as date_cls
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from db import get_connection, init_db
+from market_metrics import american_to_probability
+
+EASTERN = ZoneInfo("America/New_York")
 
 REPORTS_DIR = Path(__file__).parent.parent / "reports"
 
@@ -102,6 +106,26 @@ def latest_consensus_moneyline(
         if (home_ml if team_id == home_team else away_ml) is not None
     ]
     return round(sum(moneylines) / len(moneylines)) if moneylines else None
+
+
+def devigged_win_probabilities(home_ml: Optional[int], away_ml: Optional[int]) -> tuple:
+    """Each side's devigged, market-implied win probability, as a percentage.
+
+    Same devig approach as market_metrics.py's market_edge (convert each
+    side's American odds to a raw implied probability, then divide by their
+    sum to remove the bookmaker's overround) -- shown here purely for
+    display, next to each team's moneyline, not stored anywhere.
+
+    :param home_ml: Home team's consensus moneyline, or None if no quote.
+    :param away_ml: Away team's consensus moneyline, or None if no quote.
+    :returns: (home_pct, away_pct) in [0, 100], or (None, None) if either side's quote is missing.
+    """
+    if home_ml is None or away_ml is None:
+        return None, None
+    home_raw = american_to_probability(home_ml)
+    away_raw = american_to_probability(away_ml)
+    overround = home_raw + away_raw
+    return 100 * home_raw / overround, 100 * away_raw / overround
 
 
 def home_opener_note(conn: sqlite3.Connection, home_team: str, game_date: str) -> Optional[str]:
@@ -245,6 +269,9 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
         pick_team = game["home_team"] if home_score >= away_score else game["away_team"]
         predicted_edge = abs(home_score - away_score)
         result, straight_up_result = grading_by_game.get(game_id, (None, None))
+        home_moneyline = latest_consensus_moneyline(conn, game_id, game["home_team"])
+        away_moneyline = latest_consensus_moneyline(conn, game_id, game["away_team"])
+        home_win_pct, away_win_pct = devigged_win_probabilities(home_moneyline, away_moneyline)
         picks.append(
             {
                 "game_id": game_id,
@@ -255,8 +282,10 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
                 "predicted_edge": predicted_edge,
                 "spread_at_pick": latest_consensus_spread(conn, game_id, pick_team),
                 "moneyline_at_pick": latest_consensus_moneyline(conn, game_id, pick_team),
-                "home_moneyline": latest_consensus_moneyline(conn, game_id, game["home_team"]),
-                "away_moneyline": latest_consensus_moneyline(conn, game_id, game["away_team"]),
+                "home_moneyline": home_moneyline,
+                "away_moneyline": away_moneyline,
+                "home_win_pct": home_win_pct,
+                "away_win_pct": away_win_pct,
                 "notes": build_game_notes(conn, game_id, game["home_team"], game["game_date"]),
                 "final_home_score": game["final_home_score"],
                 "final_away_score": game["final_away_score"],
@@ -351,11 +380,16 @@ a { color: var(--accent); }
 
 
 def generation_timestamp() -> str:
-    """The current time, formatted for a page's "last updated" footer.
+    """The current time in US Eastern, formatted for a page's "last updated" footer.
 
-    :returns: e.g. "October 01, 2026 at 03:42 PM UTC".
+    Uses America/New_York via zoneinfo rather than a hardcoded "EDT" label,
+    so it reads correctly as EDT or EST depending on whether daylight saving
+    is in effect on the day this actually runs.
+
+    :returns: e.g. "October 01, 2026 at 11:42 AM EDT".
     """
-    return datetime.now(timezone.utc).strftime("%B %d, %Y at %I:%M %p UTC")
+    eastern_now = datetime.now(timezone.utc).astimezone(EASTERN)
+    return eastern_now.strftime("%B %d, %Y at %I:%M %p %Z")
 
 
 def render_html_report(target_date: str, picks: list[dict]) -> Path:
@@ -371,8 +405,15 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
     def format_spread(pick: dict) -> str:
         return f"{pick['spread_at_pick']:+.1f}" if pick["spread_at_pick"] is not None else "n/a"
 
-    def format_team(team: str, is_pick: bool, moneyline: Optional[int]) -> str:
-        label = f"{team} ({moneyline:+d})" if moneyline is not None else team
+    def format_team(
+        team: str, is_pick: bool, moneyline: Optional[int], win_pct: Optional[float]
+    ) -> str:
+        if moneyline is None:
+            label = team
+        elif win_pct is None:
+            label = f"{team} ({moneyline:+d})"
+        else:
+            label = f"{team} ({moneyline:+d}, {win_pct:.1f}%)"
         return f'<strong class="pick">{label}</strong>' if is_pick else label
 
     def format_notes(pick: dict) -> str:
@@ -419,10 +460,22 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         <tr>
             <td class="rank">{i}</td>
             <td>{
-                format_team(pick["away_team"], not pick["pick_is_home"], pick["away_moneyline"])
+                format_team(
+                    pick["away_team"],
+                    not pick["pick_is_home"],
+                    pick["away_moneyline"],
+                    pick["away_win_pct"],
+                )
             }</td>
             <td class="notes">@</td>
-            <td>{format_team(pick["home_team"], pick["pick_is_home"], pick["home_moneyline"])}</td>
+            <td>{
+                format_team(
+                    pick["home_team"],
+                    pick["pick_is_home"],
+                    pick["home_moneyline"],
+                    pick["home_win_pct"],
+                )
+            }</td>
             <td class="edge">{pick["predicted_edge"]:.3f}</td>
             <td>{format_spread(pick)}</td>
             <td class="edge">{format_final_score(pick)}</td>
@@ -449,7 +502,8 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 {pretty_date} &middot; every game on the slate, ranked by edge &middot;
 generated by the NHL paper-betting toolkit &middot;
 the <strong class="pick">green, bolded</strong> team is the pick (Score column is also
-Away&ndash;Home) &middot; the number next to each team is its current moneyline
+Away&ndash;Home) &middot; the number next to each team is its current moneyline, and the
+percentage is the market's devigged implied win probability from that moneyline
 &middot; Moneyline/Vs. Puck Line columns show once the game is final, color is only
 used for Vs. Puck Line &middot; Team ATS Record is the picked team's all-time record against
 the puck line across every graded pick so far
