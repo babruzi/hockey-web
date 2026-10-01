@@ -34,6 +34,7 @@ python lib/form_metrics.py                                 # rebuild recent_form
 source .env && python lib/fetch_odds.py                    # append an odds snapshot per (game, bookmaker) from The Odds API
 python lib/score.py --date 2026-10-01                       # apply policy.yaml to metric_values -> daily_scores
 python lib/report.py --date 2026-10-01                      # rank by score gap, print/write Top-10 CSV + HTML, log to picks_log
+python lib/backtest.py                                      # not part of run_daily.py -- a manual tuning aid, see below
 ```
 
 `fetch_schedule.py` is an upsert and safe to re-run daily to pick up final scores. `travel_metrics.py`, `metrics.py`, and `form_metrics.py` fully delete-and-rebuild the metric_values rows they own each run — always re-run them in order (`travel_metrics.py` then `metrics.py`/`form_metrics.py`, either order between those two) after `fetch_schedule.py`, since none of them rebuild automatically (`run_daily.py` handles this ordering for you). `fetch_odds.py` only appends (never deletes), so re-running it accumulates a quote history rather than duplicating in an upsert sense. `score.py` and `report.py` are each idempotent per `(date, policy_version)` — rerunning replaces that date's rows rather than duplicating them. `grade.py` only touches `picks_log` rows that are still ungraded (`result IS NULL OR straight_up_result IS NULL`), so it's safe to re-run as often as you like and never re-grades or overwrites an already-graded row. (All of these live under `lib/`.)
@@ -97,6 +98,8 @@ Data flows through a pipeline of scripts, each its own file under `nhl_toolkit/l
 
 `lib/arenas.py` is static reference data (lat/lon + IANA timezone per team, keyed by the 3-letter abbrev the NHL API uses), plus `TEAM_NAME_TO_ABBREV`, a reverse lookup built from that same data for feeds (like odds) that identify teams by full name. Note the ARI→UTA relocation: `ARENAS["ARI"]` is aliased to the same record as `ARENAS["UTA"]` so historical pre-2024-25 data still resolves.
 
+`lib/backtest.py` is a standalone, read-only diagnostic (`python lib/backtest.py`, not wired into `run_daily.py`) for tuning `policy.yaml` weights: it correlates each metric's home-minus-away differential against the actual final goal margin across every completed game, and prints `picks_log`'s real straight-up/ATS record per `policy_version`. It never hardcodes a metric name — it reads whatever rows exist in the `metrics` table, so a future metric (injuries, head-to-head, goalie quality) shows up here automatically the first time something populates its `metric_values`, with zero changes to this file. It's purely advisory (never writes to `policy.yaml`); a metric's correlation sign/magnitude is a hint for hand-tuning its weight, not a verdict, especially early in a season when sample sizes are tiny (see `--min-n`). Note `home_ice` always correlates as `n/a`: its home-minus-away differential is definitionally constant (1 for every game), so this particular diagnostic can't say anything about it.
+
 SQLite was chosen deliberately for zero-config local development; the schema is kept plain enough that a future Postgres migration is meant to be a straight port, not a rewrite (see `lib/db.py` docstring).
 
 ## Roadmap (not yet implemented)
@@ -104,9 +107,8 @@ SQLite was chosen deliberately for zero-config local development; the schema is 
 Per `nhl_toolkit/README.md` and `betting-toolkit-design.md`:
 
 - An `injuries` table (deferred as the messiest data source — likely needs scraping) and injury-derived metrics.
-- An ROI dashboard over the now-graded `picks_log` (win/loss/push record, cumulative edge, streaks, etc.) — `lib/grade.py` populates `result`/`straight_up_result`, but nothing aggregates them into a report yet.
-- A weight-tuning/backtest tool: regress actual outcomes (final score margin or spread cover) against each game's `metric_values` to see which metrics are actually predictive versus dead weight in the current `policy.yaml`. Needs no new data — `metric_values`, `daily_scores`, `picks_log`, and `games.home_score`/`away_score` already join cleanly on `game_id`; it's purely an analysis script over what's already being collected.
-- Head-to-head record and starting-goalie quality — the generic `metrics`/`metric_values` schema already supports adding these without touching `score.py`, but nothing populates them yet. (`recent_form`/`goal_differential` are now implemented, in `form_metrics.py`.)
+- An ROI dashboard over the now-graded `picks_log` (win/loss/push record, cumulative edge, streaks, etc.) — `lib/grade.py` populates `result`/`straight_up_result`, but nothing aggregates them into a report yet. (A bare per-policy-version win/loss summary is now in `lib/backtest.py`'s output, but it's not its own report.)
+- Head-to-head record and starting-goalie quality — the generic `metrics`/`metric_values` schema already supports adding these without touching `score.py` or `lib/backtest.py`, but nothing populates them yet. (`recent_form`/`goal_differential` are now implemented, in `form_metrics.py`.)
 
 Further out, not yet designed — see `betting-toolkit-design.md` section 10: player-level stats sourced from MoneyPuck.com (especially goalie data), which would need a schema step up from today's team-level-only tables; and eventually tracking/placing real bets, a materially different feature from the current paper-trading `picks_log`/grading design.
 

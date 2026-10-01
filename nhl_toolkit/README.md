@@ -133,6 +133,25 @@ run.
     there's nothing to keep in sync manually. `run_daily.py` regenerates it
     automatically each run.
 
+### Tuning weights: backtesting
+
+```bash
+python lib/backtest.py                 # defaults to flagging metrics with < 10 completed games
+python lib/backtest.py --min-n 20      # raise the sample-size bar for the "too thin" flag
+```
+
+Not part of `run_daily.py` — a manual, on-demand diagnostic for when you're
+reviewing `policy.yaml`. For every metric in the `metrics` table it
+correlates that metric's home-minus-away differential against the actual
+final goal margin across every completed game, and flags weights whose sign
+disagrees with the correlation. It also prints `picks_log`'s real
+straight-up/against-the-spread record per `policy_version`. Never writes to
+`policy.yaml` — correlation is a hint for hand-tuning, not an answer, and
+early in a season the sample sizes are too small to trust (that's what
+`--min-n` flags). It never hardcodes a metric name, so a future metric
+(injuries, head-to-head, goalie quality) appears here automatically as soon
+as it has `metric_values`, with zero code changes to this script.
+
 ## Files
 - `bin/run_daily.py` — runs every step below (including the policy page) in order for one date; the normal way to run this toolkit
 - `bin/run_daily_cron.sh` — cron-safe wrapper around `bin/run_daily.py`
@@ -148,11 +167,11 @@ run.
 - `lib/score.py` — normalizes metric values and applies `policy.yaml` to produce `daily_scores`
 - `lib/report.py` — ranks games by score gap, prints/writes the Top-10 CSV + HTML, and logs picks
 - `lib/policy_page.py` — renders `docs/policy.html`, a reference page of every metric's weight/normalize/description
+- `lib/backtest.py` — standalone diagnostic: correlates each metric against actual goal margin, prints picks_log's real record per policy_version
 
 ## Next up (Phase 3+)
 - `injuries` table (deferred as the messiest data source — likely needs scraping)
-- An ROI dashboard over the now-graded `picks_log` (win/loss/push record, cumulative edge, streaks) — `lib/grade.py` populates `result`/`straight_up_result`, but nothing aggregates them into a report yet
-- A weight-tuning/backtest tool: regress actual results against each game's `metric_values` to see which metrics are actually predictive vs. dead weight in `policy.yaml`. No new data needed — everything already joins on `game_id`
+- An ROI dashboard over the now-graded `picks_log` (win/loss/push record, cumulative edge, streaks) — `lib/grade.py` populates `result`/`straight_up_result`, but nothing aggregates them into a report yet. (`lib/backtest.py` prints a bare win/loss summary per policy_version, but it's not its own report.)
 - Head-to-head record and starting-goalie quality, feeding into the same generic `metrics` schema
 
 Further out (see `../betting-toolkit-design.md` section 10, not yet designed): player-level stats from MoneyPuck.com (especially goalie data), and eventually tracking/placing real bets rather than just paper picks.
