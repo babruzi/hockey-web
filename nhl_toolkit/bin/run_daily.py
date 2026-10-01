@@ -4,9 +4,9 @@ schedule (including a trailing lookback window to pick up final scores
 for recently-completed games), grades any picks_log rows those final
 scores make gradeable, re-renders every past HTML report (not just the
 lookback window -- a team's all-time ATS record can change any of its
-past reports, not only the most recent ones), rebuilds travel metrics
-and the generic metrics schema, pulls current odds, scores the slate,
-and builds the Top-N report (CSV + HTML + picks_log).
+past reports, not only the most recent ones), rebuilds travel/form
+metrics, pulls current odds and derives market_edge from them, scores
+the slate, and builds the Top-N report (CSV + HTML + picks_log).
 
 Every step is cheap and idempotent (upsert or full-rebuild-on-run), so
 running the whole chain is simpler and safer than trying to detect
@@ -16,8 +16,11 @@ table only ever grows, `schedule_context`/`metric_values` are rebuilt
 from all of it each run, and `odds` only appends -- nothing here ever
 resets the database, so historical data accumulates across the season
 as long as you keep running it. Odds are optional: if ODDS_API_KEY
-isn't set, that step is skipped with a warning and the rest of the
-pipeline still runs (picks just won't have a spread).
+isn't set, the fetch step is skipped with a warning, but market_edge
+still rebuilds from whatever odds snapshots are already on record (so
+a game with no ODDS_API_KEY today but a quote from an earlier run still
+gets a value) -- the rest of the pipeline runs regardless either way
+(picks just won't have a spread/market_edge for games with no quotes).
 
 Usage (from nhl_toolkit/):
     python bin/run_daily.py --date 2026-10-05
@@ -38,6 +41,7 @@ from fetch_odds import fetch_and_store_odds  # noqa: E402
 from fetch_schedule import fetch_range  # noqa: E402
 from form_metrics import rebuild_form_metrics  # noqa: E402
 from grade import grade_all  # noqa: E402
+from market_metrics import rebuild_market_metrics  # noqa: E402
 from metrics import rebuild_schedule_metrics  # noqa: E402
 from policy_page import build_policy_page  # noqa: E402
 from report import all_report_dates, build_report  # noqa: E402
@@ -81,7 +85,10 @@ def run_daily(target_date: str, top_n: int = 10, lookback_days: int = 3) -> None
         print("== Fetching odds ==")
         fetch_and_store_odds()
     else:
-        print("== Skipping odds (ODDS_API_KEY not set) ==")
+        print("== Skipping odds fetch (ODDS_API_KEY not set) ==")
+
+    print("== Rebuilding market_edge from odds on record ==")
+    rebuild_market_metrics()
 
     print(f"== Scoring {target_date} ==")
     score_date(target_date)

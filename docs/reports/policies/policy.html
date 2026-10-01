@@ -57,7 +57,7 @@ a { color: var(--accent); }
 <p><a href="../../index.html">&larr; All reports</a></p>
 <h1>Scoring Policy</h1>
 <p class="subtitle">
-Version <strong>2026-08-v2</strong> &middot;
+Version <strong>2026-10-v1</strong> &middot;
 edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
 </p>
 <table>
@@ -144,6 +144,14 @@ edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
             <td><span class="positive">+0.15</span></td>
             <td>zscore</td>
         </tr>
+
+        <tr>
+            <td>market_edge</td>
+            <td class="notes">Betting market's implied edge for this team (negative of its own spread)</td>
+            <td class="notes">points</td>
+            <td><span class="positive">+0.20</span></td>
+            <td>zscore</td>
+        </tr>
 </tbody>
 </table>
 <p class="disclaimer">
@@ -152,6 +160,6 @@ Each metric's raw value is normalized (see the Normalize column) across
 that day's slate before the weight is applied, so metrics on different
 scales combine fairly.
 </p>
-<p class="updated">Last updated October 01, 2026 at 11:52 AM UTC</p>
+<p class="updated">Last updated October 01, 2026 at 12:06 PM UTC</p>
 </body>
 </html>

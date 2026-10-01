@@ -3,7 +3,7 @@
 # section 6. `normalize` must be one of: minmax, zscore, linear, none
 # (linear and none are both a pass-through of the raw value; the distinction
 # is documentation only until a metric needs different scaling behavior).
-policy_version: "2026-08-v2"
+policy_version: "2026-10-v1"
 metrics:
   rest_days:
     weight: 0.15
@@ -34,4 +34,7 @@ metrics:
     normalize: minmax
   goal_differential:
     weight: 0.15
+    normalize: zscore
+  market_edge:
+    weight: 0.20
     normalize: zscore

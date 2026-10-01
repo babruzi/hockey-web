@@ -107,12 +107,25 @@ run.
    Each run appends a new snapshot per (game, bookmaker) rather than
    overwriting — safe, and expected, to re-run often to track line movement.
 
-8. Score a date's games against `policy.yaml`:
+8. Derive `market_edge` (the betting market's implied edge for each team --
+   the negative of its own spread, so higher = more favored) from whatever
+   odds are on record:
+   ```bash
+   python lib/market_metrics.py
+   ```
+   This is what actually puts the spread into the weighted scoring equation
+   -- previously it only showed up in the report and in after-the-fact ATS
+   grading, never in `total_score`. Works even without a fresh
+   `fetch_odds.py` run this time, using whatever quotes are already saved;
+   a team with no quote on record for a game just gets no value, same as
+   any other metric.
+
+9. Score a date's games against `policy.yaml`:
    ```bash
    python lib/score.py --date 2026-10-01
    ```
 
-9. Build the Top-10 picks report (console table + CSV + HTML) and log picks for backtesting:
+10. Build the Top-10 picks report (console table + CSV + HTML) and log picks for backtesting:
    ```bash
    python lib/report.py --date 2026-10-01
    ```
@@ -124,7 +137,7 @@ run.
    bookmarked URL always shows the latest picks. `docs/` is served live by
    GitHub Pages at https://babruzi.github.io/hockey-web/.
 
-10. Regenerate the policy reference page (every metric's weight, normalization
+11. Regenerate the policy reference page (every metric's weight, normalization
     method, and description in one place — handy while tuning weights):
     ```bash
     python lib/policy_page.py
@@ -151,7 +164,9 @@ straight-up/against-the-spread record per `policy_version`. Never writes to
 early in a season the sample sizes are too small to trust (that's what
 `--min-n` flags). It never hardcodes a metric name, so a future metric
 (injuries, head-to-head, goalie quality) appears here automatically as soon
-as it has `metric_values`, with zero code changes to this script.
+as it has `metric_values`, with zero code changes to this script -- that's
+exactly how `market_edge` showed up the first time it was added, with no
+changes to `backtest.py` itself.
 
 ## Files
 - `bin/run_daily.py` — runs every step below (including the policy page) in order for one date; the normal way to run this toolkit
@@ -164,6 +179,7 @@ as it has `metric_values`, with zero code changes to this script.
 - `lib/metrics.py` — seeds the metrics catalog and populates `metric_values` from `schedule_context`
 - `lib/form_metrics.py` — computes `recent_form`/`goal_differential` from `games` scores
 - `lib/fetch_odds.py` — pulls odds from The Odds API and matches events to `games` rows
+- `lib/market_metrics.py` — derives `market_edge` (the spread, sign-flipped) from `odds`, so the betting line is an actual weighted input to scoring, not just a display/grading detail
 - `policy.yaml` — the weighted scoring config; edit this to reweight or add/drop metrics
 - `lib/score.py` — normalizes metric values and applies `policy.yaml` to produce `daily_scores`
 - `lib/report.py` — ranks games by score gap, prints/writes the Top-10 CSV + HTML, and logs picks
