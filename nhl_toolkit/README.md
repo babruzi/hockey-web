@@ -109,6 +109,9 @@ run.
    ```
    Each run appends a new snapshot per (game, bookmaker) rather than
    overwriting — safe, and expected, to re-run often to track line movement.
+   Captures a price for every market, including the spread's own
+   (`home_spread_price`/`away_spread_price`) -- not just the puck-line
+   number and the separate moneyline.
 
 8. Derive `market_edge` (each team's devigged, market-implied win
    probability, from the moneyline) from whatever odds are on record:
@@ -144,11 +147,13 @@ run.
    `../docs/index.html` linking every report. If `--date` is today, also
    writes `../docs/reports/picks/current.html` -- a duplicate at a stable
    filename (not a symlink; GitHub Pages' build ignores those) so a
-   bookmarked URL always shows the latest picks. Each team's name is
-   followed by its moneyline and devigged implied win probability (e.g.
-   "NJD (-166, 60.0%)"). Every page's "Last updated" footer is US Eastern
-   (EDT/EST, auto-detected via `zoneinfo` -- not a hardcoded label), not
-   UTC. `docs/` is served live by GitHub Pages at
+   bookmarked URL always shows the latest picks. The HTML table is laid out
+   like a sportsbook board: two rows per game (away team on top, home team
+   below), with **Puck Line / Over-Under / Money Line** columns for each
+   side's price, each followed by its devigged implied probability in parens
+   (e.g. "-1.5 +154 (37.8%)"). Every page's "Last updated" footer is US
+   Eastern (EDT/EST, auto-detected via `zoneinfo` -- not a hardcoded label),
+   not UTC. `docs/` is served live by GitHub Pages at
    https://babruzi.github.io/hockey-web/.
 
 11. Regenerate the policy reference page (every metric's weight, normalization

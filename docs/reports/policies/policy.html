@@ -38,9 +38,18 @@ body {
 }
 h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
 .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; }
+.table-scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+td[rowspan] { vertical-align: middle; }
 tr:nth-child(even) td { background: var(--row-alt); }
+/* Picks report only: both rows of a game share one background, alternating
+   per game rather than per physical row (each game is two rows -- away team
+   on top, home team below -- so plain nth-child striping would just color
+   every home row, not every other game). Same specificity as the rule
+   above, placed after it so it wins for rows that have these classes. */
+.game-even td { background: var(--row-alt); }
+.game-odd td { background: var(--bg); }
 th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
 .rank { color: var(--muted); width: 2rem; }
 .edge { font-variant-numeric: tabular-nums; }
@@ -160,6 +169,6 @@ Each metric's raw value is normalized (see the Normalize column) across
 that day's slate before the weight is applied, so metrics on different
 scales combine fairly.
 </p>
-<p class="updated">Last updated October 01, 2026 at 11:41 AM EDT</p>
+<p class="updated">Last updated October 01, 2026 at 01:19 PM EDT</p>
 </body>
 </html>

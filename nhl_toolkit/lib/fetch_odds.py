@@ -89,11 +89,14 @@ def extract_quote(bookmaker: dict, home_team_name: str, away_team_name: str) -> 
     :param bookmaker: A single bookmaker object from the odds API response.
     :param home_team_name: The home team's full display name, to match outcomes.
     :param away_team_name: The away team's full display name, to match outcomes.
-    :returns: Flat dict of home_spread/away_spread/home_ml/away_ml/total/over_odds/under_odds.
+    :returns: Flat dict of home_spread/away_spread/home_spread_price/away_spread_price/
+        home_ml/away_ml/total/over_odds/under_odds.
     """
     quote: dict[str, object] = {
         "home_spread": None,
         "away_spread": None,
+        "home_spread_price": None,
+        "away_spread_price": None,
         "home_ml": None,
         "away_ml": None,
         "total": None,
@@ -112,8 +115,10 @@ def extract_quote(bookmaker: dict, home_team_name: str, away_team_name: str) -> 
             for outcome in outcomes:
                 if outcome["name"] == home_team_name:
                     quote["home_spread"] = outcome["point"]
+                    quote["home_spread_price"] = outcome["price"]
                 elif outcome["name"] == away_team_name:
                     quote["away_spread"] = outcome["point"]
+                    quote["away_spread_price"] = outcome["price"]
         elif market["key"] == "totals":
             for outcome in outcomes:
                 if outcome["name"] == "Over":
@@ -153,8 +158,9 @@ def upsert_odds(conn: sqlite3.Connection, events: list[dict]) -> tuple[int, int]
             conn.execute(
                 """
                 INSERT INTO odds (game_id, source, fetched_at, home_spread, away_spread,
+                                   home_spread_price, away_spread_price,
                                    home_ml, away_ml, total, over_odds, under_odds)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     game_id,
@@ -162,6 +168,8 @@ def upsert_odds(conn: sqlite3.Connection, events: list[dict]) -> tuple[int, int]
                     fetched_at,
                     quote["home_spread"],
                     quote["away_spread"],
+                    quote["home_spread_price"],
+                    quote["away_spread_price"],
                     quote["home_ml"],
                     quote["away_ml"],
                     quote["total"],

@@ -133,24 +133,76 @@ def latest_consensus_moneyline(
     return round(value) if value is not None else None
 
 
-def devigged_win_probabilities(home_ml: Optional[int], away_ml: Optional[int]) -> tuple:
-    """Each side's devigged, market-implied win probability, as a percentage.
+def latest_total(conn: sqlite3.Connection, game_id: int) -> tuple:
+    """The game's over/under total and both sides' prices.
+
+    DraftKings' own quote if it has one, else a cross-book average of each
+    bookmaker's latest quote -- same preference as :func:`_dk_or_consensus`,
+    but the total isn't per-team (over/under applies to the game as a
+    whole), so it's handled separately rather than reusing that helper.
+
+    :param conn: Open connection to the schedule database.
+    :param game_id: The game to look up odds for.
+    :returns: (total, over_odds, under_odds), each None if unavailable.
+    """
+    dk_row = conn.execute(
+        """
+        SELECT total, over_odds, under_odds
+        FROM odds
+        WHERE game_id = ? AND source = ? AND total IS NOT NULL
+        ORDER BY fetched_at DESC
+        LIMIT 1
+        """,
+        (game_id, PRIMARY_BOOK),
+    ).fetchone()
+    if dk_row:
+        return dk_row
+
+    rows = conn.execute(
+        """
+        SELECT total, over_odds, under_odds
+        FROM odds o
+        WHERE game_id = ?
+          AND total IS NOT NULL
+          AND fetched_at = (
+              SELECT MAX(o2.fetched_at) FROM odds o2
+              WHERE o2.game_id = o.game_id AND o2.source = o.source
+          )
+        """,
+        (game_id,),
+    ).fetchall()
+    if not rows:
+        return None, None, None
+
+    totals = [r[0] for r in rows]
+    overs = [r[1] for r in rows if r[1] is not None]
+    unders = [r[2] for r in rows if r[2] is not None]
+    return (
+        sum(totals) / len(totals),
+        round(sum(overs) / len(overs)) if overs else None,
+        round(sum(unders) / len(unders)) if unders else None,
+    )
+
+
+def devig_pair(odds_a: Optional[int], odds_b: Optional[int]) -> tuple:
+    """Devig a two-sided market's American odds into percentages that sum to 100.
 
     Same devig approach as market_metrics.py's market_edge (convert each
     side's American odds to a raw implied probability, then divide by their
     sum to remove the bookmaker's overround) -- shown here purely for
-    display, next to each team's moneyline, not stored anywhere.
+    display (moneyline win%, puck-line cover%, or over/under%), not stored
+    anywhere. Works for any two-sided market, not just moneylines.
 
-    :param home_ml: Home team's consensus moneyline, or None if no quote.
-    :param away_ml: Away team's consensus moneyline, or None if no quote.
-    :returns: (home_pct, away_pct) in [0, 100], or (None, None) if either side's quote is missing.
+    :param odds_a: First side's American odds, or None if no quote.
+    :param odds_b: Second side's American odds, or None if no quote.
+    :returns: (pct_a, pct_b) in [0, 100], or (None, None) if either side's quote is missing.
     """
-    if home_ml is None or away_ml is None:
+    if odds_a is None or odds_b is None:
         return None, None
-    home_raw = american_to_probability(home_ml)
-    away_raw = american_to_probability(away_ml)
-    overround = home_raw + away_raw
-    return 100 * home_raw / overround, 100 * away_raw / overround
+    raw_a = american_to_probability(odds_a)
+    raw_b = american_to_probability(odds_b)
+    overround = raw_a + raw_b
+    return 100 * raw_a / overround, 100 * raw_b / overround
 
 
 def home_opener_note(conn: sqlite3.Connection, home_team: str, game_date: str) -> Optional[str]:
@@ -294,9 +346,24 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
         pick_team = game["home_team"] if home_score >= away_score else game["away_team"]
         predicted_edge = abs(home_score - away_score)
         result, straight_up_result = grading_by_game.get(game_id, (None, None))
+
         home_moneyline = latest_consensus_moneyline(conn, game_id, game["home_team"])
         away_moneyline = latest_consensus_moneyline(conn, game_id, game["away_team"])
-        home_win_pct, away_win_pct = devigged_win_probabilities(home_moneyline, away_moneyline)
+        home_win_pct, away_win_pct = devig_pair(home_moneyline, away_moneyline)
+
+        home_spread = latest_consensus_spread(conn, game_id, game["home_team"])
+        away_spread = latest_consensus_spread(conn, game_id, game["away_team"])
+        home_spread_price = _dk_or_consensus(
+            conn, game_id, game["home_team"], "home_spread_price", "away_spread_price"
+        )
+        away_spread_price = _dk_or_consensus(
+            conn, game_id, game["away_team"], "home_spread_price", "away_spread_price"
+        )
+        home_cover_pct, away_cover_pct = devig_pair(home_spread_price, away_spread_price)
+
+        total, over_odds, under_odds = latest_total(conn, game_id)
+        over_pct, under_pct = devig_pair(over_odds, under_odds)
+
         picks.append(
             {
                 "game_id": game_id,
@@ -311,6 +378,17 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
                 "away_moneyline": away_moneyline,
                 "home_win_pct": home_win_pct,
                 "away_win_pct": away_win_pct,
+                "home_spread": home_spread,
+                "away_spread": away_spread,
+                "home_spread_price": home_spread_price,
+                "away_spread_price": away_spread_price,
+                "home_cover_pct": home_cover_pct,
+                "away_cover_pct": away_cover_pct,
+                "total": total,
+                "over_odds": over_odds,
+                "under_odds": under_odds,
+                "over_pct": over_pct,
+                "under_pct": under_pct,
                 "notes": build_game_notes(conn, game_id, game["home_team"], game["game_date"]),
                 "final_home_score": game["final_home_score"],
                 "final_away_score": game["final_away_score"],
@@ -388,9 +466,18 @@ body {
 }
 h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
 .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; }
+.table-scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+td[rowspan] { vertical-align: middle; }
 tr:nth-child(even) td { background: var(--row-alt); }
+/* Picks report only: both rows of a game share one background, alternating
+   per game rather than per physical row (each game is two rows -- away team
+   on top, home team below -- so plain nth-child striping would just color
+   every home row, not every other game). Same specificity as the rule
+   above, placed after it so it wins for rows that have these classes. */
+.game-even td { background: var(--row-alt); }
+.game-odd td { background: var(--bg); }
 th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
 .rank { color: var(--muted); width: 2rem; }
 .edge { font-variant-numeric: tabular-nums; }
@@ -427,19 +514,36 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
     DOCS_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     pretty_date = datetime.strptime(target_date, "%Y-%m-%d").strftime("%B %d, %Y")
 
-    def format_spread(pick: dict) -> str:
-        return f"{pick['spread_at_pick']:+.1f}" if pick["spread_at_pick"] is not None else "n/a"
+    def format_price(price: Optional[int]) -> str:
+        return f"{price:+d}" if price is not None else ""
 
-    def format_team(
-        team: str, is_pick: bool, moneyline: Optional[int], win_pct: Optional[float]
+    def format_team_name(team: str, is_pick: bool) -> str:
+        return f'<strong class="pick">{team}</strong>' if is_pick else team
+
+    def format_puck_line_cell(
+        spread: Optional[float], price: Optional[int], pct: Optional[float]
     ) -> str:
+        if spread is None:
+            return '<span class="notes">n/a</span>'
+        parts = [f"{spread:+.1f}", format_price(price)]
+        line = " ".join(p for p in parts if p)
+        return f"{line} ({pct:.1f}%)" if pct is not None else line
+
+    def format_total_cell(
+        side_label: str, total: Optional[float], price: Optional[int], pct: Optional[float]
+    ) -> str:
+        if total is None:
+            return '<span class="notes">n/a</span>'
+        total_str = f"{total:g}"
+        parts = [f"{side_label} {total_str}", format_price(price)]
+        line = " ".join(p for p in parts if p)
+        return f"{line} ({pct:.1f}%)" if pct is not None else line
+
+    def format_ml_cell(moneyline: Optional[int], pct: Optional[float]) -> str:
         if moneyline is None:
-            label = team
-        elif win_pct is None:
-            label = f"{team} ({moneyline:+d})"
-        else:
-            label = f"{team} ({moneyline:+d}, {win_pct:.1f}%)"
-        return f'<strong class="pick">{label}</strong>' if is_pick else label
+            return '<span class="notes">n/a</span>'
+        price = format_price(moneyline)
+        return f"{price} ({pct:.1f}%)" if pct is not None else price
 
     def format_notes(pick: dict) -> str:
         return "; ".join(pick["notes"]) if pick["notes"] else "&mdash;"
@@ -480,37 +584,41 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         pct = 100 * wins / (wins + losses)
         return f"{wins}-{losses} ({pct:.1f}%)"
 
-    rows = "\n".join(
-        f"""
-        <tr>
-            <td class="rank">{i}</td>
-            <td>{
-                format_team(
-                    pick["away_team"],
-                    not pick["pick_is_home"],
-                    pick["away_moneyline"],
-                    pick["away_win_pct"],
-                )
-            }</td>
-            <td class="notes">@</td>
-            <td>{
-                format_team(
-                    pick["home_team"],
-                    pick["pick_is_home"],
-                    pick["home_moneyline"],
-                    pick["home_win_pct"],
-                )
-            }</td>
-            <td class="edge">{pick["predicted_edge"]:.3f}</td>
-            <td>{format_spread(pick)}</td>
-            <td class="edge">{format_final_score(pick)}</td>
-            <td>{format_outcome_plain(pick["straight_up_result"])}</td>
-            <td>{format_ats(pick)}</td>
-            <td class="edge">{format_team_ats_record(pick)}</td>
-            <td class="notes">{format_notes(pick)}</td>
+    def render_game_rows(i: int, pick: dict) -> str:
+        game_class = "game-even" if i % 2 == 0 else "game-odd"
+        away_puck = format_puck_line_cell(
+            pick["away_spread"], pick["away_spread_price"], pick["away_cover_pct"]
+        )
+        home_puck = format_puck_line_cell(
+            pick["home_spread"], pick["home_spread_price"], pick["home_cover_pct"]
+        )
+        over_cell = format_total_cell("O", pick["total"], pick["over_odds"], pick["over_pct"])
+        under_cell = format_total_cell("U", pick["total"], pick["under_odds"], pick["under_pct"])
+        away_ml = format_ml_cell(pick["away_moneyline"], pick["away_win_pct"])
+        home_ml = format_ml_cell(pick["home_moneyline"], pick["home_win_pct"])
+
+        return f"""
+        <tr class="{game_class}">
+            <td class="rank" rowspan="2">{i}</td>
+            <td>{format_team_name(pick["away_team"], not pick["pick_is_home"])}</td>
+            <td>{away_puck}</td>
+            <td>{over_cell}</td>
+            <td>{away_ml}</td>
+            <td class="edge" rowspan="2">{pick["predicted_edge"]:.3f}</td>
+            <td class="edge" rowspan="2">{format_final_score(pick)}</td>
+            <td rowspan="2">{format_outcome_plain(pick["straight_up_result"])}</td>
+            <td rowspan="2">{format_ats(pick)}</td>
+            <td class="edge" rowspan="2">{format_team_ats_record(pick)}</td>
+            <td class="notes" rowspan="2">{format_notes(pick)}</td>
+        </tr>
+        <tr class="{game_class}">
+            <td>{format_team_name(pick["home_team"], pick["pick_is_home"])}</td>
+            <td>{home_puck}</td>
+            <td>{under_cell}</td>
+            <td>{home_ml}</td>
         </tr>"""
-        for i, pick in enumerate(picks, start=1)
-    )
+
+    rows = "\n".join(render_game_rows(i, pick) for i, pick in enumerate(picks, start=1))
 
     page = f"""<!doctype html>
 <html lang="en">
@@ -525,24 +633,27 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 <h1>{len(picks)} Picks</h1>
 <p class="subtitle">
 {pretty_date} &middot; every game on the slate, ranked by edge &middot;
-generated by the NHL paper-betting toolkit &middot;
-the <strong class="pick">green, bolded</strong> team is the pick (Score column is also
-Away&ndash;Home) &middot; the number next to each team is its current moneyline, and the
-percentage is the market's devigged implied win probability from that moneyline
-&middot; Moneyline/Vs. Puck Line columns show once the game is final, color is only
-used for Vs. Puck Line &middot; Team ATS Record is the picked team's all-time record against
-the puck line across every graded pick so far
+generated by the NHL paper-betting toolkit &middot; away team's row on top, home team's
+row below, same layout as a sportsbook board (Score column is also Away&ndash;Home) &middot;
+the <strong class="pick">green, bolded</strong> team is the pick &middot; Puck Line/Over-Under/
+Money Line show each side's price and, in parens, the market's devigged implied
+probability for that side &middot; ML Result/Vs. Puck Line columns grade the pick once the
+game is final, color is only used for Vs. Puck Line &middot; Team ATS Record is the picked
+team's all-time record against the puck line across every graded pick so far
 </p>
+<div class="table-scroll">
 <table>
 <thead>
 <tr>
-    <th>#</th><th>Away</th><th></th><th>Home</th><th>Edge</th><th>Puck Line</th><th>Score</th>
-    <th>Moneyline</th><th>Vs. Puck Line</th><th>Team ATS Record</th><th>Notes</th>
+    <th>#</th><th>Team</th><th>Puck Line</th><th>Over/Under</th><th>Money Line</th>
+    <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
+    <th>Team ATS Record</th><th>Notes</th>
 </tr>
 </thead>
 <tbody>{rows}
 </tbody>
 </table>
+</div>
 <p class="disclaimer">
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.

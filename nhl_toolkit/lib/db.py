@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS odds (
     fetched_at   TEXT NOT NULL,        -- ISO timestamp of this snapshot
     home_spread  REAL,
     away_spread  REAL,
+    home_spread_price  INTEGER,  -- price to bet the home side of the spread
+    away_spread_price  INTEGER,  -- price to bet the away side of the spread
     home_ml      INTEGER,
     away_ml      INTEGER,
     total        REAL,
@@ -151,6 +153,12 @@ def init_db() -> None:
                 )
             else:
                 conn.execute("ALTER TABLE picks_log ADD COLUMN profit_10 REAL")
+
+        existing_odds_columns = {row[1] for row in conn.execute("PRAGMA table_info(odds)")}
+        if "home_spread_price" not in existing_odds_columns:
+            conn.execute("ALTER TABLE odds ADD COLUMN home_spread_price INTEGER")
+        if "away_spread_price" not in existing_odds_columns:
+            conn.execute("ALTER TABLE odds ADD COLUMN away_spread_price INTEGER")
     conn.close()
     print(f"Database ready at {DB_PATH}")
 
