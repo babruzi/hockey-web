@@ -428,6 +428,17 @@ weighted heuristic (see policy.yaml), not a prediction guarantee.
     path = DOCS_REPORTS_DIR / f"picks_{target_date}.html"
     with open(path, "w") as f:
         f.write(page)
+
+    # A real symlink would be more "correct," but GitHub Pages builds in
+    # Jekyll's safe mode, which ignores symlinked files -- it would 404 once
+    # published. A duplicate file at a stable name is the static-hosting-safe
+    # equivalent of "current -> today's picks". Only written when target_date
+    # is actually today, so re-rendering a past date (e.g. the lookback
+    # refresh in run_daily.py) never clobbers it with stale content.
+    if target_date == date_cls.today().isoformat():
+        with open(DOCS_REPORTS_DIR / "current.html", "w") as f:
+            f.write(page)
+
     return path
 
 
@@ -438,6 +449,12 @@ def update_index() -> Path:
     """
     DOCS_DIR.mkdir(parents=True, exist_ok=True)
     report_files = sorted(DOCS_REPORTS_DIR.glob("picks_*.html"), reverse=True)
+
+    todays_picks_link = (
+        '<p><a href="reports/picks/current.html"><strong>Today\'s Picks &rarr;</strong></a></p>'
+        if (DOCS_REPORTS_DIR / "current.html").exists()
+        else ""
+    )
 
     links = "\n".join(
         f'<li><a href="reports/picks/{path.name}">'
@@ -457,6 +474,7 @@ def update_index() -> Path:
 <body>
 <h1>NHL Paper Betting Picks</h1>
 <p class="subtitle">Daily Top-10 reports from the policy-driven scoring engine.</p>
+{todays_picks_link}
 <p><a href="reports/policies/policy.html">Current scoring policy &amp; weights &rarr;</a></p>
 <ul>
 {links}

@@ -118,7 +118,10 @@ run.
    ```
    Writes a local CSV (`reports/`, gitignored) and a static HTML page
    (`../docs/reports/picks/picks_{date}.html`, git-tracked) plus a regenerated
-   `../docs/index.html` linking every report. `docs/` is served live by
+   `../docs/index.html` linking every report. If `--date` is today, also
+   writes `../docs/reports/picks/current.html` -- a duplicate at a stable
+   filename (not a symlink; GitHub Pages' build ignores those) so a
+   bookmarked URL always shows the latest picks. `docs/` is served live by
    GitHub Pages at https://babruzi.github.io/hockey-web/.
 
 10. Regenerate the policy reference page (every metric's weight, normalization
