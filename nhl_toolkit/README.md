@@ -73,9 +73,11 @@ run.
    python lib/grade.py
    ```
    Fills in `result` ('win'/'loss'/'push' against the spread recorded at
-   pick time) and `straight_up_result` ('win'/'loss', ignoring the spread —
-   still gets filled in even on games with no odds). Safe to re-run; only
-   touches rows that are still ungraded.
+   pick time), `straight_up_result` ('win'/'loss', ignoring the spread —
+   still gets filled in even on games with no odds), and `profit_100` ($
+   profit/loss a flat $100 moneyline bet on the pick would have made,
+   settled on `straight_up_result` since that's how moneyline bets actually
+   pay out). Safe to re-run; only touches rows missing any of the three.
 
 4. Compute rest days, game density, distance traveled, timezone shifts,
    and back-to-back flags for every team/game:
@@ -107,18 +109,22 @@ run.
    Each run appends a new snapshot per (game, bookmaker) rather than
    overwriting — safe, and expected, to re-run often to track line movement.
 
-8. Derive `market_edge` (the betting market's implied edge for each team --
-   the negative of its own spread, so higher = more favored) from whatever
-   odds are on record:
+8. Derive `market_edge` (each team's devigged, market-implied win
+   probability, from the moneyline) from whatever odds are on record:
    ```bash
    python lib/market_metrics.py
    ```
-   This is what actually puts the spread into the weighted scoring equation
-   -- previously it only showed up in the report and in after-the-fact ATS
-   grading, never in `total_score`. Works even without a fresh
-   `fetch_odds.py` run this time, using whatever quotes are already saved;
-   a team with no quote on record for a game just gets no value, same as
-   any other metric.
+   This is what actually puts the betting market into the weighted scoring
+   equation -- previously the spread only showed up in the report and in
+   after-the-fact ATS grading, never in `total_score`. Uses the moneyline,
+   not the puck-line spread: NHL puck lines are fixed at 1.5 goals in
+   practice (every quote ever recorded here is exactly -1.5 or +1.5), so a
+   spread-based version of this metric barely varies game to game -- the
+   moneyline (e.g. -218/+180 vs. -115/-105) is where the market's actual
+   opinion about *how much* it favors a team lives. Works even without a
+   fresh `fetch_odds.py` run this time, using whatever quotes are already
+   saved; a team with no quote on record for a game just gets no value,
+   same as any other metric.
 
 9. Score a date's games against `policy.yaml`:
    ```bash
@@ -159,14 +165,16 @@ reviewing `policy.yaml`. For every metric in the `metrics` table it
 correlates that metric's home-minus-away differential against the actual
 final goal margin across every completed game, and flags weights whose sign
 disagrees with the correlation. It also prints `picks_log`'s real
-straight-up/against-the-spread record per `policy_version`. Never writes to
-`policy.yaml` — correlation is a hint for hand-tuning, not an answer, and
-early in a season the sample sizes are too small to trust (that's what
-`--min-n` flags). It never hardcodes a metric name, so a future metric
-(injuries, head-to-head, goalie quality) appears here automatically as soon
-as it has `metric_values`, with zero code changes to this script -- that's
-exactly how `market_edge` showed up the first time it was added, with no
-changes to `backtest.py` itself.
+straight-up/against-the-spread record *and* moneyline ROI (summed
+`profit_100` on a flat $100 stake per pick) per `policy_version`. Never
+writes to `policy.yaml` — correlation is a hint for hand-tuning, not an
+answer, and early in a season the sample sizes are too small to trust
+(that's what `--min-n` flags). It never hardcodes a metric name, so a future
+metric (injuries, head-to-head, goalie quality) appears here automatically
+as soon as it has `metric_values`, with zero code changes to this script --
+that's exactly how `market_edge`'s correlation went from `n/a` (under the
+old spread-based version) to a real number (once reworked onto the
+moneyline), without touching `backtest.py` either time.
 
 ## Files
 - `bin/run_daily.py` — runs every step below (including the policy page) in order for one date; the normal way to run this toolkit
@@ -174,12 +182,12 @@ changes to `backtest.py` itself.
 - `lib/arenas.py` — static reference table: 32 teams, arena lat/lon, IANA timezone, and a full-team-name → abbrev lookup for odds feeds
 - `lib/db.py` — SQLite schema (`games`, `schedule_context`, `odds`, `metrics`, `metric_values`, `policy_weights`, `daily_scores`, `picks_log`)
 - `lib/fetch_schedule.py` — pulls from the NHL Web API (`api-web.nhle.com/v1/schedule/{date}`)
-- `lib/grade.py` — grades final games' `picks_log` rows: `result` (vs. the spread) and `straight_up_result` (vs. the raw final score)
+- `lib/grade.py` — grades final games' `picks_log` rows: `result` (vs. the spread), `straight_up_result` (vs. the raw final score), and `profit_100` (moneyline ROI)
 - `lib/travel_metrics.py` — derives rest/travel/timezone metrics from the raw schedule
 - `lib/metrics.py` — seeds the metrics catalog and populates `metric_values` from `schedule_context`
 - `lib/form_metrics.py` — computes `recent_form`/`goal_differential` from `games` scores
 - `lib/fetch_odds.py` — pulls odds from The Odds API and matches events to `games` rows
-- `lib/market_metrics.py` — derives `market_edge` (the spread, sign-flipped) from `odds`, so the betting line is an actual weighted input to scoring, not just a display/grading detail
+- `lib/market_metrics.py` — derives `market_edge` (devigged implied win probability, from the moneyline) from `odds`, so the betting market is an actual weighted input to scoring, not just a display/grading detail
 - `policy.yaml` — the weighted scoring config; edit this to reweight or add/drop metrics
 - `lib/score.py` — normalizes metric values and applies `policy.yaml` to produce `daily_scores`
 - `lib/report.py` — ranks games by score gap, prints/writes the Top-10 CSV + HTML, and logs picks

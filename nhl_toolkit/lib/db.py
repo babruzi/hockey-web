@@ -98,8 +98,10 @@ CREATE TABLE IF NOT EXISTS picks_log (
     pick            TEXT NOT NULL,     -- team abbrev picked
     predicted_edge  REAL,              -- score gap between the two teams
     spread_at_pick  REAL,              -- picked team's spread when logged
+    moneyline_at_pick   INTEGER,       -- picked team's American moneyline odds when logged
     result              TEXT,          -- 'win'|'loss'|'push' vs spread; NULL if ungraded/no spread
     straight_up_result  TEXT,          -- 'win'|'loss' -- picked team won outright, ignoring spread
+    profit_100          REAL,          -- $ P&L on a flat $100 moneyline stake; NULL if no odds
     graded_at       TEXT,
     FOREIGN KEY (game_id) REFERENCES games (game_id)
 );
@@ -136,6 +138,10 @@ def init_db() -> None:
         existing_columns = {row[1] for row in conn.execute("PRAGMA table_info(picks_log)")}
         if "straight_up_result" not in existing_columns:
             conn.execute("ALTER TABLE picks_log ADD COLUMN straight_up_result TEXT")
+        if "moneyline_at_pick" not in existing_columns:
+            conn.execute("ALTER TABLE picks_log ADD COLUMN moneyline_at_pick INTEGER")
+        if "profit_100" not in existing_columns:
+            conn.execute("ALTER TABLE picks_log ADD COLUMN profit_100 REAL")
     conn.close()
     print(f"Database ready at {DB_PATH}")
 

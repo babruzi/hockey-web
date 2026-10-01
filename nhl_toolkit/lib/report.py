@@ -65,6 +65,44 @@ def latest_consensus_spread(
     return sum(spreads) / len(spreads) if spreads else None
 
 
+def latest_consensus_moneyline(
+    conn: sqlite3.Connection, game_id: int, team_id: str
+) -> Optional[int]:
+    """Average the most recent moneyline quote per bookmaker for one team in one game.
+
+    A simple average of American odds, same approach as
+    :func:`latest_consensus_spread` -- not a probability-weighted average,
+    just a rough consensus price across books.
+
+    :param conn: Open connection to the schedule database.
+    :param game_id: The game to look up odds for.
+    :param team_id: The team whose moneyline to return (its home or away line).
+    :returns: The consensus moneyline, or None if no odds have been fetched for this game.
+    """
+    rows = conn.execute(
+        """
+        SELECT o.home_ml, o.away_ml, g.home_team
+        FROM odds o
+        JOIN games g ON g.game_id = o.game_id
+        WHERE o.game_id = ?
+          AND o.fetched_at = (
+              SELECT MAX(o2.fetched_at) FROM odds o2
+              WHERE o2.game_id = o.game_id AND o2.source = o.source
+          )
+        """,
+        (game_id,),
+    ).fetchall()
+    if not rows:
+        return None
+
+    moneylines = [
+        home_ml if team_id == home_team else away_ml
+        for home_ml, away_ml, home_team in rows
+        if (home_ml if team_id == home_team else away_ml) is not None
+    ]
+    return round(sum(moneylines) / len(moneylines)) if moneylines else None
+
+
 def home_opener_note(conn: sqlite3.Connection, home_team: str, game_date: str) -> Optional[str]:
     """Flag whether this is the home team's first home game in the data we've fetched.
 
@@ -215,6 +253,7 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
                 "pick_is_home": pick_team == game["home_team"],
                 "predicted_edge": predicted_edge,
                 "spread_at_pick": latest_consensus_spread(conn, game_id, pick_team),
+                "moneyline_at_pick": latest_consensus_moneyline(conn, game_id, pick_team),
                 "notes": build_game_notes(conn, game_id, game["home_team"], game["game_date"]),
                 "final_home_score": game["final_home_score"],
                 "final_away_score": game["final_away_score"],
@@ -498,7 +537,7 @@ def log_picks(conn: sqlite3.Connection, target_date: str, picks: list[dict]) -> 
     either wipe out recorded `result`/`straight_up_result`/`graded_at` values,
     or (since the old delete only matched ungraded rows) insert a duplicate
     row for an already-graded game. The upsert updates only the
-    pick/edge/spread columns and leaves grading columns untouched. Ungraded
+    pick/edge/spread/moneyline columns and leaves grading columns untouched. Ungraded
     rows for games no longer in `picks` (e.g. a dropped-out top-N game) are
     still pruned, same as before.
 
@@ -517,12 +556,14 @@ def log_picks(conn: sqlite3.Connection, target_date: str, picks: list[dict]) -> 
     )
     conn.executemany(
         """
-        INSERT INTO picks_log (date, game_id, pick, predicted_edge, spread_at_pick)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO picks_log
+            (date, game_id, pick, predicted_edge, spread_at_pick, moneyline_at_pick)
+        VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(date, game_id) DO UPDATE SET
             pick = excluded.pick,
             predicted_edge = excluded.predicted_edge,
-            spread_at_pick = excluded.spread_at_pick
+            spread_at_pick = excluded.spread_at_pick,
+            moneyline_at_pick = excluded.moneyline_at_pick
         """,
         [
             (
@@ -531,6 +572,7 @@ def log_picks(conn: sqlite3.Connection, target_date: str, picks: list[dict]) -> 
                 pick["pick"],
                 pick["predicted_edge"],
                 pick["spread_at_pick"],
+                pick["moneyline_at_pick"],
             )
             for pick in picks
         ],
