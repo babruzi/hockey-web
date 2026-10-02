@@ -101,20 +101,12 @@ game is final &middot; Team ATS Record is the picked team's all-time record agai
 puck line across every graded pick so far
 </p>
 
-<div class="controls">
-<label for="odds-type">Show "Est. Winnings" using:</label>
-<select id="odds-type" onchange="updateWinnings()">
-<option value="ml" selected>Money Line</option>
-<option value="pl">Puck Line</option>
-</select>
-<span class="notes">(payout on a $10 bet on the pick, if it wins)</span>
-</div>
 <div class="table-scroll">
 <table>
 <thead>
 <tr>
     <th>#</th><th>Team</th><th>Puck Line</th><th>Over/Under</th><th>Money Line</th>
-    <th>Est. Winnings</th>
+    
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
     <th>Team ATS Record</th><th>Notes</th>
 </tr>
@@ -126,12 +118,12 @@ puck line across every graded pick so far
             <td>+1.5 -185 (62.2%)</td>
             <td><strong class="pick">O 5.5 -120 (52.2%)</strong></td>
             <td>+142 (39.6%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-170" data-pl="154">$5.88</td>
+            
             <td class="edge" rowspan="2">2.024</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">2&ndash;3 <span class="notes">(Under)</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td class="edge" rowspan="2">0-1 (0.0%)</td>
             <td class="notes" rowspan="2">Home opener; PHI on a back-to-back</td>
         </tr>
         <tr class="game-odd">
@@ -147,12 +139,12 @@ puck line across every graded pick so far
             <td>+1.5 -135 (55.1%)</td>
             <td>O 6.5 +114 (44.9%)</td>
             <td>+180 (34.3%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-218" data-pl="114">$4.59</td>
+            
             <td class="edge" rowspan="2">1.740</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">0&ndash;6 <span class="notes">(Under)</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td class="edge" rowspan="2">1-0 (100.0%)</td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
         <tr class="game-even">
@@ -168,12 +160,12 @@ puck line across every graded pick so far
             <td>-1.5 +164 (36.3%)</td>
             <td>O 6.5 -105 (48.9%)</td>
             <td>-148 (57.2%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="124" data-pl="-198">$12.40</td>
+            
             <td class="edge" rowspan="2">1.123</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">3&ndash;4 <span class="notes">(Over)</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td class="edge" rowspan="2">1-0 (100.0%)</td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
         <tr class="game-odd">
@@ -189,12 +181,12 @@ puck line across every graded pick so far
             <td>-1.5 +180 (34.3%)</td>
             <td>O 5.5 -125 (53.2%)</td>
             <td><strong class="pick">-148 (57.2%)</strong></td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-148" data-pl="180">$6.76</td>
+            
             <td class="edge" rowspan="2">0.783</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">1&ndash;5 <span class="notes">(Over)</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td class="edge" rowspan="2">0-1 (0.0%)</td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
         <tr class="game-even">
@@ -210,12 +202,12 @@ puck line across every graded pick so far
             <td>-1.5 +220 (30.0%)</td>
             <td>O 6.5 +114 (44.9%)</td>
             <td>-112 (50.4%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-108" data-pl="-270">$9.26</td>
+            
             <td class="edge" rowspan="2">0.528</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">3&ndash;6 <span class="notes">(Over)</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td class="edge" rowspan="2">1-0 (100.0%)</td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
         <tr class="game-odd">
@@ -231,12 +223,12 @@ puck line across every graded pick so far
             <td><strong class="pick">-1.5 +170 (35.5%)</strong></td>
             <td>O 6.5 +114 (44.9%)</td>
             <td><strong class="pick">-148 (57.2%)</strong></td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-148" data-pl="170">$6.76</td>
+            
             <td class="edge" rowspan="2">0.458</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">3&ndash;1 <span class="notes">(Under)</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td class="edge" rowspan="2">1-0 (100.0%)</td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
         <tr class="game-even">
@@ -252,12 +244,12 @@ puck line across every graded pick so far
             <td>-1.5 +110 (45.7%)</td>
             <td><strong class="pick">O 6.5 -115 (51.1%)</strong></td>
             <td><strong class="pick">-218 (65.7%)</strong></td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-218" data-pl="110">$4.59</td>
+            
             <td class="edge" rowspan="2">0.446</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2">0-1 (0.0%)</td>
+            <td class="edge" rowspan="2">9&ndash;7 <span class="notes">(Over)</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td class="edge" rowspan="2">1-1 (50.0%)</td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
         <tr class="game-odd">
@@ -273,12 +265,12 @@ puck line across every graded pick so far
             <td><strong class="pick">+1.5 -278 (70.5%)</strong></td>
             <td><strong class="pick">O 5.5 -125 (53.2%)</strong></td>
             <td>-108 (49.6%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-112" data-pl="225">$8.93</td>
+            
             <td class="edge" rowspan="2">0.142</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">6&ndash;1 <span class="notes">(Over)</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td class="edge" rowspan="2">0-1 (0.0%)</td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
         <tr class="game-even">
@@ -294,25 +286,7 @@ puck line across every graded pick so far
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 01, 2026 at 02:22 PM EDT</p>
+<p class="updated">Last updated October 02, 2026 at 03:11 PM EDT</p>
 
-<script>
-function updateWinnings() {
-    var marketType = document.getElementById("odds-type").value;
-    var cells = document.querySelectorAll(".winnings-cell");
-    cells.forEach(function (cell) {
-        var attr = marketType === "ml" ? "data-ml" : "data-pl";
-        var raw = cell.getAttribute(attr);
-        if (!raw) {
-            cell.textContent = "\u2014";
-            return;
-        }
-        var price = parseInt(raw, 10);
-        var stake = 10.0;
-        var payout = price > 0 ? (stake * price) / 100 : (stake * 100) / Math.abs(price);
-        cell.textContent = "$" + payout.toFixed(2);
-    });
-}
-</script>
 </body>
 </html>
