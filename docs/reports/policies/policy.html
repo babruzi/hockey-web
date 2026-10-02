@@ -32,15 +32,32 @@ body {
     background: var(--bg);
     color: var(--fg);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    max-width: 760px;
+    max-width: 1400px;
     margin: 2rem auto;
     padding: 0 1rem;
 }
 h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
 .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; }
+/* The picks table (12 columns with full borders/padding) only needs
+   horizontal scrolling on a viewport narrower than this page's own
+   max-width -- on anything wider, it fits and should just lay out
+   normally. This also matters for the sticky header below: setting
+   overflow-x: auto on an element makes browsers implicitly treat its
+   overflow-y as auto too (per the CSS Overflow spec's "visible paired
+   with non-visible" rule), which turns it into its own scroll
+   container -- and `position: sticky` sticks to the nearest scroll
+   container, not necessarily the page. Inside an always-auto wrapper,
+   the header would silently stop sticking (it'd stick to the wrapper's
+   own never-scrolled top instead of the viewport). Scoping overflow-x
+   to narrow viewports only, where it's actually needed, keeps the
+   sticky header working everywhere else. */
 .table-scroll { overflow-x: auto; }
+@media (min-width: 1400px) {
+    .table-scroll { overflow-x: visible; }
+}
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 0.65rem 0.9rem; border: 1px solid var(--border); }
+thead th { position: sticky; top: 0; background: var(--bg); z-index: 2; }
 td[rowspan] { vertical-align: middle; }
 tr:nth-child(even) td { background: var(--row-alt); }
 /* Picks report only: both rows of a game share one background, alternating
@@ -189,6 +206,6 @@ Each metric's raw value is normalized (see the Normalize column) across
 that day's slate before the weight is applied, so metrics on different
 scales combine fairly.
 </p>
-<p class="updated">Last updated October 02, 2026 at 03:11 PM EDT</p>
+<p class="updated">Last updated October 02, 2026 at 03:21 PM EDT</p>
 </body>
 </html>

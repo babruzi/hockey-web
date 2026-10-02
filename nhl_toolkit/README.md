@@ -172,8 +172,14 @@ run.
    game -- see `puck_line_recommendation()`/`total_recommendation()` in
    `report.py`. Every
    page's "Last updated" footer is US Eastern (EDT/EST, auto-detected via
-   `zoneinfo` -- not a hardcoded label), not UTC. `docs/` is served live by
-   GitHub Pages at https://babruzi.github.io/hockey-web/.
+   `zoneinfo` -- not a hardcoded label), not UTC. The page is sized at
+   `max-width: 1400px` so the full table fits on a typical desktop browser
+   without horizontal scrolling; the horizontal-scroll fallback (for
+   anything narrower, e.g. a phone) only engages below that width, and the
+   table header freezes in place while scrolling down the page
+   (`position: sticky`) everywhere the scroll fallback isn't active.
+   `docs/` is served live by GitHub Pages at
+   https://babruzi.github.io/hockey-web/.
 
 11. Regenerate the policy reference page (every metric's weight, normalization
     method, and description in one place — handy while tuning weights):
