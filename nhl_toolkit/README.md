@@ -170,7 +170,11 @@ run.
    for/against (`goals_for_avg`/`goals_against_avg`) and compares it to the
    market's own total. All three can (and often do) disagree on the same
    game -- see `puck_line_recommendation()`/`total_recommendation()` in
-   `report.py`. Every
+   `report.py`. The page header only shows the date and (on today's page)
+   the dropdown -- the full explanation of how to read the table lives in a
+   `<p class="legend">` below the table instead, right before the
+   disclaimer/timestamp footer, so the reader gets straight to the table
+   first. Every
    page's "Last updated" footer is US Eastern (EDT/EST, auto-detected via
    `zoneinfo` -- not a hardcoded label), not UTC. The page is sized at
    `max-width: 1400px` so the full table fits on a typical desktop browser
