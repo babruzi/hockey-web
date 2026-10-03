@@ -88,6 +88,7 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: 
 .edge { font-variant-numeric: tabular-nums; }
 .notes { color: var(--muted); font-size: 0.85rem; }
 .pick { color: var(--pick); }
+.strategy { color: var(--accent); }
 .positive { color: var(--pick); font-variant-numeric: tabular-nums; }
 .negative { color: var(--negative); font-variant-numeric: tabular-nums; }
 a { color: var(--accent); }
@@ -125,7 +126,7 @@ a { color: var(--accent); }
     <th class="col-ou">Over/Under</th><th class="col-ml">Money Line</th>
     
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
-    <th>Team ATS Record</th><th>Notes</th>
+    <th>Team ATS Record</th><th>Strategy</th><th>Notes</th>
 </tr>
 </thead>
 <tbody>
@@ -141,6 +142,7 @@ a { color: var(--accent); }
             <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
             <td class="edge" rowspan="2">0-1 (0.0%)</td>
+            <td rowspan="2"><strong class="strategy">NJD</strong> <span class="notes">(PL + ML)</span></td>
             <td class="notes" rowspan="2">Home opener; PHI on a back-to-back</td>
         </tr>
         <tr class="game-odd row-home">
@@ -162,6 +164,7 @@ a { color: var(--accent); }
             <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
             <td class="edge" rowspan="2">1-0 (100.0%)</td>
+            <td rowspan="2"><strong class="strategy">UTA</strong> <span class="notes">(PL + ML)</span></td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
         <tr class="game-even row-home">
@@ -183,6 +186,7 @@ a { color: var(--accent); }
             <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
             <td class="edge" rowspan="2">1-0 (100.0%)</td>
+            <td rowspan="2"><strong class="strategy">SJS</strong> <span class="notes">(PL + ML)</span></td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
         <tr class="game-odd row-home">
@@ -204,6 +208,7 @@ a { color: var(--accent); }
             <td rowspan="2"><span class="negative">Loss</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
             <td class="edge" rowspan="2">0-1 (0.0%)</td>
+            <td rowspan="2"><strong class="strategy">NYR</strong> <span class="notes">(PL only)</span></td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
         <tr class="game-even row-home">
@@ -225,6 +230,7 @@ a { color: var(--accent); }
             <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
             <td class="edge" rowspan="2">1-0 (100.0%)</td>
+            <td rowspan="2"><strong class="strategy">CBJ</strong> <span class="notes">(PL + ML)</span></td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
         <tr class="game-odd row-home">
@@ -246,6 +252,7 @@ a { color: var(--accent); }
             <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
             <td class="edge" rowspan="2">1-0 (100.0%)</td>
+            <td rowspan="2"><strong class="strategy">MIN</strong> <span class="notes">(PL + ML)</span></td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
         <tr class="game-even row-home">
@@ -267,6 +274,7 @@ a { color: var(--accent); }
             <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
             <td class="edge" rowspan="2">1-1 (50.0%)</td>
+            <td rowspan="2"><strong class="strategy">VAN</strong> <span class="notes">(PL only)</span></td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
         <tr class="game-odd row-home">
@@ -288,6 +296,7 @@ a { color: var(--accent); }
             <td rowspan="2"><span class="negative">Loss</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
             <td class="edge" rowspan="2">0-1 (0.0%)</td>
+            <td rowspan="2"><strong class="strategy">SEA</strong> <span class="notes">(PL only)</span></td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
         <tr class="game-even row-home">
@@ -307,6 +316,8 @@ a { color: var(--accent); }
 <tr><td>Money Line</td><td><span class="positive">+23.47</span></td></tr>
 <tr><td>Puck Line</td><td><span class="positive">+25.34</span></td></tr>
 <tr><td>Over/Under</td><td><span class="negative">-8.49</span></td></tr>
+<tr><td><strong class="strategy">Strategy</strong> (PL + ML when they agree)</td>
+    <td><span class="positive">+64.22</span> (8 of 8 games, 13 bets)</td></tr>
 </tbody>
 </table>
 <p class="legend">
@@ -323,13 +334,18 @@ total) and so can recommend a different side than Money Line does &middot; each 
 is followed in parens by the market's devigged implied probability for that side
 &middot; ML Result/Vs. Puck Line columns grade the pick once the
 game is final &middot; Team ATS Record is the picked team's all-time record against the
-puck line across every graded pick so far
+puck line across every graded pick so far &middot; <strong class="strategy">Strategy</strong>
+is a simple, data-driven rule derived from the first few weeks of graded picks: always bet
+Puck Line when it has a recommendation, and only bet Money Line too on games where it agrees
+with the Puck Line pick (Over/Under is never recommended -- it's been a net loser across the
+sample so far) &middot; this is a small-sample read, not a guaranteed system, and may get
+revised as more games get graded
 </p>
 <p class="disclaimer">
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 03, 2026 at 11:32 AM EDT</p>
+<p class="updated">Last updated October 03, 2026 at 02:07 PM EDT</p>
 
 </body>
 </html>
