@@ -23,17 +23,27 @@ a game with no ODDS_API_KEY today but a quote from an earlier run still
 gets a value) -- the rest of the pipeline runs regardless either way
 (picks just won't have a spread/market_edge for games with no quotes).
 
+Finally, it commits and pushes any changed files under docs/ (the only
+git-tracked output this pipeline produces -- nhl.db/reports/logs are all
+gitignored) to origin/main, so the published GitHub Pages site stays in
+sync without a manual commit after every run. Pass --no-push to skip
+this (e.g. while testing a change locally before it's ready to publish).
+
 Usage (from nhl_toolkit/):
     python bin/run_daily.py --date 2026-10-05
     python bin/run_daily.py                      # defaults to today
+    python bin/run_daily.py --no-push             # skip the git push step
 """
 
 import argparse
 import os
+import subprocess
 import sys
 from datetime import date as date_cls
 from datetime import timedelta
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
 
@@ -51,13 +61,51 @@ from score import score_date  # noqa: E402
 from travel_metrics import rebuild_schedule_context  # noqa: E402
 
 
-def run_daily(target_date: str, lookback_days: int = 3) -> None:
+def push_to_github(target_date: str) -> None:
+    """Commit and push any changed files under docs/ to origin/main, if there are any.
+
+    Scoped to docs/ -- the only git-tracked output this pipeline produces --
+    so this never sweeps in unrelated, in-progress source edits sitting
+    uncommitted elsewhere in the repo. A git failure here (no network, a
+    stale local git identity, a push conflict) is printed as a warning
+    rather than raised, since the pipeline's actual work (the local
+    database and generated reports) already succeeded regardless of
+    whether publishing them does.
+
+    :param target_date: The date this run was for, used in the commit message.
+    """
+    status = subprocess.run(
+        ["git", "status", "--porcelain", "--", "docs"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    if not status.stdout.strip():
+        print("== No docs/ changes to push ==")
+        return
+
+    print("== Committing and pushing docs/ changes ==")
+    try:
+        subprocess.run(["git", "add", "docs"], cwd=REPO_ROOT, check=True)
+        subprocess.run(
+            ["git", "commit", "-m", f"Daily picks update for {target_date}"],
+            cwd=REPO_ROOT,
+            check=True,
+        )
+        subprocess.run(["git", "push", "origin", "main"], cwd=REPO_ROOT, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"WARNING: git push failed ({e}); local data/reports are still up to date.")
+
+
+def run_daily(target_date: str, lookback_days: int = 3, push: bool = True) -> None:
     """Run every pipeline stage needed to produce a full report for one date.
 
     :param target_date: Date to score and report on, as YYYY-MM-DD.
     :param lookback_days: How many days before target_date to also re-fetch,
         so games that finished in the last few days get their final score
         upserted even though they're no longer "today."
+    :param push: Whether to commit and push docs/ changes to GitHub at the end.
     """
     init_db()
 
@@ -103,6 +151,11 @@ def run_daily(target_date: str, lookback_days: int = 3) -> None:
     print("== Updating policy page ==")
     build_policy_page()
 
+    if push:
+        push_to_github(target_date)
+    else:
+        print("== Skipping git push (--no-push) ==")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the full daily NHL picks pipeline")
@@ -113,5 +166,10 @@ if __name__ == "__main__":
         default=3,
         help="Days before --date to also re-fetch, to catch up recently-final scores",
     )
+    parser.add_argument(
+        "--no-push",
+        action="store_true",
+        help="Skip committing/pushing docs/ changes to GitHub at the end",
+    )
     args = parser.parse_args()
-    run_daily(args.date, args.lookback_days)
+    run_daily(args.date, args.lookback_days, push=not args.no_push)

@@ -23,7 +23,11 @@ python bin/run_daily.py --date 2026-10-01
 ```
 
 Runs every step below in order for that date and writes the report (console
-table, CSV, and an HTML page under `../docs/reports/`). Safe to re-run.
+table, CSV, and an HTML page under `../docs/reports/`). Safe to re-run. As
+its last step it also commits and pushes any changed `../docs/` files to
+`origin/main`, so the published site stays in sync automatically -- pass
+`--no-push` to skip this (e.g. while testing a change locally before it's
+ready to publish).
 
 `nhl.db` is meant to keep growing all season — nothing here resets it, `games`
 only gets upserted into, and `schedule_context`/`metric_values` are rebuilt
@@ -252,7 +256,7 @@ old spread-based version) to a real number (once reworked onto the
 moneyline), without touching `backtest.py` either time.
 
 ## Files
-- `bin/run_daily.py` — runs every step below (including the policy page) in order for one date; the normal way to run this toolkit
+- `bin/run_daily.py` — runs every step below (including the policy page) in order for one date, then commits/pushes any changed `docs/` files to GitHub (`--no-push` to skip); the normal way to run this toolkit
 - `bin/run_daily_cron.sh` — cron-safe wrapper around `bin/run_daily.py`
 - `lib/arenas.py` — static reference table: 32 teams, arena lat/lon, IANA timezone, and a full-team-name → abbrev lookup for odds feeds
 - `lib/db.py` — SQLite schema (`games`, `schedule_context`, `odds`, `metrics`, `metric_values`, `policy_weights`, `daily_scores`, `picks_log`)
