@@ -71,6 +71,18 @@ tr:nth-child(even) td { background: var(--row-alt); }
    rule above and would silently lose to it. */
 tr.game-even td { background: var(--row-alt); }
 tr.game-odd td { background: var(--bg); }
+/* Thicker top/bottom edge on each game's own pair of rows -- "row-away" is
+   always the first row of a game and "row-home" the second, so this frames
+   each two-row game as one block while the border *between* the away and
+   home row of the same game stays the default 1px. Collapsed borders pick
+   the wider of two conflicting widths, so this also thickens the line
+   shared with the previous/next game's own edge, reinforcing the frame. */
+tr.row-away td { border-top: 2px solid var(--border); }
+tr.row-home td { border-bottom: 2px solid var(--border); }
+/* Specificity note: td.home-cell alone (0,1,1) loses to tr.game-even td
+   (0,1,2) above, same gotcha as the game-even/game-odd rules -- qualifying
+   with tr.row-home (0,2,2) wins outright regardless of source order. */
+tr.row-home td.home-cell { background: color-mix(in srgb, var(--accent) 14%, var(--bg)); }
 th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
 .rank { color: var(--muted); width: 2rem; }
 .edge { font-variant-numeric: tabular-nums; }
@@ -116,7 +128,7 @@ a { color: var(--accent); }
 </tr>
 </thead>
 <tbody>
-        <tr class="game-odd">
+        <tr class="game-odd row-away">
             <td class="rank" rowspan="2">1</td>
             <td>PHI</td>
             <td>+1.5 -185 (62.2%)</td>
@@ -130,14 +142,14 @@ a { color: var(--accent); }
             <td class="edge" rowspan="2">0-1 (0.0%)</td>
             <td class="notes" rowspan="2">Home opener; PHI on a back-to-back</td>
         </tr>
-        <tr class="game-odd">
-            <td><strong class="pick">NJD</strong></td>
+        <tr class="game-odd row-home">
+            <td class="home-cell"><strong class="pick">NJD</strong></td>
             <td><strong class="pick">-1.5 +154 (37.8%)</strong></td>
             <td>U 5.5 +100 (47.8%)</td>
             <td><strong class="pick">-170 (60.4%)</strong></td>
         </tr>
 
-        <tr class="game-even">
+        <tr class="game-even row-away">
             <td class="rank" rowspan="2">2</td>
             <td>CHI</td>
             <td>+1.5 -135 (55.1%)</td>
@@ -151,14 +163,14 @@ a { color: var(--accent); }
             <td class="edge" rowspan="2">1-0 (100.0%)</td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
-        <tr class="game-even">
-            <td><strong class="pick">UTA</strong></td>
+        <tr class="game-even row-home">
+            <td class="home-cell"><strong class="pick">UTA</strong></td>
             <td><strong class="pick">-1.5 +114 (44.9%)</strong></td>
             <td><strong class="pick">U 6.5 -135 (55.1%)</strong></td>
             <td><strong class="pick">-218 (65.7%)</strong></td>
         </tr>
 
-        <tr class="game-odd">
+        <tr class="game-odd row-away">
             <td class="rank" rowspan="2">3</td>
             <td>FLA</td>
             <td>-1.5 +164 (36.3%)</td>
@@ -172,14 +184,14 @@ a { color: var(--accent); }
             <td class="edge" rowspan="2">1-0 (100.0%)</td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
-        <tr class="game-odd">
-            <td><strong class="pick">SJS</strong></td>
+        <tr class="game-odd row-home">
+            <td class="home-cell"><strong class="pick">SJS</strong></td>
             <td><strong class="pick">+1.5 -198 (63.7%)</strong></td>
             <td><strong class="pick">U 6.5 -115 (51.1%)</strong></td>
             <td><strong class="pick">+124 (42.8%)</strong></td>
         </tr>
 
-        <tr class="game-even">
+        <tr class="game-even row-away">
             <td class="rank" rowspan="2">4</td>
             <td><strong class="pick">TBL</strong></td>
             <td>-1.5 +180 (34.3%)</td>
@@ -193,14 +205,14 @@ a { color: var(--accent); }
             <td class="edge" rowspan="2">0-1 (0.0%)</td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
-        <tr class="game-even">
-            <td>NYR</td>
+        <tr class="game-even row-home">
+            <td class="home-cell">NYR</td>
             <td><strong class="pick">+1.5 -218 (65.7%)</strong></td>
             <td><strong class="pick">U 5.5 +105 (46.8%)</strong></td>
             <td>+124 (42.8%)</td>
         </tr>
 
-        <tr class="game-odd">
+        <tr class="game-odd row-away">
             <td class="rank" rowspan="2">5</td>
             <td>BUF</td>
             <td>-1.5 +220 (30.0%)</td>
@@ -214,14 +226,14 @@ a { color: var(--accent); }
             <td class="edge" rowspan="2">1-0 (100.0%)</td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
-        <tr class="game-odd">
-            <td><strong class="pick">CBJ</strong></td>
+        <tr class="game-odd row-home">
+            <td class="home-cell"><strong class="pick">CBJ</strong></td>
             <td><strong class="pick">+1.5 -270 (70.0%)</strong></td>
             <td><strong class="pick">U 6.5 -135 (55.1%)</strong></td>
             <td><strong class="pick">-108 (49.6%)</strong></td>
         </tr>
 
-        <tr class="game-even">
+        <tr class="game-even row-away">
             <td class="rank" rowspan="2">6</td>
             <td><strong class="pick">MIN</strong></td>
             <td><strong class="pick">-1.5 +170 (35.5%)</strong></td>
@@ -235,14 +247,14 @@ a { color: var(--accent); }
             <td class="edge" rowspan="2">1-0 (100.0%)</td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
-        <tr class="game-even">
-            <td>NSH</td>
+        <tr class="game-even row-home">
+            <td class="home-cell">NSH</td>
             <td>+1.5 -205 (64.5%)</td>
             <td><strong class="pick">U 6.5 -135 (55.1%)</strong></td>
             <td>+124 (42.8%)</td>
         </tr>
 
-        <tr class="game-odd">
+        <tr class="game-odd row-away">
             <td class="rank" rowspan="2">7</td>
             <td><strong class="pick">EDM</strong></td>
             <td>-1.5 +110 (45.7%)</td>
@@ -256,14 +268,14 @@ a { color: var(--accent); }
             <td class="edge" rowspan="2">1-1 (50.0%)</td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
-        <tr class="game-odd">
-            <td>VAN</td>
+        <tr class="game-odd row-home">
+            <td class="home-cell">VAN</td>
             <td><strong class="pick">+1.5 -130 (54.3%)</strong></td>
             <td>U 6.5 -105 (48.9%)</td>
             <td>+180 (34.3%)</td>
         </tr>
 
-        <tr class="game-even">
+        <tr class="game-even row-away">
             <td class="rank" rowspan="2">8</td>
             <td>SEA</td>
             <td><strong class="pick">+1.5 -278 (70.5%)</strong></td>
@@ -277,8 +289,8 @@ a { color: var(--accent); }
             <td class="edge" rowspan="2">0-1 (0.0%)</td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
-        <tr class="game-even">
-            <td><strong class="pick">CGY</strong></td>
+        <tr class="game-even row-home">
+            <td class="home-cell"><strong class="pick">CGY</strong></td>
             <td>-1.5 +225 (29.5%)</td>
             <td>U 5.5 +105 (46.8%)</td>
             <td><strong class="pick">-112 (50.4%)</strong></td>
@@ -298,9 +310,10 @@ a { color: var(--accent); }
 </table>
 <p class="legend">
 Every game on the slate, ranked by edge &middot; generated by the NHL paper-betting
-toolkit &middot; away team's row on top, home team's row below, same layout as a
-sportsbook board (Score column is also Away&ndash;Home, with whether the total went
-Over/Under in parens) &middot; the
+toolkit &middot; away team's row on top, home team's row below (home team's name is
+lightly shaded) &middot; each game's two rows are boxed off with a thicker border,
+same layout as a sportsbook board (Score column is also Away&ndash;Home, with whether
+the total went Over/Under in parens) &middot; the
 <strong class="pick">green, bolded</strong> side in each column is that column's own
 recommendation &middot; Money Line is the overall pick (policy.yaml's weighted
 total_score) &middot; Puck Line and Over/Under are each a separate, simpler projection
@@ -315,7 +328,7 @@ puck line across every graded pick so far
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 03, 2026 at 10:34 AM EDT</p>
+<p class="updated">Last updated October 03, 2026 at 10:58 AM EDT</p>
 
 </body>
 </html>
