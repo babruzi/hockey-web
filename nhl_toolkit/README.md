@@ -265,6 +265,28 @@ that's exactly how `market_edge`'s correlation went from `n/a` (under the
 old spread-based version) to a real number (once reworked onto the
 moneyline), without touching `backtest.py` either time.
 
+### Comparing policies: which one would have done best overall?
+
+```bash
+python lib/policy_backtest.py
+```
+
+`backtest.py`'s `policy_performance()` only shows how each policy did
+during the (different, non-overlapping) stretch of the season it was
+actually live for -- not a fair comparison, since a version that happened
+to be live during a lucky week looks artificially strong. This replays
+every completed game's scoring under *every* policy_version ever synced
+into `policy_weights`, so every policy gets judged against the exact
+same full slate of history. Entirely a simulation: it reuses `score.py`'s
+own `compute_scores()` for the scoring math (so a replayed pick is
+computed exactly the way a real one would be) but never writes to
+`daily_scores`/`picks_log`, which represent what was actually live and
+bet on. Scales to new policies automatically -- every policy_version
+ever synced into `policy_weights` (any time `score.py` runs after a
+`policy.yaml` change) is picked up the next time this runs, nothing to
+register. Prints each policy's simulated record/ROI, ranked by ROI% so
+the best performer so far is easy to spot.
+
 ## Files
 - `bin/run_daily.py` — runs every step below (including the policy page) in order for one date, then commits/pushes any changed `docs/` files to GitHub (`--no-push` to skip); the normal way to run this toolkit
 - `bin/run_daily_cron.sh` — cron-safe wrapper around `bin/run_daily.py`
@@ -282,6 +304,7 @@ moneyline), without touching `backtest.py` either time.
 - `lib/report.py` — ranks every game by score gap, prints/writes CSV + HTML, and logs picks
 - `lib/policy_page.py` — renders `docs/reports/policies/policy.html`, a reference page of every metric's weight/normalize/description
 - `lib/backtest.py` — standalone diagnostic: correlates each metric against actual goal margin, prints picks_log's real record per policy_version
+- `lib/policy_backtest.py` — standalone diagnostic: replays every completed game under every known policy_version to compare them fairly on the same history, instead of each only being judged on the stretch it was actually live for
 - `lib/record_page.py` — renders `docs/reports/record.html`, the published overall straight-up/ATS record and moneyline ROI (reuses `backtest.py`'s numbers, not its own analysis)
 
 ## Next up (Phase 3+)

@@ -100,16 +100,24 @@ def normalize_values(values: list, method: str) -> list:
     raise ValueError(f"Unknown normalize method: {method}")
 
 
-def compute_daily_scores(conn: sqlite3.Connection, target_date: str, policy: dict) -> int:
-    """Score every team in every game on a date and write daily_scores rows.
+def compute_scores(
+    conn: sqlite3.Connection, target_date: str, weight_rows: list[tuple]
+) -> dict[tuple, float]:
+    """Compute each team's weighted total_score for one date, without persisting.
+
+    Pure scoring math, split out from :func:`compute_daily_scores` so
+    `lib/policy_backtest.py` can replay a date under any policy_version's
+    weights (not just whichever was actually live that day) using the exact
+    same logic real scoring uses, instead of a parallel reimplementation
+    that could silently drift from it.
 
     :param conn: Open connection to the schedule database.
     :param target_date: Date to score, as YYYY-MM-DD.
-    :param policy: Parsed policy config from :func:`load_policy`.
-    :returns: Number of (game, team) rows scored.
+    :param weight_rows: (metric_name, metric_id, weight, normalize) rows,
+        e.g. from `policy_weights` for one policy_version.
+    :returns: {(game_id, team_id): total_score} for every team with at
+        least one metric_values row on this date.
     """
-    policy_version = sync_policy_weights(conn, policy)
-
     game_ids = [
         row[0]
         for row in conn.execute(
@@ -117,17 +125,8 @@ def compute_daily_scores(conn: sqlite3.Connection, target_date: str, policy: dic
         ).fetchall()
     ]
     if not game_ids:
-        return 0
+        return {}
     game_placeholders = ",".join("?" * len(game_ids))
-
-    weight_rows = conn.execute(
-        """
-        SELECT m.name, m.metric_id, pw.weight, pw.normalize
-        FROM policy_weights pw JOIN metrics m ON m.metric_id = pw.metric_id
-        WHERE pw.policy_version = ?
-        """,
-        (policy_version,),
-    ).fetchall()
 
     team_rows = conn.execute(
         f"""
@@ -137,7 +136,7 @@ def compute_daily_scores(conn: sqlite3.Connection, target_date: str, policy: dic
         game_ids,
     ).fetchall()
     if not team_rows:
-        return 0
+        return {}
     scores = {key: 0.0 for key in team_rows}
 
     for _metric_name, metric_id, weight, normalize in weight_rows:
@@ -154,6 +153,32 @@ def compute_daily_scores(conn: sqlite3.Connection, target_date: str, policy: dic
         for key, norm_value in zip(keys, normalized):
             if norm_value is not None:
                 scores[key] += norm_value * weight
+
+    return scores
+
+
+def compute_daily_scores(conn: sqlite3.Connection, target_date: str, policy: dict) -> int:
+    """Score every team in every game on a date and write daily_scores rows.
+
+    :param conn: Open connection to the schedule database.
+    :param target_date: Date to score, as YYYY-MM-DD.
+    :param policy: Parsed policy config from :func:`load_policy`.
+    :returns: Number of (game, team) rows scored.
+    """
+    policy_version = sync_policy_weights(conn, policy)
+
+    weight_rows = conn.execute(
+        """
+        SELECT m.name, m.metric_id, pw.weight, pw.normalize
+        FROM policy_weights pw JOIN metrics m ON m.metric_id = pw.metric_id
+        WHERE pw.policy_version = ?
+        """,
+        (policy_version,),
+    ).fetchall()
+
+    scores = compute_scores(conn, target_date, weight_rows)
+    if not scores:
+        return 0
 
     ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
 
