@@ -105,20 +105,12 @@ a { color: var(--accent); }
 <h1>5 Picks</h1>
 <p class="subtitle">October 02, 2026</p>
 
-<div class="controls">
-<label for="odds-type">Show "Est. Winnings" using:</label>
-<select id="odds-type" onchange="updateWinnings()">
-<option value="ml" selected>Money Line</option>
-<option value="pl">Puck Line</option>
-</select>
-<span class="notes">(payout on a $10 bet on the pick, if it wins)</span>
-</div>
 <div class="table-scroll">
 <table>
 <thead>
 <tr>
     <th>#</th><th>Team</th><th>Puck Line</th><th>Over/Under</th><th>Money Line</th>
-    <th>Est. Winnings</th>
+    
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
     <th>Team ATS Record</th><th>Notes</th>
 </tr>
@@ -130,12 +122,12 @@ a { color: var(--accent); }
             <td><strong class="pick">+1.5 -154 (57.2%)</strong></td>
             <td>O 7.5 +140 (39.3%)</td>
             <td>+260 (26.2%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-360" data-pl="120">$2.78</td>
+            
             <td class="edge" rowspan="2">0.628</td>
-            <td class="edge" rowspan="2">2&ndash;3 <span class="notes">(Under)</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">4&ndash;3 <span class="notes">(Under)</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td class="edge" rowspan="2">0-1 (0.0%)</td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
         <tr class="game-odd">
@@ -151,10 +143,10 @@ a { color: var(--accent); }
             <td><span class="notes">n/a</span></td>
             <td><span class="notes">n/a</span></td>
             <td><span class="notes">n/a</span></td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="" data-pl="">&mdash;</td>
+            
             <td class="edge" rowspan="2">0.454</td>
-            <td class="edge" rowspan="2">1&ndash;0</td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">4&ndash;0</td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
             <td rowspan="2"><span class="notes">n/a</span></td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td class="notes" rowspan="2">Home opener</td>
@@ -172,12 +164,12 @@ a { color: var(--accent); }
             <td>+1.5 -142 (56.3%)</td>
             <td><strong class="pick">O 6.5 -130 (54.3%)</strong></td>
             <td>+180 (34.3%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-218" data-pl="120">$4.59</td>
+            
             <td class="edge" rowspan="2">0.368</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2">1-0 (100.0%)</td>
+            <td class="edge" rowspan="2">4&ndash;3 <span class="notes">(Over)</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td class="edge" rowspan="2">1-1 (50.0%)</td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
         <tr class="game-odd">
@@ -193,7 +185,7 @@ a { color: var(--accent); }
             <td><strong class="pick">+0.2 -81 (38.2%)</strong></td>
             <td><strong class="pick">O 5.5 -135 (55.1%)</strong></td>
             <td>-1600 (89.4%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="800" data-pl="38">$80.00</td>
+            
             <td class="edge" rowspan="2">0.123</td>
             <td class="edge" rowspan="2">2&ndash;0 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
@@ -214,12 +206,12 @@ a { color: var(--accent); }
             <td>-3.5 +550 (14.6%)</td>
             <td>O 7.5 +240 (27.7%)</td>
             <td><strong class="pick">-1903 (86.0%)</strong></td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-1903" data-pl="550">$0.53</td>
+            
             <td class="edge" rowspan="2">0.105</td>
             <td class="edge" rowspan="2">5&ndash;2 <span class="notes">(Under)</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td class="edge" rowspan="2">0-1 (0.0%)</td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
         <tr class="game-odd">
@@ -236,9 +228,9 @@ a { color: var(--accent); }
 <table>
 <thead><tr><th></th><th>Total P&amp;L ($10/pick)</th></tr></thead>
 <tbody>
-<tr><td>Money Line</td><td><span class="negative">-10.00</span> (1 of 5 graded)</td></tr>
-<tr><td>Puck Line</td><td><span class="positive">+12.35</span> (1 of 4 graded)</td></tr>
-<tr><td>Over/Under</td><td><span class="negative">-10.00</span> (1 of 4 graded)</td></tr>
+<tr><td>Money Line</td><td><span class="negative">-29.47</span> (4 of 5 graded)</td></tr>
+<tr><td>Puck Line</td><td><span class="positive">+9.93</span></td></tr>
+<tr><td>Over/Under</td><td><span class="positive">+6.28</span></td></tr>
 </tbody>
 </table>
 <p class="legend">
@@ -260,25 +252,7 @@ puck line across every graded pick so far
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 02, 2026 at 10:00 PM EDT</p>
+<p class="updated">Last updated October 03, 2026 at 10:34 AM EDT</p>
 
-<script>
-function updateWinnings() {
-    var marketType = document.getElementById("odds-type").value;
-    var cells = document.querySelectorAll(".winnings-cell");
-    cells.forEach(function (cell) {
-        var attr = marketType === "ml" ? "data-ml" : "data-pl";
-        var raw = cell.getAttribute(attr);
-        if (!raw) {
-            cell.textContent = "\u2014";
-            return;
-        }
-        var price = parseInt(raw, 10);
-        var stake = 10.0;
-        var payout = price > 0 ? (stake * price) / 100 : (stake * 100) / Math.abs(price);
-        cell.textContent = "$" + payout.toFixed(2);
-    });
-}
-</script>
 </body>
 </html>
