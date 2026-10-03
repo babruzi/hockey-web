@@ -209,7 +209,7 @@ def devig_pair(odds_a: Optional[int], odds_b: Optional[int]) -> tuple:
 def potential_payout(price: Optional[int], stake: float) -> Optional[float]:
     """Profit on a $stake bet at American odds `price`, if it wins.
 
-    Not the same thing as grade.py's moneyline_profit(), which needs to know
+    Not the same thing as grade.py's odds_profit(), which needs to know
     whether the bet actually won -- this is the forward-looking "if this
     pick hits, how much do I win" question for an *ungraded* pick, so there's
     no loss case here.
@@ -450,11 +450,41 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
         game["scores"][team_id] = total_score
 
     grading_by_game = {
-        game_id: (result, straight_up_result)
-        for game_id, result, straight_up_result in conn.execute(
-            "SELECT game_id, result, straight_up_result FROM picks_log WHERE date = ?",
+        game_id: {
+            "result": result,
+            "straight_up_result": straight_up_result,
+            "profit_10": profit_10,
+            "puck_line_result": puck_line_result,
+            "puck_line_profit_10": puck_line_profit_10,
+            "total_result": total_result,
+            "total_profit_10": total_profit_10,
+        }
+        for (
+            game_id,
+            result,
+            straight_up_result,
+            profit_10,
+            puck_line_result,
+            puck_line_profit_10,
+            total_result,
+            total_profit_10,
+        ) in conn.execute(
+            """
+            SELECT game_id, result, straight_up_result, profit_10,
+                   puck_line_result, puck_line_profit_10, total_result, total_profit_10
+            FROM picks_log WHERE date = ?
+            """,
             (target_date,),
         ).fetchall()
+    }
+    empty_grading: dict = {
+        "result": None,
+        "straight_up_result": None,
+        "profit_10": None,
+        "puck_line_result": None,
+        "puck_line_profit_10": None,
+        "total_result": None,
+        "total_profit_10": None,
     }
     ats_records = team_ats_records(conn)
 
@@ -467,7 +497,8 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
 
         pick_team = game["home_team"] if home_score >= away_score else game["away_team"]
         predicted_edge = abs(home_score - away_score)
-        result, straight_up_result = grading_by_game.get(game_id, (None, None))
+        grading = grading_by_game.get(game_id, empty_grading)
+        result, straight_up_result = grading["result"], grading["straight_up_result"]
 
         home_moneyline = latest_consensus_moneyline(conn, game_id, game["home_team"])
         away_moneyline = latest_consensus_moneyline(conn, game_id, game["away_team"])
@@ -475,11 +506,20 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
 
         home_spread = latest_consensus_spread(conn, game_id, game["home_team"])
         away_spread = latest_consensus_spread(conn, game_id, game["away_team"])
-        home_spread_price = _dk_or_consensus(
+        home_spread_price_raw = _dk_or_consensus(
             conn, game_id, game["home_team"], "home_spread_price", "away_spread_price"
         )
-        away_spread_price = _dk_or_consensus(
+        away_spread_price_raw = _dk_or_consensus(
             conn, game_id, game["away_team"], "home_spread_price", "away_spread_price"
+        )
+        # American odds are always whole numbers; _dk_or_consensus's cross-book
+        # average fallback (DraftKings-missing games only) can return a float,
+        # same as latest_consensus_moneyline() already rounds for the same reason.
+        home_spread_price = (
+            round(home_spread_price_raw) if home_spread_price_raw is not None else None
+        )
+        away_spread_price = (
+            round(away_spread_price_raw) if away_spread_price_raw is not None else None
         )
         home_cover_pct, away_cover_pct = devig_pair(home_spread_price, away_spread_price)
         pick_spread_price = (
@@ -505,6 +545,15 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
             home_form.get("goals_against_avg"),
             away_form.get("goals_for_avg"),
             away_form.get("goals_against_avg"),
+        )
+        if puck_line_pick == game["home_team"]:
+            puck_line_spread_at_pick, puck_line_price_at_pick = home_spread, home_spread_price
+        elif puck_line_pick == game["away_team"]:
+            puck_line_spread_at_pick, puck_line_price_at_pick = away_spread, away_spread_price
+        else:
+            puck_line_spread_at_pick, puck_line_price_at_pick = None, None
+        total_price_at_pick = (
+            over_odds if total_pick == "Over" else (under_odds if total_pick == "Under" else None)
         )
 
         picks.append(
@@ -534,12 +583,21 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
                 "over_pct": over_pct,
                 "under_pct": under_pct,
                 "puck_line_pick": puck_line_pick,
+                "puck_line_spread_at_pick": puck_line_spread_at_pick,
+                "puck_line_price_at_pick": puck_line_price_at_pick,
                 "total_pick": total_pick,
+                "total_at_pick": total,
+                "total_price_at_pick": total_price_at_pick,
                 "notes": build_game_notes(conn, game_id, game["home_team"], game["game_date"]),
                 "final_home_score": game["final_home_score"],
                 "final_away_score": game["final_away_score"],
                 "result": result,
                 "straight_up_result": straight_up_result,
+                "profit_10": grading["profit_10"],
+                "puck_line_result": grading["puck_line_result"],
+                "puck_line_profit_10": grading["puck_line_profit_10"],
+                "total_result": grading["total_result"],
+                "total_profit_10": grading["total_profit_10"],
                 "pick_ats_record": ats_records.get(pick_team),
             }
         )
@@ -852,6 +910,37 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 
     rows = "\n".join(render_game_rows(i, pick) for i, pick in enumerate(picks, start=1))
 
+    def format_day_total(applicable: int, profit_key: str) -> str:
+        profits = [pick[profit_key] for pick in picks if pick[profit_key] is not None]
+        if not profits:
+            if applicable == 0:
+                return '<span class="notes">No recommendation today</span>'
+            if not any(pick["straight_up_result"] is not None for pick in picks):
+                return '<span class="notes">Not yet graded</span>'
+            # Games are final, but no price was on record for any of this
+            # bet type's recommendations (e.g. puck-line prices weren't
+            # captured until after this date) -- distinct from "pending."
+            return '<span class="notes">No odds on record</span>'
+        total = sum(profits)
+        css_class = "positive" if total >= 0 else "negative"
+        note = f" ({len(profits)} of {applicable} graded)" if len(profits) < applicable else ""
+        return f'<span class="{css_class}">{total:+.2f}</span>{note}'
+
+    day_totals_html = f"""
+<h2>If You Bet Every Pick</h2>
+<table>
+<thead><tr><th></th><th>Total P&amp;L (${STAKE:.0f}/pick)</th></tr></thead>
+<tbody>
+<tr><td>Money Line</td><td>{format_day_total(len(picks), "profit_10")}</td></tr>
+<tr><td>Puck Line</td><td>{
+        format_day_total(sum(1 for pick in picks if pick["puck_line_pick"]), "puck_line_profit_10")
+    }</td></tr>
+<tr><td>Over/Under</td><td>{
+        format_day_total(sum(1 for pick in picks if pick["total_pick"]), "total_profit_10")
+    }</td></tr>
+</tbody>
+</table>"""
+
     winnings_header = "<th>Est. Winnings</th>" if is_today else ""
     controls_html = (
         f"""
@@ -919,6 +1008,7 @@ function updateWinnings() {
 </tbody>
 </table>
 </div>
+{day_totals_html}
 <p class="legend">
 Every game on the slate, ranked by edge &middot; generated by the NHL paper-betting
 toolkit &middot; away team's row on top, home team's row below, same layout as a
@@ -1021,8 +1111,11 @@ def log_picks(conn: sqlite3.Connection, target_date: str, picks: list[dict]) -> 
     their published HTML with final scores -- a plain delete-then-insert would
     either wipe out recorded `result`/`straight_up_result`/`graded_at` values,
     or (since the old delete only matched ungraded rows) insert a duplicate
-    row for an already-graded game. The upsert updates only the
-    pick/edge/spread/moneyline columns and leaves grading columns untouched. Ungraded
+    row for an already-graded game. The upsert updates only the pick-time
+    columns (pick/edge/spread/moneyline, and the same for the puck line and
+    total recommendations) and leaves grading columns (result,
+    straight_up_result, profit_10, puck_line_result, puck_line_profit_10,
+    total_result, total_profit_10, graded_at) untouched. Ungraded
     rows for games no longer in `picks` (e.g. a postponed game) are
     still pruned, same as before.
 
@@ -1042,13 +1135,21 @@ def log_picks(conn: sqlite3.Connection, target_date: str, picks: list[dict]) -> 
     conn.executemany(
         """
         INSERT INTO picks_log
-            (date, game_id, pick, predicted_edge, spread_at_pick, moneyline_at_pick)
-        VALUES (?, ?, ?, ?, ?, ?)
+            (date, game_id, pick, predicted_edge, spread_at_pick, moneyline_at_pick,
+             puck_line_pick, puck_line_spread_at_pick, puck_line_price_at_pick,
+             total_pick, total_at_pick, total_price_at_pick)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(date, game_id) DO UPDATE SET
             pick = excluded.pick,
             predicted_edge = excluded.predicted_edge,
             spread_at_pick = excluded.spread_at_pick,
-            moneyline_at_pick = excluded.moneyline_at_pick
+            moneyline_at_pick = excluded.moneyline_at_pick,
+            puck_line_pick = excluded.puck_line_pick,
+            puck_line_spread_at_pick = excluded.puck_line_spread_at_pick,
+            puck_line_price_at_pick = excluded.puck_line_price_at_pick,
+            total_pick = excluded.total_pick,
+            total_at_pick = excluded.total_at_pick,
+            total_price_at_pick = excluded.total_price_at_pick
         """,
         [
             (
@@ -1058,6 +1159,12 @@ def log_picks(conn: sqlite3.Connection, target_date: str, picks: list[dict]) -> 
                 pick["predicted_edge"],
                 pick["spread_at_pick"],
                 pick["moneyline_at_pick"],
+                pick["puck_line_pick"],
+                pick["puck_line_spread_at_pick"],
+                pick["puck_line_price_at_pick"],
+                pick["total_pick"],
+                pick["total_at_pick"],
+                pick["total_price_at_pick"],
             )
             for pick in picks
         ],

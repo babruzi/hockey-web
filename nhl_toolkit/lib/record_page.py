@@ -1,10 +1,13 @@
 """
-Renders docs/reports/record.html: picks_log's overall record (moneyline,
-against the puck line, and moneyline ROI) across every policy_version,
-plus a per-policy_version breakdown for comparing before/after a weight
-change. This is the published, no-terminal-needed view of the same
-numbers backtest.py already prints to the console -- it reuses
-backtest.py's policy_performance() rather than re-deriving them.
+Renders docs/reports/record.html: picks_log's overall record and ROI for
+all three independent bet types -- Money Line, Puck Line, and Over/Under
+(see report.py's puck_line_recommendation()/total_recommendation()) --
+plus a per-policy_version Money Line breakdown for comparing before/after
+a weight change (Puck Line/Over-Under aren't policy.yaml-driven, so a
+per-policy_version breakdown wouldn't mean anything for those two). This
+is the published, no-terminal-needed view of the same numbers backtest.py
+already prints to the console -- it reuses backtest.py's
+policy_performance()/bet_type_totals() rather than re-deriving them.
 
 Regenerated automatically by run_daily.py, or run standalone:
 
@@ -14,7 +17,7 @@ Usage:
 
 from pathlib import Path
 
-from backtest import policy_performance
+from backtest import bet_type_totals, policy_performance
 from db import get_connection
 from grade import STAKE
 from report import DOCS_DIR, HTML_STYLE, generation_timestamp
@@ -46,7 +49,7 @@ def combine_performance(performance: list) -> dict:
 
 
 def format_record_pct(wins: int, losses: int) -> str:
-    """"W-L (win %)", or "0-0 (n/a)" if there's nothing graded yet.
+    """ "W-L (win %)", or "0-0 (n/a)" if there's nothing graded yet.
 
     :param wins: Win count.
     :param losses: Loss count.
@@ -56,6 +59,20 @@ def format_record_pct(wins: int, losses: int) -> str:
     if not total:
         return "0-0 (n/a)"
     return f"{wins}-{losses} ({100 * wins / total:.1f}%)"
+
+
+def format_record_with_pushes(wins: int, losses: int, pushes: int) -> str:
+    """ "W-L-P (win %, decided bets only)", or "...(n/a)" with nothing decided yet.
+
+    :param wins: Win count.
+    :param losses: Loss count.
+    :param pushes: Push count (doesn't count toward the percentage).
+    :returns: Formatted record string.
+    """
+    decided = wins + losses
+    if not decided:
+        return f"{wins}-{losses}-{pushes} (n/a)"
+    return f"{wins}-{losses}-{pushes} ({100 * wins / decided:.1f}%)"
 
 
 def format_roi(total_profit: float, bet_count: int) -> tuple:
@@ -72,10 +89,11 @@ def format_roi(total_profit: float, bet_count: int) -> tuple:
     return f"{total_profit:+.2f} on {bet_count} bets ({roi_pct:+.1f}%)", css_class
 
 
-def render_record_html(performance: list) -> Path:
+def render_record_html(performance: list, bet_types: dict) -> Path:
     """Render the overall + per-policy_version record as a static HTML page.
 
     :param performance: Rows from :func:`backtest.policy_performance`.
+    :param bet_types: Result of :func:`backtest.bet_type_totals`.
     :returns: Path to the written HTML file.
     """
     RECORD_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -83,17 +101,19 @@ def render_record_html(performance: list) -> Path:
 
     overall_su = format_record_pct(overall["su_wins"], overall["su_losses"])
     overall_ats_total = overall["ats_wins"] + overall["ats_losses"] + overall["ats_pushes"]
-    overall_ats_decided = overall["ats_wins"] + overall["ats_losses"]
-    overall_ats_pct = (
-        f"{overall['ats_wins']}-{overall['ats_losses']}-{overall['ats_pushes']} "
-        f"({100 * overall['ats_wins'] / overall_ats_decided:.1f}%)"
-        if overall_ats_decided
-        else f"{overall['ats_wins']}-{overall['ats_losses']}-{overall['ats_pushes']} (n/a)"
+    overall_ats_pct = format_record_with_pushes(
+        overall["ats_wins"], overall["ats_losses"], overall["ats_pushes"]
     )
     overall_roi_str, overall_roi_class = format_roi(
         overall["total_profit"], overall["graded_bet_count"]
     )
     overall_ats_total_note = f" ({overall_ats_total} graded)" if overall_ats_total else ""
+
+    pl, ou = bet_types["puck_line"], bet_types["total"]
+    pl_record = format_record_with_pushes(pl["wins"], pl["losses"], pl["pushes"])
+    pl_roi_str, pl_roi_class = format_roi(pl["total_profit"], pl["graded_bet_count"])
+    ou_record = format_record_with_pushes(ou["wins"], ou["losses"], ou["pushes"])
+    ou_roi_str, ou_roi_class = format_roi(ou["total_profit"], ou["graded_bet_count"])
 
     version_rows = "\n".join(
         f"""
@@ -101,11 +121,8 @@ def render_record_html(performance: list) -> Path:
             <td>{row["policy_version"]}</td>
             <td>{format_record_pct(row["su_wins"], row["su_losses"])}</td>
             <td>{
-                f"{row['ats_wins']}-{row['ats_losses']}-{row['ats_pushes']}"
-                f" ({100 * row['ats_wins'] / (row['ats_wins'] + row['ats_losses']):.1f}%)"
-                if (row["ats_wins"] + row["ats_losses"])
-                else f"{row['ats_wins']}-{row['ats_losses']}-{row['ats_pushes']} (n/a)"
-            }</td>
+            format_record_with_pushes(row["ats_wins"], row["ats_losses"], row["ats_pushes"])
+        }</td>
             <td class="{format_roi(row["total_profit"] or 0.0, row["graded_bet_count"])[1]}">
                 {format_roi(row["total_profit"] or 0.0, row["graded_bet_count"])[0]}
             </td>
@@ -127,8 +144,10 @@ def render_record_html(performance: list) -> Path:
 <p><a href="../index.html">&larr; All reports</a></p>
 <h1>Performance Record</h1>
 <p class="subtitle">
-picks_log's real record so far, moneyline and against the puck line, plus
-simulated moneyline ROI on a flat ${STAKE:.0f} stake per pick.
+picks_log's real record so far across all three independent bet types --
+Money Line, Puck Line, and Over/Under -- plus simulated ROI on a flat
+${STAKE:.0f} stake per pick, had every one of that type's recommendations
+been bet.
 </p>
 
 <table>
@@ -137,6 +156,10 @@ simulated moneyline ROI on a flat ${STAKE:.0f} stake per pick.
 <tr><td>Moneyline</td><td>{overall_su}</td></tr>
 <tr><td>Vs. Puck Line</td><td>{overall_ats_pct}{overall_ats_total_note}</td></tr>
 <tr><td>Moneyline ROI</td><td class="{overall_roi_class}">{overall_roi_str}</td></tr>
+<tr><td>Puck Line Record</td><td>{pl_record}</td></tr>
+<tr><td>Puck Line ROI</td><td class="{pl_roi_class}">{pl_roi_str}</td></tr>
+<tr><td>Over/Under Record</td><td>{ou_record}</td></tr>
+<tr><td>Over/Under ROI</td><td class="{ou_roi_class}">{ou_roi_str}</td></tr>
 </tbody>
 </table>
 
@@ -150,8 +173,12 @@ simulated moneyline ROI on a flat ${STAKE:.0f} stake per pick.
 </table>
 
 <p class="disclaimer">
-Moneyline ROI assumes a flat ${STAKE:.0f} stake per pick at the consensus
-moneyline recorded when the pick was made, and only counts picks that had
+"Moneyline" and "Vs. Puck Line" above are both about the scoring engine's
+one pick (policy.yaml's weighted total_score); "Puck Line Record" and
+"Over/Under Record" are separate, independent recommendations that can
+name a different team or side (see the picks pages for why) -- each ROI
+figure assumes a flat ${STAKE:.0f} stake per pick at the price recorded
+when that type's recommendation was made, and only counts picks that had
 odds on record. Paper-trading analysis only, not betting advice.
 </p>
 <p class="updated">Last updated {generation_timestamp()}</p>
@@ -168,8 +195,9 @@ def build_record_page() -> None:
     conn = get_connection()
     with conn:
         performance = policy_performance(conn)
+        bet_types = bet_type_totals(conn)
     conn.close()
-    path = render_record_html(performance)
+    path = render_record_html(performance, bet_types)
     print(f"Wrote {path}")
 
 

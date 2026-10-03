@@ -72,13 +72,20 @@ run.
    ```bash
    python lib/grade.py
    ```
-   Fills in `result` ('win'/'loss'/'push' against the spread recorded at
-   pick time), `straight_up_result` ('win'/'loss', ignoring the spread —
-   still gets filled in even on games with no odds), and `profit_10` ($
-   profit/loss a flat $10 moneyline bet on the pick would have made,
-   settled on `straight_up_result` since that's how moneyline bets actually
-   pay out -- the stake is `grade.py`'s `STAKE` constant, imported wherever
-   else it's needed). Safe to re-run; only touches rows missing any of the three.
+   Grades all three independent bet types a picks page can recommend
+   (Money Line, Puck Line, Over/Under -- see step 10): `result`
+   ('win'/'loss'/'push' against the spread recorded at pick time),
+   `straight_up_result` ('win'/'loss', ignoring the spread -- still gets
+   filled in even on games with no odds), and `profit_10` ($ profit/loss a
+   flat $10 moneyline bet on the pick would have made, settled on
+   `straight_up_result` since that's how moneyline bets actually pay out)
+   for Money Line; `puck_line_result`/`puck_line_profit_10` the same way
+   but for whichever team the Puck Line recommendation actually named
+   (which can differ from the Money Line pick); `total_result`/
+   `total_profit_10` for the Over/Under recommendation. The stake for all
+   three is `grade.py`'s `STAKE` constant, imported wherever else it's
+   needed. Safe to re-run; only touches rows still missing a gradeable
+   result.
 
 4. Compute rest days, game density, distance traveled, timezone shifts,
    and back-to-back flags for every team/game:
@@ -182,7 +189,15 @@ run.
    anything narrower, e.g. a phone) only engages below that width, and the
    table header freezes in place while scrolling down the page
    (`position: sticky`) everywhere the scroll fallback isn't active.
-   `docs/` is served live by GitHub Pages at
+   Below the table, an **If You Bet Every Pick** table shows that day's
+   actual $ outcome per bet type -- Money Line, Puck Line, Over/Under --
+   if every one of that type's recommendations on the slate had been bet
+   at a flat $10. It only has a real number once a game is graded; before
+   that it says "Not yet graded," and if the games are final but there was
+   never a price on record for that bet type (e.g. a date before
+   `fetch_odds.py` started capturing puck-line prices) it says "No odds on
+   record" instead -- those are different situations and the page doesn't
+   conflate them. `docs/` is served live by GitHub Pages at
    https://babruzi.github.io/hockey-web/.
 
 11. Regenerate the policy reference page (every metric's weight, normalization
@@ -199,10 +214,12 @@ run.
     ```bash
     python lib/record_page.py
     ```
-    Writes `../docs/reports/record.html` -- picks_log's overall moneyline
-    and vs.-puck-line record plus moneyline ROI, both overall and
-    broken down per `policy_version`, with percentages throughout. Reuses
-    `backtest.py`'s `policy_performance()` rather than re-deriving the
+    Writes `../docs/reports/record.html` -- picks_log's overall record and
+    ROI for all three bet types (Money Line, Puck Line, Over/Under), each
+    as its own row, plus a per-`policy_version` breakdown for Money Line
+    only (Puck Line/Over-Under aren't policy.yaml-driven, so grouping those
+    by policy_version wouldn't mean anything). Reuses `backtest.py`'s
+    `policy_performance()`/`bet_type_totals()` rather than re-deriving the
     numbers. Linked from the reports index as "Performance record & ROI,"
     only once the page actually exists (same dead-link guard as "Today's
     Picks"). `run_daily.py` regenerates it right after grading, before the
@@ -221,7 +238,10 @@ correlates that metric's home-minus-away differential against the actual
 final goal margin across every completed game, and flags weights whose sign
 disagrees with the correlation. It also prints `picks_log`'s real
 moneyline/against-the-puck-line record *and* moneyline ROI (summed
-`profit_10` on a flat $10 stake per pick) per `policy_version`. Never
+`profit_10` on a flat $10 stake per pick) per `policy_version`, plus the
+same record/ROI for the Puck Line and Over/Under recommendations as one
+overall total each (independent of `policy_version`, since neither is
+policy.yaml-driven). Never
 writes to `policy.yaml` — correlation is a hint for hand-tuning, not an
 answer, and early in a season the sample sizes are too small to trust
 (that's what `--min-n` flags). It never hardcodes a metric name, so a future
@@ -237,7 +257,7 @@ moneyline), without touching `backtest.py` either time.
 - `lib/arenas.py` — static reference table: 32 teams, arena lat/lon, IANA timezone, and a full-team-name → abbrev lookup for odds feeds
 - `lib/db.py` — SQLite schema (`games`, `schedule_context`, `odds`, `metrics`, `metric_values`, `policy_weights`, `daily_scores`, `picks_log`)
 - `lib/fetch_schedule.py` — pulls from the NHL Web API (`api-web.nhle.com/v1/schedule/{date}`)
-- `lib/grade.py` — grades final games' `picks_log` rows: `result` (vs. the spread), `straight_up_result` (vs. the raw final score), and `profit_10` (moneyline ROI); owns the `STAKE` constant everything else imports
+- `lib/grade.py` — grades final games' `picks_log` rows for all three bet types (Money Line, Puck Line, Over/Under): `result`/`straight_up_result`/`profit_10`, `puck_line_result`/`puck_line_profit_10`, `total_result`/`total_profit_10`; owns the `STAKE` constant and the shared `odds_profit()` P&L helper everything else imports
 - `lib/travel_metrics.py` — derives rest/travel/timezone metrics from the raw schedule
 - `lib/metrics.py` — seeds the metrics catalog and populates `metric_values` from `schedule_context`
 - `lib/form_metrics.py` — computes `recent_form`/`goal_differential` from `games` scores

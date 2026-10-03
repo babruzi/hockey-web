@@ -180,16 +180,77 @@ def policy_performance(conn: sqlite3.Connection) -> list:
     ]
 
 
+def bet_type_totals(conn: sqlite3.Connection) -> dict:
+    """Overall record/ROI for the Puck Line and Over/Under recommendations.
+
+    Unlike :func:`policy_performance`, these aren't broken out per
+    policy_version: the Puck Line and Over/Under recommendations (see
+    report.py's puck_line_recommendation()/total_recommendation()) are
+    independent, un-weighted projections, not driven by policy.yaml, so
+    grouping them by whichever policy_version happened to be active that
+    day wouldn't mean anything.
+
+    :param conn: Open connection to the schedule database.
+    :returns: {"puck_line": {...}, "total": {...}}, each with wins/losses/
+        pushes and a profit sum across every graded pick to date.
+    """
+    row = conn.execute(
+        """
+        SELECT
+            SUM(CASE WHEN puck_line_result = 'win' THEN 1 ELSE 0 END),
+            SUM(CASE WHEN puck_line_result = 'loss' THEN 1 ELSE 0 END),
+            SUM(CASE WHEN puck_line_result = 'push' THEN 1 ELSE 0 END),
+            SUM(puck_line_profit_10),
+            SUM(CASE WHEN puck_line_profit_10 IS NOT NULL THEN 1 ELSE 0 END),
+            SUM(CASE WHEN total_result = 'win' THEN 1 ELSE 0 END),
+            SUM(CASE WHEN total_result = 'loss' THEN 1 ELSE 0 END),
+            SUM(CASE WHEN total_result = 'push' THEN 1 ELSE 0 END),
+            SUM(total_profit_10),
+            SUM(CASE WHEN total_profit_10 IS NOT NULL THEN 1 ELSE 0 END)
+        FROM picks_log
+        """
+    ).fetchone()
+    (
+        pl_wins,
+        pl_losses,
+        pl_pushes,
+        pl_profit,
+        pl_bet_count,
+        ou_wins,
+        ou_losses,
+        ou_pushes,
+        ou_profit,
+        ou_bet_count,
+    ) = row
+    return {
+        "puck_line": {
+            "wins": pl_wins or 0,
+            "losses": pl_losses or 0,
+            "pushes": pl_pushes or 0,
+            "total_profit": pl_profit or 0.0,
+            "graded_bet_count": pl_bet_count or 0,
+        },
+        "total": {
+            "wins": ou_wins or 0,
+            "losses": ou_losses or 0,
+            "pushes": ou_pushes or 0,
+            "total_profit": ou_profit or 0.0,
+            "graded_bet_count": ou_bet_count or 0,
+        },
+    }
+
+
 def _pct(wins: int, losses: int) -> str:
     total = wins + losses
     return f"{wins}-{losses} ({100 * wins / total:.1f}%)" if total else "0-0 (n/a)"
 
 
-def print_backtest_report(report: list, performance: list, min_n: int) -> None:
+def print_backtest_report(report: list, performance: list, bet_types: dict, min_n: int) -> None:
     """Print the metric-correlation table and the policy performance summary.
 
     :param report: Rows from :func:`metric_report`.
     :param performance: Rows from :func:`policy_performance`.
+    :param bet_types: Result of :func:`bet_type_totals`.
     :param min_n: Metrics with fewer completed-game samples than this are
         flagged as too thin to draw a conclusion from, not hidden outright.
     """
@@ -242,6 +303,21 @@ def print_backtest_report(report: list, performance: list, min_n: int) -> None:
             roi_note = " | moneyline ROI n/a (no odds on any graded pick)"
         print(f"{row['policy_version']}: moneyline {su} | vs. puck line {ats}{push_note}{roi_note}")
 
+    print("\nOverall record by bet type (independent of policy_version)")
+    print("-" * 88)
+    for label, key in (("puck line", "puck_line"), ("over/under", "total")):
+        bt = bet_types[key]
+        record = _pct(bt["wins"], bt["losses"])
+        push_note = f", {bt['pushes']} push" if bt["pushes"] else ""
+        bet_count = bt["graded_bet_count"]
+        if bet_count:
+            profit = bt["total_profit"]
+            roi_pct = 100 * profit / (STAKE * bet_count)
+            roi_note = f" | ROI {profit:+.2f} on {bet_count} bets ({roi_pct:+.1f}%)"
+        else:
+            roi_note = " | ROI n/a (no odds on any graded pick)"
+        print(f"{label}: {record}{push_note}{roi_note}")
+
 
 def build_backtest_report(min_n: int = DEFAULT_MIN_N) -> None:
     """Run the full backtest and print it.
@@ -253,8 +329,9 @@ def build_backtest_report(min_n: int = DEFAULT_MIN_N) -> None:
     with conn:
         report = metric_report(conn)
         performance = policy_performance(conn)
+        bet_types = bet_type_totals(conn)
     conn.close()
-    print_backtest_report(report, performance, min_n)
+    print_backtest_report(report, performance, bet_types, min_n)
 
 
 if __name__ == "__main__":

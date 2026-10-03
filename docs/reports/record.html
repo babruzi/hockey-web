@@ -104,16 +104,22 @@ a { color: var(--accent); }
 <p><a href="../index.html">&larr; All reports</a></p>
 <h1>Performance Record</h1>
 <p class="subtitle">
-picks_log's real record so far, moneyline and against the puck line, plus
-simulated moneyline ROI on a flat $10 stake per pick.
+picks_log's real record so far across all three independent bet types --
+Money Line, Puck Line, and Over/Under -- plus simulated ROI on a flat
+$10 stake per pick, had every one of that type's recommendations
+been bet.
 </p>
 
 <table>
 <thead><tr><th></th><th>Record</th></tr></thead>
 <tbody>
-<tr><td>Moneyline</td><td>15-9 (62.5%)</td></tr>
-<tr><td>Vs. Puck Line</td><td>12-11-0 (52.2%) (23 graded)</td></tr>
-<tr><td>Moneyline ROI</td><td class="positive">+31.15 on 23 bets (+13.5%)</td></tr>
+<tr><td>Moneyline</td><td>15-10 (60.0%)</td></tr>
+<tr><td>Vs. Puck Line</td><td>12-12-0 (50.0%) (24 graded)</td></tr>
+<tr><td>Moneyline ROI</td><td class="positive">+21.15 on 24 bets (+8.8%)</td></tr>
+<tr><td>Puck Line Record</td><td>8-8-0 (50.0%)</td></tr>
+<tr><td>Puck Line ROI</td><td class="positive">+37.68 on 9 bets (+41.9%)</td></tr>
+<tr><td>Over/Under Record</td><td>5-9-0 (35.7%)</td></tr>
+<tr><td>Over/Under ROI</td><td class="negative">-50.49 on 14 bets (-36.1%)</td></tr>
 </tbody>
 </table>
 
@@ -134,20 +140,24 @@ simulated moneyline ROI on a flat $10 stake per pick.
 
         <tr>
             <td>2026-10-v1</td>
-            <td>7-6 (53.8%)</td>
-            <td>6-6-0 (50.0%)</td>
+            <td>7-7 (50.0%)</td>
+            <td>6-7-0 (46.2%)</td>
             <td class="negative">
-                -2.65 on 12 bets (-2.2%)
+                -12.65 on 13 bets (-9.7%)
             </td>
         </tr>
 </tbody>
 </table>
 
 <p class="disclaimer">
-Moneyline ROI assumes a flat $10 stake per pick at the consensus
-moneyline recorded when the pick was made, and only counts picks that had
+"Moneyline" and "Vs. Puck Line" above are both about the scoring engine's
+one pick (policy.yaml's weighted total_score); "Puck Line Record" and
+"Over/Under Record" are separate, independent recommendations that can
+name a different team or side (see the picks pages for why) -- each ROI
+figure assumes a flat $10 stake per pick at the price recorded
+when that type's recommendation was made, and only counts picks that had
 odds on record. Paper-trading analysis only, not betting advice.
 </p>
-<p class="updated">Last updated October 02, 2026 at 03:28 PM EDT</p>
+<p class="updated">Last updated October 02, 2026 at 10:00 PM EDT</p>
 </body>
 </html>

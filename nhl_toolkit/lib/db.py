@@ -97,13 +97,28 @@ CREATE TABLE IF NOT EXISTS picks_log (
     pick_id         INTEGER PRIMARY KEY AUTOINCREMENT,
     date            TEXT NOT NULL,     -- YYYY-MM-DD, date the pick was made
     game_id         INTEGER NOT NULL,
-    pick            TEXT NOT NULL,     -- team abbrev picked
+    pick            TEXT NOT NULL,     -- team abbrev picked (the Money Line pick)
     predicted_edge  REAL,              -- score gap between the two teams
-    spread_at_pick  REAL,              -- picked team's spread when logged
-    moneyline_at_pick   INTEGER,       -- picked team's American moneyline odds when logged
+    spread_at_pick  REAL,              -- Money Line pick's spread when logged
+    moneyline_at_pick   INTEGER,       -- Money Line pick's American odds when logged
     result              TEXT,          -- 'win'|'loss'|'push' vs spread; NULL if ungraded/no spread
     straight_up_result  TEXT,          -- 'win'|'loss' -- picked team won outright, ignoring spread
     profit_10           REAL,          -- $ P&L on a flat $10 moneyline stake; NULL if no odds
+    -- The Puck Line and Over/Under recommendations are independent of the
+    -- Money Line pick above (see report.py's puck_line_recommendation()/
+    -- total_recommendation()) and can name a different team/side -- each
+    -- gets its own pick-time snapshot and grading columns, parallel to the
+    -- Money Line ones above.
+    puck_line_pick            TEXT,    -- team abbrev recommended for the puck line
+    puck_line_spread_at_pick  REAL,    -- that team's signed puck line (e.g. -1.5/+1.5) when logged
+    puck_line_price_at_pick   INTEGER, -- that team's puck line American odds when logged
+    puck_line_result          TEXT,    -- 'win'|'loss'|'push'; NULL if ungraded/no recommendation
+    puck_line_profit_10       REAL,    -- $ P&L on a flat $10 puck line stake; NULL if no odds
+    total_pick          TEXT,          -- 'Over'|'Under' recommended
+    total_at_pick        REAL,         -- the total (over/under) line when logged
+    total_price_at_pick  INTEGER,      -- that side's American odds when logged
+    total_result         TEXT,         -- 'win'|'loss'|'push'; NULL if ungraded/no recommendation
+    total_profit_10       REAL,        -- $ P&L on a flat $10 total stake; NULL if no odds
     graded_at       TEXT,
     FOREIGN KEY (game_id) REFERENCES games (game_id)
 );
@@ -153,6 +168,22 @@ def init_db() -> None:
                 )
             else:
                 conn.execute("ALTER TABLE picks_log ADD COLUMN profit_10 REAL")
+
+        picks_log_new_columns = {
+            "puck_line_pick": "TEXT",
+            "puck_line_spread_at_pick": "REAL",
+            "puck_line_price_at_pick": "INTEGER",
+            "puck_line_result": "TEXT",
+            "puck_line_profit_10": "REAL",
+            "total_pick": "TEXT",
+            "total_at_pick": "REAL",
+            "total_price_at_pick": "INTEGER",
+            "total_result": "TEXT",
+            "total_profit_10": "REAL",
+        }
+        for column, column_type in picks_log_new_columns.items():
+            if column not in existing_columns:
+                conn.execute(f"ALTER TABLE picks_log ADD COLUMN {column} {column_type}")
 
         existing_odds_columns = {row[1] for row in conn.execute("PRAGMA table_info(odds)")}
         if "home_spread_price" not in existing_odds_columns:
