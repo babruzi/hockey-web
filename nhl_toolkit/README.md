@@ -163,7 +163,10 @@ run.
    filename (not a symlink; GitHub Pages' build ignores those) so a
    bookmarked URL always shows the latest picks. The HTML table is laid out
    like a sportsbook board: two rows per game (away team on top, home team
-   below), with **Puck Line / Over-Under / Money Line** columns for each
+   below, its name lightly shaded so which team is home is visible at a
+   glance), each game's pair of rows boxed off with a thicker top/bottom
+   border than the 1px border between every other cell, with **Puck Line /
+   Over-Under / Money Line** columns for each
    side's price, each followed by its devigged implied probability in parens
    (e.g. "-1.5 +154 (37.8%)"). Only on today's page, an **Est. Winnings**
    column plus a Money Line/Puck Line dropdown let you see the payout on a
