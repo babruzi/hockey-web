@@ -407,6 +407,34 @@ def total_recommendation(
     return None
 
 
+def strategy_markets(pick_team: str, puck_line_pick: Optional[str]) -> list[str]:
+    """Which markets a simple, data-driven betting rule recommends for this game.
+
+    Derived from comparing predicted_edge/profit_10/puck_line_profit_10 across
+    the first few weeks of graded picks (see the "safest bets" conversation,
+    not a formula in this codebase): Puck Line has been the single
+    best-performing bet type on its own, while Money Line has only been
+    profitable specifically on games where it agrees with the Puck Line pick
+    -- when the two disagree, Puck Line has been the righter side more often
+    than Money Line. Over/Under has been a net loser across the sample and is
+    never recommended here regardless of its own column's pick. This is a
+    small-sample read (barely 20 graded games at the time it was derived),
+    not a proven system -- expect it to be revisited as more games get graded.
+
+    :param pick_team: The Money Line pick (whichever team scored higher).
+    :param puck_line_pick: The Puck Line recommendation, or None if there
+        isn't enough data/odds for one.
+    :returns: Market codes to bet for this game, e.g. ["pl", "ml"] or ["pl"]
+        or [] if there's no Puck Line recommendation to build a strategy on.
+    """
+    if puck_line_pick is None:
+        return []
+    markets = ["pl"]
+    if pick_team == puck_line_pick:
+        markets.append("ml")
+    return markets
+
+
 def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
     """Rank each game by score gap and pick the higher-scoring side.
 
@@ -575,6 +603,7 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
         total_price_at_pick = (
             over_odds if total_pick == "Over" else (under_odds if total_pick == "Under" else None)
         )
+        strategy = strategy_markets(pick_team, puck_line_pick)
 
         picks.append(
             {
@@ -608,6 +637,7 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
                 "total_pick": total_pick,
                 "total_at_pick": total,
                 "total_price_at_pick": total_price_at_pick,
+                "strategy_markets": strategy,
                 "notes": build_game_notes(conn, game_id, game["home_team"], game["game_date"]),
                 "final_home_score": game["final_home_score"],
                 "final_away_score": game["final_away_score"],
@@ -740,6 +770,7 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: 
 .edge { font-variant-numeric: tabular-nums; }
 .notes { color: var(--muted); font-size: 0.85rem; }
 .pick { color: var(--pick); }
+.strategy { color: var(--accent); }
 .positive { color: var(--pick); font-variant-numeric: tabular-nums; }
 .negative { color: var(--negative); font-variant-numeric: tabular-nums; }
 a { color: var(--accent); }
@@ -873,6 +904,14 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         pct = 100 * wins / (wins + losses)
         return f"{wins}-{losses} ({pct:.1f}%)"
 
+    def format_strategy_cell(pick: dict) -> str:
+        markets = pick["strategy_markets"]
+        if not markets:
+            return '<span class="notes">&mdash;</span>'
+        label = "PL + ML" if "ml" in markets else "PL only"
+        team = pick["puck_line_pick"]
+        return f'<strong class="strategy">{team}</strong> <span class="notes">({label})</span>'
+
     is_today = target_date == date_cls.today().isoformat()
 
     def format_winnings_cell(pick: dict) -> str:
@@ -945,6 +984,7 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
             <td rowspan="2">{format_outcome_colored(pick["straight_up_result"])}</td>
             <td rowspan="2">{format_ats(pick)}</td>
             <td class="edge" rowspan="2">{format_team_ats_record(pick)}</td>
+            <td rowspan="2">{format_strategy_cell(pick)}</td>
             <td class="notes" rowspan="2">{format_notes(pick)}</td>
         </tr>
         <tr class="{game_class} row-home">
@@ -972,6 +1012,31 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         note = f" ({len(profits)} of {applicable} graded)" if len(profits) < applicable else ""
         return f'<span class="{css_class}">{total:+.2f}</span>{note}'
 
+    def format_strategy_total() -> str:
+        applicable = [pick for pick in picks if pick["strategy_markets"]]
+        if not applicable:
+            return '<span class="notes">No recommendation today</span>'
+        if not any(pick["straight_up_result"] is not None for pick in applicable):
+            return '<span class="notes">Not yet graded</span>'
+        total = 0.0
+        bet_count = 0
+        graded_games = 0
+        for pick in applicable:
+            leg_profits = []
+            if "pl" in pick["strategy_markets"] and pick["puck_line_profit_10"] is not None:
+                leg_profits.append(pick["puck_line_profit_10"])
+            if "ml" in pick["strategy_markets"] and pick["profit_10"] is not None:
+                leg_profits.append(pick["profit_10"])
+            if leg_profits:
+                total += sum(leg_profits)
+                bet_count += len(leg_profits)
+                graded_games += 1
+        if not bet_count:
+            return '<span class="notes">No odds on record</span>'
+        css_class = "positive" if total >= 0 else "negative"
+        note = f" ({graded_games} of {len(applicable)} games, {bet_count} bets)"
+        return f'<span class="{css_class}">{total:+.2f}</span>{note}'
+
     day_totals_html = f"""
 <h2>If You Bet Every Pick</h2>
 <table>
@@ -984,6 +1049,8 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 <tr><td>Over/Under</td><td>{
         format_day_total(sum(1 for pick in picks if pick["total_pick"]), "total_profit_10")
     }</td></tr>
+<tr><td><strong class="strategy">Strategy</strong> (PL + ML when they agree)</td>
+    <td>{format_strategy_total()}</td></tr>
 </tbody>
 </table>"""
 
@@ -1063,7 +1130,7 @@ function onMarketChange() {
     <th{market_col_attrs("ou")}>Over/Under</th><th{market_col_attrs("ml")}>Money Line</th>
     {winnings_header}
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
-    <th>Team ATS Record</th><th>Notes</th>
+    <th>Team ATS Record</th><th>Strategy</th><th>Notes</th>
 </tr>
 </thead>
 <tbody>{rows}
@@ -1085,7 +1152,12 @@ total) and so can recommend a different side than Money Line does &middot; each 
 is followed in parens by the market's devigged implied probability for that side
 &middot; ML Result/Vs. Puck Line columns grade the pick once the
 game is final &middot; Team ATS Record is the picked team's all-time record against the
-puck line across every graded pick so far
+puck line across every graded pick so far &middot; <strong class="strategy">Strategy</strong>
+is a simple, data-driven rule derived from the first few weeks of graded picks: always bet
+Puck Line when it has a recommendation, and only bet Money Line too on games where it agrees
+with the Puck Line pick (Over/Under is never recommended -- it's been a net loser across the
+sample so far) &middot; this is a small-sample read, not a guaranteed system, and may get
+revised as more games get graded
 </p>
 <p class="disclaimer">
 Paper-trading analysis only, not betting advice. Scores are a config-driven

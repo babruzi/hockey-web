@@ -208,7 +208,15 @@ run.
    never a price on record for that bet type (e.g. a date before
    `fetch_odds.py` started capturing puck-line prices) it says "No odds on
    record" instead -- those are different situations and the page doesn't
-   conflate them. `docs/` is served live by GitHub Pages at
+   conflate them. A fourth row and a matching **Strategy** table column
+   (on every page, not just today) surface a simple rule derived from
+   analyzing the first few weeks of graded picks: always bet Puck Line
+   when it has a recommendation, and only bet Money Line too on games
+   where it agrees with the Puck Line pick -- Over/Under is never
+   recommended, since it's been a net loser across the sample this was
+   derived from. This is explicitly a small-sample, evolving read, not a
+   finished model -- see `strategy_markets()` in `report.py`.
+   `docs/` is served live by GitHub Pages at
    https://babruzi.github.io/hockey-web/.
 
 11. Regenerate the policy reference page (every metric's weight, normalization
