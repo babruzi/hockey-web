@@ -169,11 +169,15 @@ run.
    Over-Under / Money Line** columns for each
    side's price, each followed by its devigged implied probability in parens
    (e.g. "-1.5 +154 (37.8%)"). Only on today's page, an **Est. Winnings**
-   column plus a Money Line/Puck Line dropdown let you see the payout on a
-   $10 bet on the pick for either market, recalculated instantly by a small
-   inline script when you switch the dropdown -- the only JavaScript on the
-   site, and only shown for today since it's a forward-looking "if this pick
-   wins" number that doesn't make sense once a date is already graded. The
+   column plus a Money Line/Puck Line/Over-Under dropdown do two things at
+   once: show the payout on a $10 bet on the pick for whichever market is
+   selected, recalculated instantly by a small inline script, *and* filter
+   the table down to just that market's two columns (everything else --
+   Edge, Score, Team ATS Record, etc. -- always stays visible). This is the
+   only JavaScript on the site, and only shown for today since it's a
+   forward-looking "if this pick wins" number that doesn't make sense once a
+   date is already graded -- past dates always show all three market columns
+   with no dropdown, exactly as before. The
    green highlight in each of the three columns is that column's own,
    independent recommendation, not one pick repeated three times: Money Line
    is the overall pick (policy.yaml's weighted `total_score`); Puck Line

@@ -860,14 +860,28 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
             return ""
         ml_price = pick["moneyline_at_pick"]
         pl_price = pick["pick_spread_price"]
+        ou_price = pick["total_price_at_pick"]
         default_payout = potential_payout(ml_price, STAKE)
         default_str = f"${default_payout:.2f}" if default_payout is not None else "&mdash;"
         ml_attr = "" if ml_price is None else str(ml_price)
         pl_attr = "" if pl_price is None else str(pl_price)
+        ou_attr = "" if ou_price is None else str(ou_price)
         return (
             f'<td class="edge winnings-cell" rowspan="2" data-ml="{ml_attr}" '
-            f'data-pl="{pl_attr}">{default_str}</td>'
+            f'data-pl="{pl_attr}" data-ou="{ou_attr}">{default_str}</td>'
         )
+
+    def market_col_attrs(category: str) -> str:
+        """class (+ hidden by default, on today's page only) for a Puck Line/
+        Over-Under/Money Line column cell, so the dropdown's JS can filter the
+        table down to just the selected market's columns. Money Line matches
+        the dropdown's default selection, so it starts visible; the other two
+        start hidden -- past-date pages have no dropdown/JS, so this never
+        hides anything there (the class is added but inert).
+        """
+        hidden = is_today and category != "ml"
+        style = ' style="display:none"' if hidden else ""
+        return f' class="col-{category}"{style}'
 
     def render_game_rows(i: int, pick: dict) -> str:
         game_class = "game-even" if i % 2 == 0 else "game-odd"
@@ -902,9 +916,9 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         <tr class="{game_class} row-away">
             <td class="rank" rowspan="2">{i}</td>
             <td>{format_team_name(pick["away_team"], not pick["pick_is_home"])}</td>
-            <td>{away_puck}</td>
-            <td>{over_cell}</td>
-            <td>{away_ml}</td>
+            <td{market_col_attrs("pl")}>{away_puck}</td>
+            <td{market_col_attrs("ou")}>{over_cell}</td>
+            <td{market_col_attrs("ml")}>{away_ml}</td>
             {format_winnings_cell(pick)}
             <td class="edge" rowspan="2">{pick["predicted_edge"]:.3f}</td>
             <td class="edge" rowspan="2">{format_final_score(pick)}</td>
@@ -915,9 +929,9 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         </tr>
         <tr class="{game_class} row-home">
             <td class="home-cell">{format_team_name(pick["home_team"], pick["pick_is_home"])}</td>
-            <td>{home_puck}</td>
-            <td>{under_cell}</td>
-            <td>{home_ml}</td>
+            <td{market_col_attrs("pl")}>{home_puck}</td>
+            <td{market_col_attrs("ou")}>{under_cell}</td>
+            <td{market_col_attrs("ml")}>{home_ml}</td>
         </tr>"""
 
     rows = "\n".join(render_game_rows(i, pick) for i, pick in enumerate(picks, start=1))
@@ -957,12 +971,14 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
     controls_html = (
         f"""
 <div class="controls">
-<label for="odds-type">Show "Est. Winnings" using:</label>
-<select id="odds-type" onchange="updateWinnings()">
+<label for="odds-type">Show picks for:</label>
+<select id="odds-type" onchange="onMarketChange()">
 <option value="ml" selected>Money Line</option>
 <option value="pl">Puck Line</option>
+<option value="ou">Over/Under</option>
 </select>
-<span class="notes">(payout on a ${STAKE:.0f} bet on the pick, if it wins)</span>
+<span class="notes">(shows only that market's columns; Est. Winnings is the
+payout on a ${STAKE:.0f} bet on the pick, if it wins)</span>
 </div>"""
         if is_today
         else ""
@@ -972,9 +988,9 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 <script>
 function updateWinnings() {
     var marketType = document.getElementById("odds-type").value;
+    var attr = marketType === "ml" ? "data-ml" : (marketType === "pl" ? "data-pl" : "data-ou");
     var cells = document.querySelectorAll(".winnings-cell");
     cells.forEach(function (cell) {
-        var attr = marketType === "ml" ? "data-ml" : "data-pl";
         var raw = cell.getAttribute(attr);
         if (!raw) {
             cell.textContent = "\\u2014";
@@ -987,6 +1003,19 @@ function updateWinnings() {
         var payout = price > 0 ? (stake * price) / 100 : (stake * 100) / Math.abs(price);
         cell.textContent = "$" + payout.toFixed(2);
     });
+}
+function updateColumns() {
+    var marketType = document.getElementById("odds-type").value;
+    ["pl", "ou", "ml"].forEach(function (category) {
+        var display = category === marketType ? "" : "none";
+        document.querySelectorAll(".col-" + category).forEach(function (cell) {
+            cell.style.display = display;
+        });
+    });
+}
+function onMarketChange() {
+    updateWinnings();
+    updateColumns();
 }
 </script>"""
         if is_today
@@ -1010,7 +1039,8 @@ function updateWinnings() {
 <table>
 <thead>
 <tr>
-    <th>#</th><th>Team</th><th>Puck Line</th><th>Over/Under</th><th>Money Line</th>
+    <th>#</th><th>Team</th><th{market_col_attrs("pl")}>Puck Line</th>
+    <th{market_col_attrs("ou")}>Over/Under</th><th{market_col_attrs("ml")}>Money Line</th>
     {winnings_header}
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
     <th>Team ATS Record</th><th>Notes</th>
