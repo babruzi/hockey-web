@@ -118,18 +118,21 @@ a { color: var(--accent); }
 <p class="subtitle">October 03, 2026</p>
 
 <div class="controls">
-<label for="odds-type">Show "Est. Winnings" using:</label>
-<select id="odds-type" onchange="updateWinnings()">
+<label for="odds-type">Show picks for:</label>
+<select id="odds-type" onchange="onMarketChange()">
 <option value="ml" selected>Money Line</option>
 <option value="pl">Puck Line</option>
+<option value="ou">Over/Under</option>
 </select>
-<span class="notes">(payout on a $10 bet on the pick, if it wins)</span>
+<span class="notes">(shows only that market's columns; Est. Winnings is the
+payout on a $10 bet on the pick, if it wins)</span>
 </div>
 <div class="table-scroll">
 <table>
 <thead>
 <tr>
-    <th>#</th><th>Team</th><th>Puck Line</th><th>Over/Under</th><th>Money Line</th>
+    <th>#</th><th>Team</th><th class="col-pl" style="display:none">Puck Line</th>
+    <th class="col-ou" style="display:none">Over/Under</th><th class="col-ml">Money Line</th>
     <th>Est. Winnings</th>
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
     <th>Team ATS Record</th><th>Notes</th>
@@ -139,10 +142,10 @@ a { color: var(--accent); }
         <tr class="game-odd row-away">
             <td class="rank" rowspan="2">1</td>
             <td>CHI</td>
-            <td><strong class="pick">+1.5 -130 (54.3%)</strong></td>
-            <td>O 6.5 -102 (48.3%)</td>
-            <td>+190 (33.1%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-230" data-pl="110">$4.35</td>
+            <td class="col-pl" style="display:none"><strong class="pick">+1.5 -130 (54.3%)</strong></td>
+            <td class="col-ou" style="display:none">O 6.5 -102 (48.3%)</td>
+            <td class="col-ml">+190 (33.1%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-230" data-pl="110" data-ou="-118">$4.35</td>
             <td class="edge" rowspan="2">1.655</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -152,18 +155,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-odd row-home">
             <td class="home-cell"><strong class="pick">BUF</strong></td>
-            <td>-1.5 +110 (45.7%)</td>
-            <td><strong class="pick">U 6.5 -118 (51.7%)</strong></td>
-            <td><strong class="pick">-230 (66.9%)</strong></td>
+            <td class="col-pl" style="display:none">-1.5 +110 (45.7%)</td>
+            <td class="col-ou" style="display:none"><strong class="pick">U 6.5 -118 (51.7%)</strong></td>
+            <td class="col-ml"><strong class="pick">-230 (66.9%)</strong></td>
         </tr>
 
         <tr class="game-even row-away">
             <td class="rank" rowspan="2">2</td>
             <td>BOS</td>
-            <td><strong class="pick">+1.5 -148 (57.2%)</strong></td>
-            <td>O 6.5 +110 (45.7%)</td>
-            <td>+170 (35.5%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-205" data-pl="124">$4.88</td>
+            <td class="col-pl" style="display:none"><strong class="pick">+1.5 -148 (57.2%)</strong></td>
+            <td class="col-ou" style="display:none">O 6.5 +110 (45.7%)</td>
+            <td class="col-ml">+170 (35.5%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-205" data-pl="124" data-ou="-130">$4.88</td>
             <td class="edge" rowspan="2">1.330</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -173,18 +176,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-even row-home">
             <td class="home-cell"><strong class="pick">MIN</strong></td>
-            <td>-1.5 +124 (42.8%)</td>
-            <td><strong class="pick">U 6.5 -130 (54.3%)</strong></td>
-            <td><strong class="pick">-205 (64.5%)</strong></td>
+            <td class="col-pl" style="display:none">-1.5 +124 (42.8%)</td>
+            <td class="col-ou" style="display:none"><strong class="pick">U 6.5 -130 (54.3%)</strong></td>
+            <td class="col-ml"><strong class="pick">-205 (64.5%)</strong></td>
         </tr>
 
         <tr class="game-odd row-away">
             <td class="rank" rowspan="2">3</td>
             <td><strong class="pick">NJD</strong></td>
-            <td><strong class="pick">-1.5 +195 (32.5%)</strong></td>
-            <td>O 5.5 -130 (54.3%)</td>
-            <td><strong class="pick">-142 (56.3%)</strong></td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-142" data-pl="195">$7.04</td>
+            <td class="col-pl" style="display:none"><strong class="pick">-1.5 +185 (33.6%)</strong></td>
+            <td class="col-ou" style="display:none">O 5.5 -130 (54.3%)</td>
+            <td class="col-ml"><strong class="pick">-142 (56.3%)</strong></td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-142" data-pl="185" data-ou="110">$7.04</td>
             <td class="edge" rowspan="2">0.983</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -194,18 +197,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-odd row-home">
             <td class="home-cell">NYI</td>
-            <td>+1.5 -238 (67.5%)</td>
-            <td><strong class="pick">U 5.5 +110 (45.7%)</strong></td>
-            <td>+120 (43.7%)</td>
+            <td class="col-pl" style="display:none">+1.5 -225 (66.4%)</td>
+            <td class="col-ou" style="display:none"><strong class="pick">U 5.5 +110 (45.7%)</strong></td>
+            <td class="col-ml">+120 (43.7%)</td>
         </tr>
 
         <tr class="game-even row-away">
             <td class="rank" rowspan="2">4</td>
             <td>WSH</td>
-            <td><strong class="pick">+1.5 -166 (60.0%)</strong></td>
-            <td>O 6.5 +105 (46.8%)</td>
-            <td>+150 (38.4%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-180" data-pl="140">$5.56</td>
+            <td class="col-pl" style="display:none"><strong class="pick">+1.5 -166 (60.0%)</strong></td>
+            <td class="col-ou" style="display:none">O 6.5 +105 (46.8%)</td>
+            <td class="col-ml">+150 (38.4%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-180" data-pl="140" data-ou="-125">$5.56</td>
             <td class="edge" rowspan="2">0.701</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -215,18 +218,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-even row-home">
             <td class="home-cell"><strong class="pick">TBL</strong></td>
-            <td>-1.5 +140 (40.0%)</td>
-            <td><strong class="pick">U 6.5 -125 (53.2%)</strong></td>
-            <td><strong class="pick">-180 (61.6%)</strong></td>
+            <td class="col-pl" style="display:none">-1.5 +140 (40.0%)</td>
+            <td class="col-ou" style="display:none"><strong class="pick">U 6.5 -125 (53.2%)</strong></td>
+            <td class="col-ml"><strong class="pick">-180 (61.6%)</strong></td>
         </tr>
 
         <tr class="game-odd row-away">
             <td class="rank" rowspan="2">5</td>
             <td>MTL</td>
-            <td>-1.5 +190 (33.1%)</td>
-            <td>O 6.5 -102 (48.3%)</td>
-            <td>-130 (54.3%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="110" data-pl="-230">$11.00</td>
+            <td class="col-pl" style="display:none">-1.5 +190 (33.1%)</td>
+            <td class="col-ou" style="display:none">O 6.5 -102 (48.3%)</td>
+            <td class="col-ml">-130 (54.3%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="110" data-pl="-230" data-ou="-118">$11.00</td>
             <td class="edge" rowspan="2">0.646</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -236,18 +239,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-odd row-home">
             <td class="home-cell"><strong class="pick">PIT</strong></td>
-            <td><strong class="pick">+1.5 -230 (66.9%)</strong></td>
-            <td><strong class="pick">U 6.5 -118 (51.7%)</strong></td>
-            <td><strong class="pick">+110 (45.7%)</strong></td>
+            <td class="col-pl" style="display:none"><strong class="pick">+1.5 -230 (66.9%)</strong></td>
+            <td class="col-ou" style="display:none"><strong class="pick">U 6.5 -118 (51.7%)</strong></td>
+            <td class="col-ml"><strong class="pick">+110 (45.7%)</strong></td>
         </tr>
 
         <tr class="game-even row-away">
             <td class="rank" rowspan="2">6</td>
             <td>LAK</td>
-            <td><strong class="pick">+1.5 -265 (69.6%)</strong></td>
-            <td><strong class="pick">O 6.5 +110 (45.7%)</strong></td>
-            <td>+100 (47.8%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-120" data-pl="215">$8.33</td>
+            <td class="col-pl" style="display:none"><strong class="pick">+1.5 -265 (69.6%)</strong></td>
+            <td class="col-ou" style="display:none"><strong class="pick">O 6.5 +110 (45.7%)</strong></td>
+            <td class="col-ml">+100 (47.8%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-120" data-pl="215" data-ou="110">$8.33</td>
             <td class="edge" rowspan="2">0.593</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -257,18 +260,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-even row-home">
             <td class="home-cell"><strong class="pick">SJS</strong></td>
-            <td>-1.5 +215 (30.4%)</td>
-            <td>U 6.5 -130 (54.3%)</td>
-            <td><strong class="pick">-120 (52.2%)</strong></td>
+            <td class="col-pl" style="display:none">-1.5 +215 (30.4%)</td>
+            <td class="col-ou" style="display:none">U 6.5 -130 (54.3%)</td>
+            <td class="col-ml"><strong class="pick">-120 (52.2%)</strong></td>
         </tr>
 
         <tr class="game-odd row-away">
             <td class="rank" rowspan="2">7</td>
             <td>UTA</td>
-            <td>-1.5 +220 (30.0%)</td>
-            <td>O 6.5 +114 (44.9%)</td>
-            <td>-112 (50.4%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-108" data-pl="-270">$9.26</td>
+            <td class="col-pl" style="display:none">-1.5 +220 (30.0%)</td>
+            <td class="col-ou" style="display:none">O 6.5 +114 (44.9%)</td>
+            <td class="col-ml">-112 (50.4%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-108" data-pl="-270" data-ou="-135">$9.26</td>
             <td class="edge" rowspan="2">0.395</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -278,18 +281,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-odd row-home">
             <td class="home-cell"><strong class="pick">CBJ</strong></td>
-            <td><strong class="pick">+1.5 -270 (70.0%)</strong></td>
-            <td><strong class="pick">U 6.5 -135 (55.1%)</strong></td>
-            <td><strong class="pick">-108 (49.6%)</strong></td>
+            <td class="col-pl" style="display:none"><strong class="pick">+1.5 -270 (70.0%)</strong></td>
+            <td class="col-ou" style="display:none"><strong class="pick">U 6.5 -135 (55.1%)</strong></td>
+            <td class="col-ml"><strong class="pick">-108 (49.6%)</strong></td>
         </tr>
 
         <tr class="game-even row-away">
             <td class="rank" rowspan="2">8</td>
             <td>STL</td>
-            <td><span class="notes">n/a</span></td>
-            <td><span class="notes">n/a</span></td>
-            <td><span class="notes">n/a</span></td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="" data-pl="">&mdash;</td>
+            <td class="col-pl" style="display:none"><span class="notes">n/a</span></td>
+            <td class="col-ou" style="display:none"><span class="notes">n/a</span></td>
+            <td class="col-ml"><span class="notes">n/a</span></td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="" data-pl="" data-ou="">&mdash;</td>
             <td class="edge" rowspan="2">0.321</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -299,18 +302,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-even row-home">
             <td class="home-cell"><strong class="pick">COL</strong></td>
-            <td><span class="notes">n/a</span></td>
-            <td><span class="notes">n/a</span></td>
-            <td><span class="notes">n/a</span></td>
+            <td class="col-pl" style="display:none"><span class="notes">n/a</span></td>
+            <td class="col-ou" style="display:none"><span class="notes">n/a</span></td>
+            <td class="col-ml"><span class="notes">n/a</span></td>
         </tr>
 
         <tr class="game-odd row-away">
             <td class="rank" rowspan="2">9</td>
             <td><strong class="pick">DAL</strong></td>
-            <td><strong class="pick">-1.5 +185 (33.6%)</strong></td>
-            <td>O 6.5 +114 (44.9%)</td>
-            <td><strong class="pick">-135 (55.1%)</strong></td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-135" data-pl="185">$7.41</td>
+            <td class="col-pl" style="display:none"><strong class="pick">-1.5 +185 (33.6%)</strong></td>
+            <td class="col-ou" style="display:none">O 6.5 +114 (44.9%)</td>
+            <td class="col-ml"><strong class="pick">-135 (55.1%)</strong></td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-135" data-pl="185" data-ou="-135">$7.41</td>
             <td class="edge" rowspan="2">0.284</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -320,18 +323,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-odd row-home">
             <td class="home-cell">NSH</td>
-            <td>+1.5 -225 (66.4%)</td>
-            <td><strong class="pick">U 6.5 -135 (55.1%)</strong></td>
-            <td>+114 (44.9%)</td>
+            <td class="col-pl" style="display:none">+1.5 -225 (66.4%)</td>
+            <td class="col-ou" style="display:none"><strong class="pick">U 6.5 -135 (55.1%)</strong></td>
+            <td class="col-ml">+114 (44.9%)</td>
         </tr>
 
         <tr class="game-even row-away">
             <td class="rank" rowspan="2">10</td>
             <td><strong class="pick">CAR</strong></td>
-            <td><strong class="pick">-1.5 +190 (33.1%)</strong></td>
-            <td>O 5.5 -135 (55.1%)</td>
-            <td><strong class="pick">-130 (54.3%)</strong></td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-130" data-pl="190">$7.69</td>
+            <td class="col-pl" style="display:none"><strong class="pick">-1.5 +190 (33.1%)</strong></td>
+            <td class="col-ou" style="display:none">O 5.5 -135 (55.1%)</td>
+            <td class="col-ml"><strong class="pick">-130 (54.3%)</strong></td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-130" data-pl="190" data-ou="114">$7.69</td>
             <td class="edge" rowspan="2">0.202</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -341,18 +344,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-even row-home">
             <td class="home-cell">PHI</td>
-            <td>+1.5 -230 (66.9%)</td>
-            <td><strong class="pick">U 5.5 +114 (44.9%)</strong></td>
-            <td>+110 (45.7%)</td>
+            <td class="col-pl" style="display:none">+1.5 -230 (66.9%)</td>
+            <td class="col-ou" style="display:none"><strong class="pick">U 5.5 +114 (44.9%)</strong></td>
+            <td class="col-ml">+110 (45.7%)</td>
         </tr>
 
         <tr class="game-odd row-away">
             <td class="rank" rowspan="2">11</td>
             <td>CGY</td>
-            <td>+1.5 -265 (69.6%)</td>
-            <td><strong class="pick">O 6.5 +105 (46.8%)</strong></td>
-            <td>-110 (50.0%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-110" data-pl="215">$9.09</td>
+            <td class="col-pl" style="display:none">+1.5 -265 (69.6%)</td>
+            <td class="col-ou" style="display:none"><strong class="pick">O 6.5 +105 (46.8%)</strong></td>
+            <td class="col-ml">-110 (50.0%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-110" data-pl="215" data-ou="105">$9.09</td>
             <td class="edge" rowspan="2">0.201</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -362,18 +365,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-odd row-home">
             <td class="home-cell"><strong class="pick">VAN</strong></td>
-            <td><strong class="pick">-1.5 +215 (30.4%)</strong></td>
-            <td>U 6.5 -125 (53.2%)</td>
-            <td><strong class="pick">-110 (50.0%)</strong></td>
+            <td class="col-pl" style="display:none"><strong class="pick">-1.5 +215 (30.4%)</strong></td>
+            <td class="col-ou" style="display:none">U 6.5 -125 (53.2%)</td>
+            <td class="col-ml"><strong class="pick">-110 (50.0%)</strong></td>
         </tr>
 
         <tr class="game-even row-away">
             <td class="rank" rowspan="2">12</td>
             <td>OTT</td>
-            <td><strong class="pick">+1.5 -258 (69.1%)</strong></td>
-            <td>O 6.5 +105 (46.8%)</td>
-            <td>+100 (47.8%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-120" data-pl="210">$8.33</td>
+            <td class="col-pl" style="display:none"><strong class="pick">+1.5 -258 (69.1%)</strong></td>
+            <td class="col-ou" style="display:none">O 6.5 +105 (46.8%)</td>
+            <td class="col-ml">+100 (47.8%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-120" data-pl="210" data-ou="-125">$8.33</td>
             <td class="edge" rowspan="2">0.165</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -383,18 +386,18 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-even row-home">
             <td class="home-cell"><strong class="pick">TOR</strong></td>
-            <td>-1.5 +210 (30.9%)</td>
-            <td><strong class="pick">U 6.5 -125 (53.2%)</strong></td>
-            <td><strong class="pick">-120 (52.2%)</strong></td>
+            <td class="col-pl" style="display:none">-1.5 +210 (30.9%)</td>
+            <td class="col-ou" style="display:none"><strong class="pick">U 6.5 -125 (53.2%)</strong></td>
+            <td class="col-ml"><strong class="pick">-120 (52.2%)</strong></td>
         </tr>
 
         <tr class="game-odd row-away">
             <td class="rank" rowspan="2">13</td>
             <td>SEA</td>
-            <td><strong class="pick">+1.5 -142 (56.3%)</strong></td>
-            <td><strong class="pick">O 6.5 -108 (49.6%)</strong></td>
-            <td>+170 (35.5%)</td>
-            <td class="edge winnings-cell" rowspan="2" data-ml="-205" data-pl="120">$4.88</td>
+            <td class="col-pl" style="display:none"><strong class="pick">+1.5 -142 (56.3%)</strong></td>
+            <td class="col-ou" style="display:none"><strong class="pick">O 6.5 -108 (49.6%)</strong></td>
+            <td class="col-ml">+170 (35.5%)</td>
+            <td class="edge winnings-cell" rowspan="2" data-ml="-205" data-pl="120" data-ou="-108">$4.88</td>
             <td class="edge" rowspan="2">0.128</td>
             <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
@@ -404,9 +407,9 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-odd row-home">
             <td class="home-cell"><strong class="pick">EDM</strong></td>
-            <td>-1.5 +120 (43.7%)</td>
-            <td>U 6.5 -112 (50.4%)</td>
-            <td><strong class="pick">-205 (64.5%)</strong></td>
+            <td class="col-pl" style="display:none">-1.5 +120 (43.7%)</td>
+            <td class="col-ou" style="display:none">U 6.5 -112 (50.4%)</td>
+            <td class="col-ml"><strong class="pick">-205 (64.5%)</strong></td>
         </tr>
 </tbody>
 </table>
@@ -441,14 +444,14 @@ puck line across every graded pick so far
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 03, 2026 at 10:58 AM EDT</p>
+<p class="updated">Last updated October 03, 2026 at 11:08 AM EDT</p>
 
 <script>
 function updateWinnings() {
     var marketType = document.getElementById("odds-type").value;
+    var attr = marketType === "ml" ? "data-ml" : (marketType === "pl" ? "data-pl" : "data-ou");
     var cells = document.querySelectorAll(".winnings-cell");
     cells.forEach(function (cell) {
-        var attr = marketType === "ml" ? "data-ml" : "data-pl";
         var raw = cell.getAttribute(attr);
         if (!raw) {
             cell.textContent = "\u2014";
@@ -459,6 +462,19 @@ function updateWinnings() {
         var payout = price > 0 ? (stake * price) / 100 : (stake * 100) / Math.abs(price);
         cell.textContent = "$" + payout.toFixed(2);
     });
+}
+function updateColumns() {
+    var marketType = document.getElementById("odds-type").value;
+    ["pl", "ou", "ml"].forEach(function (category) {
+        var display = category === marketType ? "" : "none";
+        document.querySelectorAll(".col-" + category).forEach(function (cell) {
+            cell.style.display = display;
+        });
+    });
+}
+function onMarketChange() {
+    updateWinnings();
+    updateColumns();
 }
 </script>
 </body>

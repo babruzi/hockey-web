@@ -121,7 +121,8 @@ a { color: var(--accent); }
 <table>
 <thead>
 <tr>
-    <th>#</th><th>Team</th><th>Puck Line</th><th>Over/Under</th><th>Money Line</th>
+    <th>#</th><th>Team</th><th class="col-pl">Puck Line</th>
+    <th class="col-ou">Over/Under</th><th class="col-ml">Money Line</th>
     
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
     <th>Team ATS Record</th><th>Notes</th>
@@ -131,9 +132,9 @@ a { color: var(--accent); }
         <tr class="game-odd row-away">
             <td class="rank" rowspan="2">1</td>
             <td><strong class="pick">LAK</strong></td>
-            <td><strong class="pick">+1.5</strong></td>
-            <td>O 6.5 +110 (45.7%)</td>
-            <td><strong class="pick">+160 (36.9%)</strong></td>
+            <td class="col-pl"><strong class="pick">+1.5</strong></td>
+            <td class="col-ou">O 6.5 +110 (45.7%)</td>
+            <td class="col-ml"><strong class="pick">+160 (36.9%)</strong></td>
             
             <td class="edge" rowspan="2">0.464</td>
             <td class="edge" rowspan="2">4&ndash;8 <span class="notes">(Over)</span></td>
@@ -144,17 +145,17 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-odd row-home">
             <td class="home-cell">COL</td>
-            <td>-1.5</td>
-            <td><strong class="pick">U 6.5 -130 (54.3%)</strong></td>
-            <td>-192 (63.1%)</td>
+            <td class="col-pl">-1.5</td>
+            <td class="col-ou"><strong class="pick">U 6.5 -130 (54.3%)</strong></td>
+            <td class="col-ml">-192 (63.1%)</td>
         </tr>
 
         <tr class="game-even row-away">
             <td class="rank" rowspan="2">2</td>
             <td>NYI</td>
-            <td>+1.5</td>
-            <td>O 5.5 -130 (54.3%)</td>
-            <td>+100 (47.8%)</td>
+            <td class="col-pl">+1.5</td>
+            <td class="col-ou">O 5.5 -130 (54.3%)</td>
+            <td class="col-ml">+100 (47.8%)</td>
             
             <td class="edge" rowspan="2">0.454</td>
             <td class="edge" rowspan="2">1&ndash;2 <span class="notes">(Under)</span></td>
@@ -165,17 +166,17 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-even row-home">
             <td class="home-cell"><strong class="pick">TOR</strong></td>
-            <td><strong class="pick">-1.5</strong></td>
-            <td>U 5.5 +110 (45.7%)</td>
-            <td><strong class="pick">-120 (52.2%)</strong></td>
+            <td class="col-pl"><strong class="pick">-1.5</strong></td>
+            <td class="col-ou">U 5.5 +110 (45.7%)</td>
+            <td class="col-ml"><strong class="pick">-120 (52.2%)</strong></td>
         </tr>
 
         <tr class="game-odd row-away">
             <td class="rank" rowspan="2">3</td>
             <td><strong class="pick">PIT</strong></td>
-            <td><strong class="pick">+1.5</strong></td>
-            <td>O 5.5 -135 (55.1%)</td>
-            <td><strong class="pick">+120 (43.7%)</strong></td>
+            <td class="col-pl"><strong class="pick">+1.5</strong></td>
+            <td class="col-ou">O 5.5 -135 (55.1%)</td>
+            <td class="col-ml"><strong class="pick">+120 (43.7%)</strong></td>
             
             <td class="edge" rowspan="2">0.355</td>
             <td class="edge" rowspan="2">7&ndash;0 <span class="notes">(Over)</span></td>
@@ -186,9 +187,9 @@ a { color: var(--accent); }
         </tr>
         <tr class="game-odd row-home">
             <td class="home-cell">PHI</td>
-            <td>-1.5</td>
-            <td><strong class="pick">U 5.5 +114 (44.9%)</strong></td>
-            <td>-142 (56.3%)</td>
+            <td class="col-pl">-1.5</td>
+            <td class="col-ou"><strong class="pick">U 5.5 +114 (44.9%)</strong></td>
+            <td class="col-ml">-142 (56.3%)</td>
         </tr>
 </tbody>
 </table>
@@ -223,7 +224,7 @@ puck line across every graded pick so far
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 03, 2026 at 10:58 AM EDT</p>
+<p class="updated">Last updated October 03, 2026 at 11:08 AM EDT</p>
 
 </body>
 </html>
