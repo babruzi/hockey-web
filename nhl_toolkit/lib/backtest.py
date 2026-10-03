@@ -134,7 +134,15 @@ def policy_performance(conn: sqlite3.Connection) -> list:
 
     Joined through daily_scores (picks_log itself doesn't store policy_version)
     so that comparing performance before/after a policy.yaml weight change is
-    possible once more than one policy_version has actually been scored.
+    possible once more than one policy_version has actually been scored. The
+    subquery picks one policy_version per date -- whichever is lexicographically
+    latest among the versions that actually scored it (same logic as
+    report.py's build_picks()) -- because a date can carry rows from more
+    than one policy_version once a weight change happens mid-season (score.py
+    only deletes/replaces rows for the version it's currently writing). A
+    plain join without this would double-count a pick under every
+    policy_version that ever scored its date, inflating every version's
+    tally by however many dates they overlap on.
 
     :param conn: Open connection to the schedule database.
     :returns: One dict per policy_version with win/loss/push counts.
@@ -150,8 +158,13 @@ def policy_performance(conn: sqlite3.Connection) -> list:
                SUM(p.profit_10),
                SUM(CASE WHEN p.profit_10 IS NOT NULL THEN 1 ELSE 0 END)
         FROM picks_log p
-        JOIN daily_scores ds
-          ON ds.date = p.date AND ds.game_id = p.game_id AND ds.team_id = p.pick
+        JOIN (
+            SELECT date, game_id, team_id, policy_version
+            FROM daily_scores ds1
+            WHERE ds1.policy_version = (
+                SELECT MAX(ds2.policy_version) FROM daily_scores ds2 WHERE ds2.date = ds1.date
+            )
+        ) ds ON ds.date = p.date AND ds.game_id = p.game_id AND ds.team_id = p.pick
         GROUP BY ds.policy_version
         ORDER BY ds.policy_version
         """

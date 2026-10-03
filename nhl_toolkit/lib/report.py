@@ -410,19 +410,39 @@ def total_recommendation(
 def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
     """Rank each game by score gap and pick the higher-scoring side.
 
+    Uses only one policy_version's scores per date -- whichever is
+    lexicographically latest among the versions that actually scored this
+    date (policy_version strings sort chronologically, e.g. "2026-10-v1" <
+    "2026-10-v2"). This matters once a weight change happens mid-season:
+    score.py only deletes/replaces rows for the policy_version it's
+    currently writing, so daily_scores can hold rows from more than one
+    policy_version for the same date (e.g. today, scored once before a
+    policy.yaml change and again after). Without this, a date scored
+    under two versions would pick whichever row SQLite happened to return
+    last for a given (game, team) -- an implementation detail, not a real
+    decision. A date that's only ever been scored once (every past date,
+    normally) is unaffected -- MAX() of one value is just that value, so
+    this never requires re-scoring historical dates under the version
+    that's current today.
+
     :param conn: Open connection to the schedule database.
     :param target_date: Date to report on, as YYYY-MM-DD.
     :returns: Pick dicts sorted by predicted_edge descending.
     """
+    policy_version = conn.execute(
+        "SELECT MAX(policy_version) FROM daily_scores WHERE date = ?", (target_date,)
+    ).fetchone()[0]
+    if policy_version is None:
+        return []
     rows = conn.execute(
         """
         SELECT ds.game_id, ds.team_id, ds.total_score, g.home_team, g.away_team,
                g.game_date, g.home_score, g.away_score
         FROM daily_scores ds
         JOIN games g ON g.game_id = ds.game_id
-        WHERE ds.date = ?
+        WHERE ds.date = ? AND ds.policy_version = ?
         """,
-        (target_date,),
+        (target_date, policy_version),
     ).fetchall()
 
     scores_by_game: dict[int, dict] = {}

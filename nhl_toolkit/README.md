@@ -252,7 +252,10 @@ moneyline/against-the-puck-line record *and* moneyline ROI (summed
 `profit_10` on a flat $10 stake per pick) per `policy_version`, plus the
 same record/ROI for the Puck Line and Over/Under recommendations as one
 overall total each (independent of `policy_version`, since neither is
-policy.yaml-driven). Never
+policy.yaml-driven). The per-`policy_version` numbers only count a date
+under whichever version is the latest on record for it, so a date that's
+been re-scored since a `policy.yaml` change doesn't inflate the older
+version it was originally scored under. Never
 writes to `policy.yaml` — correlation is a hint for hand-tuning, not an
 answer, and early in a season the sample sizes are too small to trust
 (that's what `--min-n` flags). It never hardcodes a metric name, so a future
