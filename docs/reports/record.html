@@ -171,6 +171,52 @@ been bet.
 </tbody>
 </table>
 
+<h2>Policy Backtest</h2>
+<p class="subtitle">
+Every policy_version replayed against the exact same full slate of completed
+games, instead of only the different (non-overlapping) stretch each one
+actually happened to be live for -- a fair head-to-head comparison, ranked
+by moneyline ROI%. See policy_backtest.py.
+</p>
+<table>
+<thead>
+<tr>
+    <th>Version</th><th>Games</th><th>Moneyline</th><th>Vs. Puck Line</th><th>Moneyline ROI</th>
+</tr>
+</thead>
+<tbody>
+        <tr>
+            <td>2026-10-v1</td>
+            <td class="edge">34</td>
+            <td>20-14 (58.8%)</td>
+            <td>13-18-0 (41.9%)</td>
+            <td class="positive">
+                +7.88 on 31 bets (+2.5%)
+            </td>
+        </tr>
+
+        <tr>
+            <td>2026-10-v2</td>
+            <td class="edge">34</td>
+            <td>19-15 (55.9%)</td>
+            <td>14-17-0 (45.2%)</td>
+            <td class="negative">
+                -6.90 on 31 bets (-2.2%)
+            </td>
+        </tr>
+
+        <tr>
+            <td>2026-08-v2</td>
+            <td class="edge">34</td>
+            <td>17-17 (50.0%)</td>
+            <td>10-21-0 (32.3%)</td>
+            <td class="negative">
+                -36.80 on 31 bets (-11.9%)
+            </td>
+        </tr>
+</tbody>
+</table>
+
 <p class="disclaimer">
 "Moneyline" and "Vs. Puck Line" above are both about the scoring engine's
 one pick (policy.yaml's weighted total_score); "Puck Line Record" and
@@ -178,8 +224,12 @@ one pick (policy.yaml's weighted total_score); "Puck Line Record" and
 name a different team or side (see the picks pages for why) -- each ROI
 figure assumes a flat $10 stake per pick at the price recorded
 when that type's recommendation was made, and only counts picks that had
-odds on record. Paper-trading analysis only, not betting advice.
+odds on record. The Policy Backtest table is a simulation, not a record of
+real picks -- it's what each policy_version's Money Line pick would have
+been on every completed game, graded against the real final score and
+whatever odds were on record, not what was actually logged in picks_log
+at the time. Paper-trading analysis only, not betting advice.
 </p>
-<p class="updated">Last updated October 04, 2026 at 11:11 AM EDT</p>
+<p class="updated">Last updated October 04, 2026 at 11:25 AM EDT</p>
 </body>
 </html>
