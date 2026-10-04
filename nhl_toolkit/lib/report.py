@@ -697,6 +697,10 @@ HTML_STYLE = """
     --accent: #1d4ed8;
     --pick: #15803d;
     --negative: #b91c1c;
+    --chart-ml: #1d4ed8;
+    --chart-pl: #7c3aed;
+    --chart-ou: #ea580c;
+    --chart-strategy: #15803d;
 }
 @media (prefers-color-scheme: dark) {
     :root {
@@ -708,6 +712,10 @@ HTML_STYLE = """
         --accent: #60a5fa;
         --pick: #4ade80;
         --negative: #f87171;
+        --chart-ml: #60a5fa;
+        --chart-pl: #c4b5fd;
+        --chart-ou: #fb923c;
+        --chart-strategy: #4ade80;
     }
 }
 body {
@@ -775,6 +783,10 @@ th { color: var(--muted); font-weight: 600; font-size: 0.85rem; text-transform: 
 .negative { color: var(--negative); font-variant-numeric: tabular-nums; }
 a { color: var(--accent); }
 .disclaimer { color: var(--muted); font-size: 0.85rem; margin-top: 2rem; }
+.chart-wrap { width: 100%; margin: 1rem 0; }
+.bankroll-chart { width: 100%; height: auto; display: block; }
+.chart-legend { font-size: 0.85rem; color: var(--muted); margin-top: 0.25rem; }
+.chart-legend .swatch { font-size: 1rem; line-height: 1; }
 .updated { color: var(--muted); font-size: 0.75rem; margin-top: 0.5rem; }
 .controls {
     display: flex;

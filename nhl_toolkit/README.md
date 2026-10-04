@@ -249,6 +249,13 @@ run.
     per-date report refresh runs -- so the policy backtest is always current
     as of the last graded games too, with no extra wiring needed.
 
+    Also includes a **Bankroll Over Time** chart: a day-by-day cumulative
+    P&L line per bet type (Money Line, Puck Line, Over/Under, and the
+    Strategy combo from the picks page), rendered as plain inline SVG --
+    no JavaScript, no charting library, matching the rest of the site.
+    Below it, Current Streak and Best/Worst Single Pick round out the
+    picture, computed straight from `picks_log`.
+
 ### Tuning weights: backtesting
 
 ```bash
