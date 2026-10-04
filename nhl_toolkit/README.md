@@ -237,12 +237,17 @@ run.
     ROI for all three bet types (Money Line, Puck Line, Over/Under), each
     as its own row, plus a per-`policy_version` breakdown for Money Line
     only (Puck Line/Over-Under aren't policy.yaml-driven, so grouping those
-    by policy_version wouldn't mean anything). Reuses `backtest.py`'s
-    `policy_performance()`/`bet_type_totals()` rather than re-deriving the
-    numbers. Linked from the reports index as "Performance record & ROI,"
+    by policy_version wouldn't mean anything), plus a **Policy Backtest**
+    table replaying every policy_version against the exact same full slate
+    of completed games -- a fair head-to-head comparison, unlike the
+    per-`policy_version` table above it. Reuses `backtest.py`'s
+    `policy_performance()`/`bet_type_totals()` and `policy_backtest.py`'s
+    `build_policy_backtest()`/`rank_by_roi()` rather than re-deriving any of
+    the numbers. Linked from the reports index as "Performance record & ROI,"
     only once the page actually exists (same dead-link guard as "Today's
     Picks"). `run_daily.py` regenerates it right after grading, before the
-    per-date report refresh runs.
+    per-date report refresh runs -- so the policy backtest is always current
+    as of the last graded games too, with no extra wiring needed.
 
 ### Tuning weights: backtesting
 

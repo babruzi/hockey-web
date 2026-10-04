@@ -4,12 +4,19 @@ all three independent bet types -- Money Line, Puck Line, and Over/Under
 (see report.py's puck_line_recommendation()/total_recommendation()) --
 plus a per-policy_version Money Line breakdown for comparing before/after
 a weight change (Puck Line/Over-Under aren't policy.yaml-driven, so a
-per-policy_version breakdown wouldn't mean anything for those two). This
-is the published, no-terminal-needed view of the same numbers backtest.py
-already prints to the console -- it reuses backtest.py's
-policy_performance()/bet_type_totals() rather than re-deriving them.
+per-policy_version breakdown wouldn't mean anything for those two), and a
+third section replaying every policy_version against the exact same full
+slate of completed games (policy_backtest.py) -- unlike the "By Policy
+Version" section above it, which only shows how each version did during
+the different, non-overlapping stretch it happened to be live for, this
+one is a fair head-to-head comparison. This is the published,
+no-terminal-needed view of the same numbers backtest.py/policy_backtest.py
+already print to the console -- it reuses their
+policy_performance()/bet_type_totals()/build_policy_backtest() rather
+than re-deriving them.
 
-Regenerated automatically by run_daily.py, or run standalone:
+Regenerated automatically by run_daily.py (right after grading, so this
+is always current as of the last graded games), or run standalone:
 
 Usage:
     python lib/record_page.py
@@ -20,6 +27,7 @@ from pathlib import Path
 from backtest import bet_type_totals, policy_performance
 from db import get_connection
 from grade import STAKE
+from policy_backtest import build_policy_backtest, rank_by_roi
 from report import DOCS_DIR, HTML_STYLE, generation_timestamp
 
 RECORD_PATH = DOCS_DIR / "reports" / "record.html"
@@ -89,11 +97,14 @@ def format_roi(total_profit: float, bet_count: int) -> tuple:
     return f"{total_profit:+.2f} on {bet_count} bets ({roi_pct:+.1f}%)", css_class
 
 
-def render_record_html(performance: list, bet_types: dict) -> Path:
+def render_record_html(
+    performance: list, bet_types: dict, policy_backtest_results: list[tuple[str, dict]]
+) -> Path:
     """Render the overall + per-policy_version record as a static HTML page.
 
     :param performance: Rows from :func:`backtest.policy_performance`.
     :param bet_types: Result of :func:`backtest.bet_type_totals`.
+    :param policy_backtest_results: Result of :func:`policy_backtest.build_policy_backtest`.
     :returns: Path to the written HTML file.
     """
     RECORD_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -131,6 +142,26 @@ def render_record_html(performance: list, bet_types: dict) -> Path:
     )
     if not version_rows:
         version_rows = '<tr><td colspan="4" class="notes">No graded picks yet.</td></tr>'
+
+    backtest_rows = "\n".join(
+        f"""
+        <tr>
+            <td>{policy_version}</td>
+            <td class="edge">{totals["games_evaluated"]}</td>
+            <td>{format_record_pct(totals["su_wins"], totals["su_losses"])}</td>
+            <td>{
+            format_record_with_pushes(
+                totals["ats_wins"], totals["ats_losses"], totals["ats_pushes"]
+            )
+        }</td>
+            <td class="{format_roi(totals["total_profit"], totals["graded_bet_count"])[1]}">
+                {format_roi(totals["total_profit"], totals["graded_bet_count"])[0]}
+            </td>
+        </tr>"""
+        for policy_version, totals in rank_by_roi(policy_backtest_results)
+    )
+    if not backtest_rows:
+        backtest_rows = '<tr><td colspan="5" class="notes">No completed games yet.</td></tr>'
 
     page = f"""<!doctype html>
 <html lang="en">
@@ -172,6 +203,23 @@ been bet.
 </tbody>
 </table>
 
+<h2>Policy Backtest</h2>
+<p class="subtitle">
+Every policy_version replayed against the exact same full slate of completed
+games, instead of only the different (non-overlapping) stretch each one
+actually happened to be live for -- a fair head-to-head comparison, ranked
+by moneyline ROI%. See policy_backtest.py.
+</p>
+<table>
+<thead>
+<tr>
+    <th>Version</th><th>Games</th><th>Moneyline</th><th>Vs. Puck Line</th><th>Moneyline ROI</th>
+</tr>
+</thead>
+<tbody>{backtest_rows}
+</tbody>
+</table>
+
 <p class="disclaimer">
 "Moneyline" and "Vs. Puck Line" above are both about the scoring engine's
 one pick (policy.yaml's weighted total_score); "Puck Line Record" and
@@ -179,7 +227,11 @@ one pick (policy.yaml's weighted total_score); "Puck Line Record" and
 name a different team or side (see the picks pages for why) -- each ROI
 figure assumes a flat ${STAKE:.0f} stake per pick at the price recorded
 when that type's recommendation was made, and only counts picks that had
-odds on record. Paper-trading analysis only, not betting advice.
+odds on record. The Policy Backtest table is a simulation, not a record of
+real picks -- it's what each policy_version's Money Line pick would have
+been on every completed game, graded against the real final score and
+whatever odds were on record, not what was actually logged in picks_log
+at the time. Paper-trading analysis only, not betting advice.
 </p>
 <p class="updated">Last updated {generation_timestamp()}</p>
 </body>
@@ -197,7 +249,8 @@ def build_record_page() -> None:
         performance = policy_performance(conn)
         bet_types = bet_type_totals(conn)
     conn.close()
-    path = render_record_html(performance, bet_types)
+    policy_backtest_results = build_policy_backtest()
+    path = render_record_html(performance, bet_types, policy_backtest_results)
     print(f"Wrote {path}")
 
 

@@ -143,6 +143,30 @@ def _pct(wins: int, losses: int) -> str:
     return f"{wins}-{losses} ({100 * wins / total:.1f}%)" if total else "0-0 (n/a)"
 
 
+def roi_pct(totals: dict) -> Optional[float]:
+    """Moneyline ROI%, on a flat $STAKE stake per bet.
+
+    :param totals: One policy_version's aggregate dict, from :func:`simulate_policy`.
+    :returns: ROI as a percentage, or None if no evaluated game had a moneyline to bet.
+    """
+    bet_count = totals["graded_bet_count"]
+    if not bet_count:
+        return None
+    return 100 * totals["total_profit"] / (STAKE * bet_count)
+
+
+def rank_by_roi(results: list[tuple[str, dict]]) -> list[tuple[str, dict]]:
+    """Every policy_version's results, best ROI% first (policies with no odds last).
+
+    Shared by the console printout and record_page.py's published table, so
+    both ever only show one ranking of "which policy's doing best."
+
+    :param results: (policy_version, totals) pairs, as returned by :func:`simulate_policy`.
+    :returns: The same pairs, re-ordered.
+    """
+    return sorted(results, key=lambda item: (roi_pct(item[1]) is None, -(roi_pct(item[1]) or 0)))
+
+
 def print_policy_backtest(results: list[tuple[str, dict]]) -> None:
     """Print every policy_version's simulated record, ranked by moneyline ROI%.
 
@@ -154,15 +178,7 @@ def print_policy_backtest(results: list[tuple[str, dict]]) -> None:
         print("No completed games yet.")
         return
 
-    def roi_pct(totals: dict) -> Optional[float]:
-        bet_count = totals["graded_bet_count"]
-        if not bet_count:
-            return None
-        return 100 * totals["total_profit"] / (STAKE * bet_count)
-
-    ranked = sorted(results, key=lambda item: (roi_pct(item[1]) is None, -(roi_pct(item[1]) or 0)))
-
-    for policy_version, totals in ranked:
+    for policy_version, totals in rank_by_roi(results):
         su = _pct(totals["su_wins"], totals["su_losses"])
         ats = _pct(totals["ats_wins"], totals["ats_losses"])
         push_note = f", {totals['ats_pushes']} push" if totals["ats_pushes"] else ""
