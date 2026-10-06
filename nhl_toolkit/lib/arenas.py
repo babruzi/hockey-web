@@ -190,7 +190,7 @@ ARENAS = {
         "tz": "America/Los_Angeles",
     },
     "STL": {
-        "team": "St. Louis Blues",
+        "team": "St Louis Blues",
         "city": "St. Louis, MO",
         "lat": 38.6266,
         "lon": -90.2026,
@@ -261,6 +261,15 @@ TEAM_NAME_TO_ABBREV["Utah Hockey Club"] = "UTA"
 # silently got zero odds for the franchise's entire history here until this
 # exact-match mismatch was caught by querying the live feed directly.
 TEAM_NAME_TO_ABBREV["Montreal Canadiens"] = "MTL"
+
+# Punctuated fallback: The Odds API spells it "St Louis Blues" (no period
+# after "St", the canonical form used above), but "St. Louis Blues" is the
+# more common/grammatically-standard spelling elsewhere -- every Blues game
+# silently got zero odds for the franchise's entire history here until this
+# exact-match mismatch was caught the same way the Utah/Montreal ones were:
+# querying the live feed directly and diffing its team names against this
+# file, rather than assuming the punctuated spelling here was correct.
+TEAM_NAME_TO_ABBREV["St. Louis Blues"] = "STL"
 
 
 def get_abbrev_for_team_name(team_name: str) -> str:
