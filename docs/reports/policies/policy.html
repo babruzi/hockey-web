@@ -129,7 +129,7 @@ a { color: var(--accent); }
 <p><a href="../../index.html">&larr; All reports</a></p>
 <h1>Scoring Policy</h1>
 <p class="subtitle">
-Version <strong>2026-10-v2</strong> &middot;
+Version <strong>2026-10-v3</strong> &middot;
 edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
 </p>
 <table>
@@ -149,7 +149,7 @@ edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
             <td>games_last_7</td>
             <td class="notes">Games played in the trailing 7 days</td>
             <td class="notes">count</td>
-            <td><span class="negative">-0.10</span></td>
+            <td><span class="positive">+0.04</span></td>
             <td>zscore</td>
         </tr>
 
@@ -157,7 +157,7 @@ edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
             <td>games_last_14</td>
             <td class="notes">Games played in the trailing 14 days</td>
             <td class="notes">count</td>
-            <td><span class="negative">-0.08</span></td>
+            <td><span class="positive">+0.03</span></td>
             <td>zscore</td>
         </tr>
 
@@ -165,7 +165,7 @@ edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
             <td>games_last_30</td>
             <td class="notes">Games played in the trailing 30 days</td>
             <td class="notes">count</td>
-            <td><span class="negative">-0.05</span></td>
+            <td><span class="positive">+0.02</span></td>
             <td>zscore</td>
         </tr>
 
@@ -189,7 +189,7 @@ edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
             <td>back_to_back</td>
             <td class="notes">Playing on zero days of rest</td>
             <td class="notes">bool</td>
-            <td><span class="negative">-0.20</span></td>
+            <td><span class="negative">-0.15</span></td>
             <td>none</td>
         </tr>
 
@@ -205,7 +205,7 @@ edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
             <td>recent_form</td>
             <td class="notes">Win percentage over the last 10 completed games</td>
             <td class="notes">win_pct</td>
-            <td><span class="positive">+0.20</span></td>
+            <td><span class="positive">+0.08</span></td>
             <td>minmax</td>
         </tr>
 
@@ -229,7 +229,7 @@ edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
             <td>market_edge</td>
             <td class="notes">Betting market's devigged implied win probability for this team (from moneyline)</td>
             <td class="notes">win_pct</td>
-            <td><span class="positive">+0.20</span></td>
+            <td><span class="positive">+0.25</span></td>
             <td>zscore</td>
         </tr>
 </tbody>
@@ -240,6 +240,6 @@ Each metric's raw value is normalized (see the Normalize column) across
 that day's slate before the weight is applied, so metrics on different
 scales combine fairly.
 </p>
-<p class="updated">Last updated October 07, 2026 at 05:35 AM EDT</p>
+<p class="updated">Last updated October 07, 2026 at 05:50 AM EDT</p>
 </body>
 </html>
