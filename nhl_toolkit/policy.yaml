@@ -3,19 +3,25 @@
 # section 6. `normalize` must be one of: minmax, zscore, linear, none
 # (linear and none are both a pass-through of the raw value; the distinction
 # is documentation only until a metric needs different scaling behavior).
-policy_version: "2026-10-v2"
+policy_version: "2026-10-v3"
 metrics:
   rest_days:
     weight: 0.15
     normalize: minmax
+  # games_last_7/14/30 flipped from negative to small positive: at n=52,
+  # backtest.py shows all three correlating weakly *positive* with actual
+  # goal margin (+0.10 to +0.14), disagreeing with the "more games recently
+  # = fatigue, should hurt" assumption these were originally weighted on.
+  # Kept small since the correlation itself is weak -- this is a nudge
+  # toward what the data shows, not a confident reversal.
   games_last_7:
-    weight: -0.10
+    weight: 0.04
     normalize: zscore
   games_last_14:
-    weight: -0.08
+    weight: 0.03
     normalize: zscore
   games_last_30:
-    weight: -0.05
+    weight: 0.02
     normalize: zscore
   distance_traveled_km:
     weight: -0.05
@@ -23,14 +29,24 @@ metrics:
   timezones_crossed:
     weight: -0.12
     normalize: linear
+  # Trimmed from -0.20: still agrees in sign with its -0.119 correlation,
+  # just not as strongly as the old weight implied.
   back_to_back:
-    weight: -0.20
+    weight: -0.15
     normalize: none
   home_ice:
     weight: 0.10
     normalize: none
+  # Cut from 0.20 (tied for the largest weight in the policy) to 0.08:
+  # recent_form's correlation with actual goal margin has hovered right
+  # around zero across two checks at increasing sample size (+0.031 at
+  # n=20, then -0.044 at n=51) -- weighted like one of the two most
+  # important factors despite showing no real relationship with margin.
+  # Not zeroed out entirely since this correlation is against margin
+  # specifically, not straight-up win/loss, where recent form could still
+  # matter even without predicting margin size.
   recent_form:
-    weight: 0.20
+    weight: 0.08
     normalize: minmax
   goal_differential:
     weight: 0.15
@@ -38,6 +54,8 @@ metrics:
   goals_against_avg:
     weight: -0.20
     normalize: zscore
+  # Bumped from 0.20: the single strongest, most consistent correlation
+  # across every backtest check so far (+0.230 at n=20, +0.293 at n=49).
   market_edge:
-    weight: 0.20
+    weight: 0.25
     normalize: zscore
