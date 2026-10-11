@@ -24,13 +24,13 @@ string of favorites can go win-heavy and still lose money (and
 underdogs can do the reverse) -- `backtest.py`/`record_page.py` sum the
 profit columns for actual ROI figures, one per bet type.
 
-Only grades rows for games the NHL Web API marks 'OFF' (final; see
-form_metrics.py for why not 'FINAL') with both scores present, and only
-rows still missing a gradeable result -- safe to re-run as often as you
-like. A game with no Puck Line/Over-Under recommendation on record (e.g.
-no odds, or not enough trailing-game data yet) simply never gets those
-columns graded, same as a missing spread/moneyline already does for the
-Money Line bet.
+Only grades rows for games whose game_state is in db.py's
+COMPLETED_STATES ("OFF" or "FINAL" -- see there for why both) with both
+scores present, and only rows still missing a gradeable result -- safe
+to re-run as often as you like. A game with no Puck Line/Over-Under
+recommendation on record (e.g. no odds, or not enough trailing-game data
+yet) simply never gets those columns graded, same as a missing
+spread/moneyline already does for the Money Line bet.
 
 Usage:
     python lib/grade.py
@@ -39,7 +39,7 @@ Usage:
 from datetime import datetime, timezone
 from typing import Optional
 
-from db import get_connection, init_db
+from db import COMPLETED_STATES, get_connection, init_db
 
 STAKE = 10.0
 
@@ -69,15 +69,16 @@ def grade_pending_picks(conn) -> int:
     :param conn: Open connection to the schedule database.
     :returns: Number of picks_log rows graded.
     """
+    state_placeholders = ",".join("?" * len(COMPLETED_STATES))
     rows = conn.execute(
-        """
+        f"""
         SELECT p.pick_id, p.pick, p.spread_at_pick, p.moneyline_at_pick,
                p.puck_line_pick, p.puck_line_spread_at_pick, p.puck_line_price_at_pick,
                p.total_pick, p.total_at_pick, p.total_price_at_pick,
                g.home_team, g.away_team, g.home_score, g.away_score
         FROM picks_log p
         JOIN games g ON g.game_id = p.game_id
-        WHERE g.game_state = 'OFF'
+        WHERE g.game_state IN ({state_placeholders})
           AND g.home_score IS NOT NULL
           AND g.away_score IS NOT NULL
           AND (
@@ -85,7 +86,8 @@ def grade_pending_picks(conn) -> int:
               OR (p.puck_line_pick IS NOT NULL AND p.puck_line_result IS NULL)
               OR (p.total_pick IS NOT NULL AND p.total_result IS NULL)
           )
-        """
+        """,
+        COMPLETED_STATES,
     ).fetchall()
 
     graded_at = datetime.now(timezone.utc).isoformat()

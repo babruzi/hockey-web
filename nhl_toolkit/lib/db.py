@@ -10,6 +10,17 @@ from pathlib import Path
 
 DB_PATH = Path(__file__).parent.parent / "nhl.db"
 
+# The NHL Web API marks most completed games' game_state as "OFF", but a
+# real minority (confirmed: 30 games out of 1353 in a 2025-26 season
+# backfill) come back as "FINAL" instead -- there's no visible pattern to
+# which state a given completed game gets, so anything that reads
+# "is this game over" needs to check both, not just "OFF". This was first
+# caught (and only half-fixed, in form_metrics.py) when a one-season
+# window of this project's own current-season data happened to never
+# produce a single "FINAL" row; backfilling a full extra season is what
+# actually surfaced real cases of it.
+COMPLETED_STATES = ("OFF", "FINAL")
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS games (
     game_id         INTEGER PRIMARY KEY,   -- NHL's own gamePk/id
@@ -19,7 +30,7 @@ CREATE TABLE IF NOT EXISTS games (
     away_team       TEXT NOT NULL,
     home_score      INTEGER,
     away_score      INTEGER,
-    game_state      TEXT,                  -- 'FUT', 'LIVE', 'OFF' (completed), etc.
+    game_state      TEXT,                  -- 'FUT', 'LIVE', completed is COMPLETED_STATES
     venue           TEXT
 );
 

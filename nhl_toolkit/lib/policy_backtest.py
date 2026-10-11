@@ -28,7 +28,7 @@ Usage:
 
 from typing import Optional
 
-from db import get_connection, init_db
+from db import COMPLETED_STATES, get_connection, init_db
 from grade import STAKE, odds_profit
 from report import latest_consensus_moneyline, latest_consensus_spread
 from score import compute_scores
@@ -54,13 +54,16 @@ def completed_games_by_date(conn) -> dict[str, list[tuple]]:
     :param conn: Open connection to the schedule database.
     :returns: {game_date: [(game_id, home_team, away_team, home_score, away_score), ...]}
     """
+    state_placeholders = ",".join("?" * len(COMPLETED_STATES))
     rows = conn.execute(
-        """
+        f"""
         SELECT game_date, game_id, home_team, away_team, home_score, away_score
         FROM games
-        WHERE game_state = 'OFF' AND home_score IS NOT NULL AND away_score IS NOT NULL
+        WHERE game_state IN ({state_placeholders})
+          AND home_score IS NOT NULL AND away_score IS NOT NULL
         ORDER BY game_date
-        """
+        """,
+        COMPLETED_STATES,
     ).fetchall()
     games_by_date: dict[str, list[tuple]] = {}
     for game_date, game_id, home_team, away_team, home_score, away_score in rows:

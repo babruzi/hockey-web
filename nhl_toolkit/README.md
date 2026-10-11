@@ -307,6 +307,24 @@ ever synced into `policy_weights` (any time `score.py` runs after a
 register. Prints each policy's simulated record/ROI, ranked by ROI% so
 the best performer so far is easy to spot.
 
+Neither this nor `backtest.py` cares what season a game is from -- just
+whether it's completed -- so backfilling a prior season grows both
+tools' sample size for free, no code changes needed:
+
+```bash
+python lib/fetch_schedule.py --start 2025-10-07 --end 2026-04-16  # 2025-26 regular season
+python lib/travel_metrics.py && python lib/metrics.py && python lib/form_metrics.py
+```
+
+(Regular-season dates only -- check a sample date's `gameType` via the
+schedule API if backfilling a different season, since the same endpoint
+also returns preseason/playoff games with no obvious flag in this
+toolkit's own data.) The one thing a season backfill *can't* help with
+is ROI: The Odds API's free tier never serves historical lines, so
+profitability comparisons stay capped at whatever this current season
+has real odds for, no matter how many historical games get added -- only
+the win/loss side of the comparison actually grows.
+
 ## Files
 - `bin/run_daily.py` — runs every step below (including the policy page) in order for one date, then commits/pushes any changed `docs/` files to GitHub (`--no-push` to skip); the normal way to run this toolkit
 - `bin/run_daily_cron.sh` — cron-safe wrapper around `bin/run_daily.py`

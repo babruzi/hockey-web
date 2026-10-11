@@ -15,11 +15,11 @@ own total line) -- they're not in policy.yaml, so they don't affect
 score.py's total_score/pick at all; score.py only applies weights for
 metric names explicitly listed there.
 
-Only completed games (game_state 'OFF', per the NHL Web API) update the
-rolling window, but a metric_values row is written for every game on
-record (including future ones), so an upcoming game gets scored using
-form built from games already played -- there's no lookahead into the
-game being scored.
+Only completed games (game_state in db.py's COMPLETED_STATES -- "OFF" or
+"FINAL", see there for why both) update the rolling window, but a
+metric_values row is written for every game on record (including future
+ones), so an upcoming game gets scored using form built from games
+already played -- there's no lookahead into the game being scored.
 
 Run this after fetch_schedule.py has updated scores. Like the other
 metric builders, it fully deletes and rebuilds the metric_values rows
@@ -33,16 +33,11 @@ import sqlite3
 from collections import deque
 from typing import Optional
 
-from db import get_connection, init_db
+from db import COMPLETED_STATES, get_connection, init_db
 from metrics import seed_metrics
 from travel_metrics import all_team_abbrevs
 
 FORM_WINDOW = 10
-
-# The NHL Web API uses "OFF" for a completed/official game, not "FINAL"
-# (despite what db.py's schema comment suggests) -- "FINAL" is kept here
-# too as a defensive fallback in case that ever changes upstream.
-COMPLETED_STATES = ("OFF", "FINAL")
 
 FORM_METRICS = [
     ("recent_form", f"Win percentage over the last {FORM_WINDOW} completed games", "win_pct"),

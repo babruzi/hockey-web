@@ -17,7 +17,7 @@ import argparse
 import csv
 import sqlite3
 from datetime import date as date_cls
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo
@@ -226,24 +226,35 @@ def potential_payout(price: Optional[int], stake: float) -> Optional[float]:
 
 
 def home_opener_note(conn: sqlite3.Connection, home_team: str, game_date: str) -> Optional[str]:
-    """Flag whether this is the home team's first home game in the data we've fetched.
+    """Flag whether this is the home team's first home game of the current season.
 
-    Only as reliable as the fetched schedule window -- if `games` doesn't go
-    back to the actual season start, this reports the first home game *we
-    know about*, not necessarily the true season opener.
+    "Current season" is approximated as "within the last 120 days" rather
+    than a real season boundary (the schema has no season column) -- the
+    NHL offseason gap between a season's finale and the next one's opener
+    is comfortably longer than that (~5 months in practice), while no team
+    ever goes 120 days between home games *within* a season, so this is
+    enough to tell the two apart. This matters once `games` has more than
+    one season's worth of history on record (e.g. after backfilling a
+    prior season for policy_backtest.py/backtest.py): without the cutoff,
+    a team's actual current-season opener would see last season's home
+    games as "earlier" and silently stop being flagged as a home opener
+    at all.
 
     :param conn: Open connection to the schedule database.
     :param home_team: The home team's abbreviation.
     :param game_date: This game's date, as YYYY-MM-DD.
-    :returns: "Home opener" if no earlier home game is on record, else None.
+    :returns: "Home opener" if no earlier home game is on record within the
+        last 120 days, else None.
     """
+    season_cutoff = (date_cls.fromisoformat(game_date) - timedelta(days=120)).isoformat()
     earlier_home_games = conn.execute(
         """
         SELECT COUNT(*) FROM schedule_context sc
         JOIN games g ON g.game_id = sc.game_id
-        WHERE sc.team_id = ? AND sc.is_home = 1 AND g.game_date < ?
+        WHERE sc.team_id = ? AND sc.is_home = 1
+          AND g.game_date < ? AND g.game_date >= ?
         """,
-        (home_team, game_date),
+        (home_team, game_date, season_cutoff),
     ).fetchone()[0]
     return "Home opener" if earlier_home_games == 0 else None
 

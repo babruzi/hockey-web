@@ -28,7 +28,7 @@ import argparse
 import sqlite3
 from typing import Optional
 
-from db import get_connection, init_db
+from db import COMPLETED_STATES, get_connection, init_db
 from grade import STAKE
 from score import load_policy
 
@@ -63,19 +63,20 @@ def metric_margin_pairs(conn: sqlite3.Connection, metric_id: int) -> tuple:
     :returns: (diffs, margins), paired and same length -- one entry per game
         where both teams have a value for this metric.
     """
+    state_placeholders = ",".join("?" * len(COMPLETED_STATES))
     rows = conn.execute(
-        """
+        f"""
         SELECT mv.game_id, mv.team_id, mv.value, g.home_team, g.away_team,
                g.home_score, g.away_score
         FROM metric_values mv
         JOIN games g ON g.game_id = mv.game_id
         WHERE mv.metric_id = ?
-          AND g.game_state = 'OFF'
+          AND g.game_state IN ({state_placeholders})
           AND g.home_score IS NOT NULL
           AND g.away_score IS NOT NULL
           AND mv.value IS NOT NULL
         """,
-        (metric_id,),
+        (metric_id, *COMPLETED_STATES),
     ).fetchall()
 
     by_game: dict = {}

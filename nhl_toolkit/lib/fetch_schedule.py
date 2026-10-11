@@ -18,6 +18,7 @@ import time
 from datetime import date, datetime, timedelta
 
 import requests
+from arenas import ARENAS
 from db import get_connection, init_db
 
 BASE_URL = "https://api-web.nhle.com/v1/schedule"
@@ -33,6 +34,15 @@ def fetch_game_week(anchor_date: str) -> dict:
 def upsert_games(conn: sqlite3.Connection, payload: dict) -> int:
     """Upsert every game in a game-week payload into the `games` table.
 
+    Skips any game where either side isn't a known NHL franchise abbrev.
+    The schedule endpoint also returns in-season international tournament
+    games during an Olympic break (e.g. Feb 2026's Winter Olympics), using
+    country codes like "CAN"/"USA" instead of team abbrevs -- those aren't
+    NHL club games and would otherwise corrupt every downstream metric that
+    assumes `games.home_team`/`away_team` are always real franchises (travel
+    distance, rest days, recent form, etc. all key off `lib/arenas.py`'s
+    ARENAS table, which has no entry for a country code).
+
     :param conn: Open connection to the schedule database.
     :param payload: JSON payload from the NHL schedule API.
     :returns: Number of game rows upserted.
@@ -40,13 +50,17 @@ def upsert_games(conn: sqlite3.Connection, payload: dict) -> int:
     count = 0
     for day in payload.get("gameWeek", []):
         for game in day.get("games", []):
+            home_abbrev = game["homeTeam"]["abbrev"]
+            away_abbrev = game["awayTeam"]["abbrev"]
+            if home_abbrev not in ARENAS or away_abbrev not in ARENAS:
+                continue
             venue = game.get("venue")
             row = (
                 game["id"],
                 day["date"],
                 game.get("startTimeUTC"),
-                game["homeTeam"]["abbrev"],
-                game["awayTeam"]["abbrev"],
+                home_abbrev,
+                away_abbrev,
                 game["homeTeam"].get("score"),
                 game["awayTeam"].get("score"),
                 game.get("gameState"),
