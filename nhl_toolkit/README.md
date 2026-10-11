@@ -215,7 +215,16 @@ run.
    where it agrees with the Puck Line pick -- Over/Under is never
    recommended, since it's been a net loser across the sample this was
    derived from. This is explicitly a small-sample, evolving read, not a
-   finished model -- see `strategy_markets()` in `report.py`.
+   finished model -- see `strategy_markets()` in `report.py`. A
+   **Minimum edge** dropdown above the table (also every page, also not
+   gated to today) hides whole games below a chosen `predicted_edge`,
+   defaulting to `0.9` -- the threshold that had the best win rate
+   (64.2%) with a still-trustworthy sample (134 games) when the live
+   policy was replayed against the full season history in
+   `policy_backtest.py`; past that cutoff the sample drops under 60
+   games and stops being trustworthy. Purely a display filter -- it
+   never changes which team was picked, only which already-picked
+   games the page shows by default.
    `docs/` is served live by GitHub Pages at
    https://babruzi.github.io/hockey-web/.
 

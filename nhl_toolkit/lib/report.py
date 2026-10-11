@@ -346,6 +346,17 @@ FORM_METRIC_NAMES = ["goal_differential", "goals_for_avg", "goals_against_avg"]
 # than this many goals."
 PUCK_LINE = 1.5
 
+# Default minimum predicted_edge for the picks page's edge filter. Derived
+# from replaying the live policy against the full 1424-game history
+# (last season backfilled in) and sweeping edge thresholds: win rate climbs
+# fairly smoothly from 52.9% (every game) up to 64.2% right around this
+# value, on a still-reasonable 134-game sample -- past it, the sample drops
+# below 60 games and the win rate just bounces around on noise rather than
+# continuing to climb. Not stored in policy.yaml since it's a display
+# filter, not a scoring weight -- changing it doesn't affect which team is
+# picked, just which already-picked games the page highlights by default.
+DEFAULT_MIN_EDGE = 0.9
+
 
 def puck_line_recommendation(
     home_team: str,
@@ -965,6 +976,17 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         style = ' style="display:none"' if hidden else ""
         return f' class="col-{category}"{style}'
 
+    def edge_row_attrs(pick: dict) -> str:
+        """data-edge (+ hidden by default, below DEFAULT_MIN_EDGE) for a
+        game's two <tr>s, so the edge-filter dropdown's JS can hide whole
+        games below whatever threshold is selected. Present on every page
+        (not just today), since this is a pure display filter over
+        already-graded or already-picked games either way.
+        """
+        hidden = pick["predicted_edge"] < DEFAULT_MIN_EDGE
+        style = ' style="display:none"' if hidden else ""
+        return f' data-edge="{pick["predicted_edge"]:.3f}"{style}'
+
     def render_game_rows(i: int, pick: dict) -> str:
         game_class = "game-even" if i % 2 == 0 else "game-odd"
         away_puck = format_puck_line_cell(
@@ -995,7 +1017,7 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         home_ml = format_ml_cell(pick["home_moneyline"], pick["home_win_pct"], pick["pick_is_home"])
 
         return f"""
-        <tr class="{game_class} row-away">
+        <tr class="{game_class} row-away"{edge_row_attrs(pick)}>
             <td class="rank" rowspan="2">{i}</td>
             <td>{format_team_name(pick["away_team"], not pick["pick_is_home"])}</td>
             <td{market_col_attrs("pl")}>{away_puck}</td>
@@ -1010,7 +1032,7 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
             <td rowspan="2">{format_strategy_cell(pick)}</td>
             <td class="notes" rowspan="2">{format_notes(pick)}</td>
         </tr>
-        <tr class="{game_class} row-home">
+        <tr class="{game_class} row-home"{edge_row_attrs(pick)}>
             <td class="home-cell">{format_team_name(pick["home_team"], pick["pick_is_home"])}</td>
             <td{market_col_attrs("pl")}>{home_puck}</td>
             <td{market_col_attrs("ou")}>{under_cell}</td>
@@ -1078,9 +1100,15 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 </table>"""
 
     winnings_header = "<th>Est. Winnings</th>" if is_today else ""
-    controls_html = (
+
+    def edge_option(value: float) -> str:
+        label = "All games" if value == 0 else f"{value:g}+"
+        selected = ' selected="selected"' if value == DEFAULT_MIN_EDGE else ""
+        return f'<option value="{value}"{selected}>{label}</option>'
+
+    edge_options = "\n".join(edge_option(v) for v in (0, 0.5, 0.7, 0.8, DEFAULT_MIN_EDGE, 1.0, 1.2))
+    market_controls = (
         f"""
-<div class="controls">
 <label for="odds-type">Show picks for:</label>
 <select id="odds-type" onchange="onMarketChange()">
 <option value="ml" selected>Money Line</option>
@@ -1088,11 +1116,21 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 <option value="ou">Over/Under</option>
 </select>
 <span class="notes">(shows only that market's columns; Est. Winnings is the
-payout on a ${STAKE:.0f} bet on the pick, if it wins)</span>
-</div>"""
+payout on a ${STAKE:.0f} bet on the pick, if it wins)</span>"""
         if is_today
         else ""
     )
+    controls_html = f"""
+<div class="controls">
+<label for="edge-filter">Minimum edge:</label>
+<select id="edge-filter" onchange="updateEdgeFilter()">
+{edge_options}
+</select>
+<span class="notes">(hides games below this edge; {DEFAULT_MIN_EDGE:g}+ had the
+best win rate with a large-enough sample across the full season history --
+see policy_backtest.py)</span>
+{market_controls}
+</div>"""
     winnings_script = (
         """
 <script>
@@ -1131,6 +1169,15 @@ function onMarketChange() {
         if is_today
         else ""
     )
+    edge_filter_script = """
+<script>
+function updateEdgeFilter() {
+    var minEdge = parseFloat(document.getElementById("edge-filter").value);
+    document.querySelectorAll("tr[data-edge]").forEach(function (row) {
+        row.style.display = parseFloat(row.getAttribute("data-edge")) >= minEdge ? "" : "none";
+    });
+}
+</script>"""
 
     page = f"""<!doctype html>
 <html lang="en">
@@ -1180,13 +1227,18 @@ is a simple, data-driven rule derived from the first few weeks of graded picks: 
 Puck Line when it has a recommendation, and only bet Money Line too on games where it agrees
 with the Puck Line pick (Over/Under is never recommended -- it's been a net loser across the
 sample so far) &middot; this is a small-sample read, not a guaranteed system, and may get
-revised as more games get graded
+revised as more games get graded &middot; the <strong>Minimum edge</strong> dropdown above
+the table hides games below a chosen `predicted_edge` -- defaults to {DEFAULT_MIN_EDGE:g}+,
+which had the best win rate (64.2%) with a still-reasonable sample (134 games) when the live
+policy was replayed against the full season history; past that the sample gets too thin
+(under 60 games) to trust
 </p>
 <p class="disclaimer">
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
 <p class="updated">Last updated {generation_timestamp()}</p>
+{edge_filter_script}
 {winnings_script}
 </body>
 </html>
