@@ -130,6 +130,22 @@ a { color: var(--accent); }
 <h1>5 Picks</h1>
 <p class="subtitle">October 02, 2026</p>
 
+<div class="controls">
+<label for="edge-filter">Minimum edge:</label>
+<select id="edge-filter" onchange="updateEdgeFilter()">
+<option value="0">All games</option>
+<option value="0.5">0.5+</option>
+<option value="0.7">0.7+</option>
+<option value="0.8">0.8+</option>
+<option value="0.9" selected="selected">0.9+</option>
+<option value="1.0">1+</option>
+<option value="1.2">1.2+</option>
+</select>
+<span class="notes">(hides games below this edge; 0.9+ had the
+best win rate with a large-enough sample across the full season history --
+see policy_backtest.py)</span>
+
+</div>
 <div class="table-scroll">
 <table>
 <thead>
@@ -142,7 +158,7 @@ a { color: var(--accent); }
 </tr>
 </thead>
 <tbody>
-        <tr class="game-odd row-away">
+        <tr class="game-odd row-away" data-edge="0.628" style="display:none">
             <td class="rank" rowspan="2">1</td>
             <td>BOS</td>
             <td class="col-pl"><strong class="pick">+1.5 -154 (57.2%)</strong></td>
@@ -157,14 +173,14 @@ a { color: var(--accent); }
             <td rowspan="2"><strong class="strategy">BOS</strong> <span class="notes">(PL only)</span></td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
-        <tr class="game-odd row-home">
+        <tr class="game-odd row-home" data-edge="0.628" style="display:none">
             <td class="home-cell"><strong class="pick">WPG</strong></td>
             <td class="col-pl">-1.5 +120 (42.8%)</td>
             <td class="col-ou"><strong class="pick">U 7.5 -180 (60.7%)</strong></td>
             <td class="col-ml"><strong class="pick">-360 (73.8%)</strong></td>
         </tr>
 
-        <tr class="game-even row-away">
+        <tr class="game-even row-away" data-edge="0.454" style="display:none">
             <td class="rank" rowspan="2">2</td>
             <td>STL</td>
             <td class="col-pl"><span class="notes">n/a</span></td>
@@ -179,14 +195,14 @@ a { color: var(--accent); }
             <td rowspan="2"><span class="notes">&mdash;</span></td>
             <td class="notes" rowspan="2">Home opener</td>
         </tr>
-        <tr class="game-even row-home">
+        <tr class="game-even row-home" data-edge="0.454" style="display:none">
             <td class="home-cell"><strong class="pick">DAL</strong></td>
             <td class="col-pl"><span class="notes">n/a</span></td>
             <td class="col-ou"><span class="notes">n/a</span></td>
             <td class="col-ml"><span class="notes">n/a</span></td>
         </tr>
 
-        <tr class="game-odd row-away">
+        <tr class="game-odd row-away" data-edge="0.368" style="display:none">
             <td class="rank" rowspan="2">3</td>
             <td>ANA</td>
             <td class="col-pl">+1.5 -142 (56.3%)</td>
@@ -201,14 +217,14 @@ a { color: var(--accent); }
             <td rowspan="2"><strong class="strategy">VGK</strong> <span class="notes">(PL + ML)</span></td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
-        <tr class="game-odd row-home">
+        <tr class="game-odd row-home" data-edge="0.368" style="display:none">
             <td class="home-cell"><strong class="pick">VGK</strong></td>
             <td class="col-pl"><strong class="pick">-1.5 +120 (43.7%)</strong></td>
             <td class="col-ou">U 6.5 +110 (45.7%)</td>
             <td class="col-ml"><strong class="pick">-218 (65.7%)</strong></td>
         </tr>
 
-        <tr class="game-even row-away">
+        <tr class="game-even row-away" data-edge="0.123" style="display:none">
             <td class="rank" rowspan="2">4</td>
             <td>NYR</td>
             <td class="col-pl"><strong class="pick">+0.2 -81 (38.2%)</strong></td>
@@ -223,14 +239,14 @@ a { color: var(--accent); }
             <td rowspan="2"><strong class="strategy">NYR</strong> <span class="notes">(PL only)</span></td>
             <td class="notes" rowspan="2">NYR on a back-to-back</td>
         </tr>
-        <tr class="game-even row-home">
+        <tr class="game-even row-home" data-edge="0.123" style="display:none">
             <td class="home-cell"><strong class="pick">DET</strong></td>
             <td class="col-pl">-0.2 +38 (61.8%)</td>
             <td class="col-ou">U 5.5 +114 (44.9%)</td>
             <td class="col-ml"><strong class="pick">+800 (10.6%)</strong></td>
         </tr>
 
-        <tr class="game-odd row-away">
+        <tr class="game-odd row-away" data-edge="0.105" style="display:none">
             <td class="rank" rowspan="2">5</td>
             <td><strong class="pick">WSH</strong></td>
             <td class="col-pl">-3.5 +550 (14.6%)</td>
@@ -245,7 +261,7 @@ a { color: var(--accent); }
             <td rowspan="2"><strong class="strategy">CAR</strong> <span class="notes">(PL only)</span></td>
             <td class="notes" rowspan="2">&mdash;</td>
         </tr>
-        <tr class="game-odd row-home">
+        <tr class="game-odd row-home" data-edge="0.105" style="display:none">
             <td class="home-cell">CAR</td>
             <td class="col-pl"><strong class="pick">+3.5 -920 (85.4%)</strong></td>
             <td class="col-ou"><strong class="pick">U 7.5 -330 (72.3%)</strong></td>
@@ -285,13 +301,26 @@ is a simple, data-driven rule derived from the first few weeks of graded picks: 
 Puck Line when it has a recommendation, and only bet Money Line too on games where it agrees
 with the Puck Line pick (Over/Under is never recommended -- it's been a net loser across the
 sample so far) &middot; this is a small-sample read, not a guaranteed system, and may get
-revised as more games get graded
+revised as more games get graded &middot; the <strong>Minimum edge</strong> dropdown above
+the table hides games below a chosen `predicted_edge` -- defaults to 0.9+,
+which had the best win rate (64.2%) with a still-reasonable sample (134 games) when the live
+policy was replayed against the full season history; past that the sample gets too thin
+(under 60 games) to trust
 </p>
 <p class="disclaimer">
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 11, 2026 at 06:54 PM EDT</p>
+<p class="updated">Last updated October 11, 2026 at 07:10 PM EDT</p>
+
+<script>
+function updateEdgeFilter() {
+    var minEdge = parseFloat(document.getElementById("edge-filter").value);
+    document.querySelectorAll("tr[data-edge]").forEach(function (row) {
+        row.style.display = parseFloat(row.getAttribute("data-edge")) >= minEdge ? "" : "none";
+    });
+}
+</script>
 
 </body>
 </html>
