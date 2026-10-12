@@ -28,7 +28,12 @@ from typing import Optional
 from backtest import bet_type_totals, policy_performance
 from db import get_connection
 from grade import STAKE
-from policy_backtest import build_policy_backtest, rank_by_roi
+from policy_backtest import (
+    LIVE_POLICY_MIN_EDGE,
+    build_live_policy_edge_backtest,
+    build_policy_backtest,
+    rank_by_roi,
+)
 from report import DOCS_DIR, HTML_STYLE, generation_timestamp, strategy_markets
 
 RECORD_PATH = DOCS_DIR / "reports" / "record.html"
@@ -284,6 +289,7 @@ def render_record_html(
     streak: Optional[tuple[str, int]],
     best_pick: Optional[tuple],
     worst_pick: Optional[tuple],
+    live_policy_edge_result: tuple[str, dict],
 ) -> Path:
     """Render the overall + per-policy_version record as a static HTML page.
 
@@ -294,6 +300,8 @@ def render_record_html(
     :param streak: Result of :func:`current_streak`.
     :param best_pick: Result of :func:`best_worst_pick` (first element).
     :param worst_pick: Result of :func:`best_worst_pick` (second element).
+    :param live_policy_edge_result: Result of
+        :func:`policy_backtest.build_live_policy_edge_backtest`.
     :returns: Path to the written HTML file.
     """
     RECORD_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -351,6 +359,11 @@ def render_record_html(
     )
     if not backtest_rows:
         backtest_rows = '<tr><td colspan="5" class="notes">No completed games yet.</td></tr>'
+
+    live_policy_version, live_edge_totals = live_policy_edge_result
+    live_edge_roi_str, live_edge_roi_class = format_roi(
+        live_edge_totals["total_profit"], live_edge_totals["graded_bet_count"]
+    )
 
     chart_svg = render_bankroll_chart(bankroll)
     if streak:
@@ -442,6 +455,33 @@ by moneyline ROI%. See policy_backtest.py.
 </tbody>
 </table>
 
+<h2>Live Policy at High Edge</h2>
+<p class="subtitle">
+The currently-live policy (<strong>{live_policy_version}</strong>), restricted to this
+season's games that actually have odds on record, and only the ones with a predicted
+edge of {LIVE_POLICY_MIN_EDGE:g}+ -- the same filter and threshold as the picks page's
+Minimum Edge dropdown, applied here to every qualifying game this season at once rather
+than one day at a time.
+</p>
+<table>
+<thead><tr><th></th><th>Record</th></tr></thead>
+<tbody>
+<tr><td>Games (edge &ge; {LIVE_POLICY_MIN_EDGE:g})</td>
+    <td>{live_edge_totals["games_evaluated"]}</td></tr>
+<tr><td>Moneyline</td>
+    <td>{format_record_pct(live_edge_totals["su_wins"], live_edge_totals["su_losses"])}</td></tr>
+<tr><td>Vs. Puck Line</td>
+    <td>{
+        format_record_with_pushes(
+            live_edge_totals["ats_wins"],
+            live_edge_totals["ats_losses"],
+            live_edge_totals["ats_pushes"],
+        )
+    }</td></tr>
+<tr><td>Moneyline ROI</td><td class="{live_edge_roi_class}">{live_edge_roi_str}</td></tr>
+</tbody>
+</table>
+
 <p class="disclaimer">
 "Moneyline" and "Vs. Puck Line" above are both about the scoring engine's
 one pick (policy.yaml's weighted total_score); "Puck Line Record" and
@@ -453,7 +493,11 @@ odds on record. The Policy Backtest table is a simulation, not a record of
 real picks -- it's what each policy_version's Money Line pick would have
 been on every completed game, graded against the real final score and
 whatever odds were on record, not what was actually logged in picks_log
-at the time. Paper-trading analysis only, not betting advice.
+at the time. Live Policy at High Edge is also a simulation for the same
+reason, filtered down further to one policy_version and one edge
+threshold -- a small sample by design, since it only includes this
+season's odds-covered games above a fairly high bar. Paper-trading
+analysis only, not betting advice.
 </p>
 <p class="updated">Last updated {generation_timestamp()}</p>
 </body>
@@ -475,8 +519,16 @@ def build_record_page() -> None:
         best_pick, worst_pick = best_worst_pick(conn)
     conn.close()
     policy_backtest_results = build_policy_backtest()
+    live_policy_edge_result = build_live_policy_edge_backtest()
     path = render_record_html(
-        performance, bet_types, policy_backtest_results, bankroll, streak, best_pick, worst_pick
+        performance,
+        bet_types,
+        policy_backtest_results,
+        bankroll,
+        streak,
+        best_pick,
+        worst_pick,
+        live_policy_edge_result,
     )
     print(f"Wrote {path}")
 

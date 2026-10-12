@@ -31,7 +31,17 @@ from typing import Optional
 from db import COMPLETED_STATES, get_connection, init_db
 from grade import STAKE, odds_profit
 from report import latest_consensus_moneyline, latest_consensus_spread
-from score import compute_scores
+from score import compute_scores, load_policy
+
+# Minimum predicted edge for the live-policy section of record.html.
+# Derived differently from report.py's DEFAULT_MIN_EDGE (0.9, from sweeping
+# thresholds against the full season-backfilled history, most of which has
+# no odds): this one came from sweeping thresholds against just this
+# season's odds-covered games under the live policy specifically, where
+# 1.0 gave the best combination of win rate (76.2%) and sample size (21
+# games) -- 1.2 had a slightly worse rate on fewer games, lower thresholds
+# had worse rates on more games.
+LIVE_POLICY_MIN_EDGE = 1.0
 
 
 def all_policy_versions(conn) -> list[str]:
@@ -73,12 +83,40 @@ def completed_games_by_date(conn) -> dict[str, list[tuple]]:
     return games_by_date
 
 
-def simulate_policy(conn, policy_version: str, games_by_date: dict[str, list[tuple]]) -> dict:
+def games_with_odds(conn, games_by_date: dict[str, list[tuple]]) -> dict[str, list[tuple]]:
+    """Restrict a games_by_date dict to games with at least one odds quote on record.
+
+    In practice this restricts to the current season, since The Odds API's
+    free tier never serves historical lines for a backfilled prior season
+    -- but it's written as a generic "has odds" filter, not a date check,
+    so it stays correct if that ever changes.
+
+    :param conn: Open connection to the schedule database.
+    :param games_by_date: Result of :func:`completed_games_by_date`.
+    :returns: The same shape, with games that have no odds quote dropped.
+    """
+    odds_game_ids = {row[0] for row in conn.execute("SELECT DISTINCT game_id FROM odds")}
+    filtered = {
+        game_date: [game for game in games if game[0] in odds_game_ids]
+        for game_date, games in games_by_date.items()
+    }
+    return {game_date: games for game_date, games in filtered.items() if games}
+
+
+def simulate_policy(
+    conn,
+    policy_version: str,
+    games_by_date: dict[str, list[tuple]],
+    min_edge: float = 0.0,
+) -> dict:
     """Replay every completed date's slate under one policy_version and grade the picks.
 
     :param conn: Open connection to the schedule database.
     :param policy_version: Which policy_weights version to score with.
     :param games_by_date: Result of :func:`completed_games_by_date`.
+    :param min_edge: Skip any game whose score gap under this policy is below
+        this -- a pure display filter, same idea as report.py's picks-page
+        edge dropdown, not a change to how a game would actually be picked.
     :returns: Aggregate record/ROI dict for this policy_version across all history.
     """
     weight_rows = conn.execute(
@@ -107,6 +145,8 @@ def simulate_policy(conn, policy_version: str, games_by_date: dict[str, list[tup
             home_score_val = scores.get((game_id, home_team))
             away_score_val = scores.get((game_id, away_team))
             if home_score_val is None or away_score_val is None:
+                continue
+            if abs(home_score_val - away_score_val) < min_edge:
                 continue
 
             if home_score_val >= away_score_val:
@@ -214,6 +254,29 @@ def build_policy_backtest() -> list[tuple[str, dict]]:
         ]
     conn.close()
     return results
+
+
+def build_live_policy_edge_backtest() -> tuple[str, dict]:
+    """Simulate just the currently-live policy, restricted to this season's
+    odds-covered games with at least LIVE_POLICY_MIN_EDGE of predicted edge.
+
+    Narrower than :func:`build_policy_backtest` on purpose: that one answers
+    "which policy_version does best overall," this one answers "how has the
+    policy actually live right now done on the specific games/threshold
+    combination report.py's picks-page edge filter is built around" -- a
+    direct, odds-backed read on the live policy rather than a cross-version
+    comparison.
+
+    :returns: (live policy_version, totals dict from :func:`simulate_policy`).
+    """
+    init_db()
+    conn = get_connection()
+    with conn:
+        live_version = load_policy()["policy_version"]
+        odds_games = games_with_odds(conn, completed_games_by_date(conn))
+        totals = simulate_policy(conn, live_version, odds_games, min_edge=LIVE_POLICY_MIN_EDGE)
+    conn.close()
+    return live_version, totals
 
 
 if __name__ == "__main__":

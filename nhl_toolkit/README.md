@@ -258,6 +258,12 @@ run.
     per-date report refresh runs -- so the policy backtest is always current
     as of the last graded games too, with no extra wiring needed.
 
+    Also includes **Live Policy at High Edge**: the currently-live policy
+    (read straight from `policy.yaml`, not hardcoded), restricted to this
+    season's odds-covered games with a predicted edge of 1.0+ -- the same
+    filter the picks page's Minimum Edge dropdown uses, applied here across
+    every qualifying game at once instead of one day at a time.
+
     Also includes a **Bankroll Over Time** chart: a day-by-day cumulative
     P&L line per bet type (Money Line, Puck Line, Over/Under, and the
     Strategy combo from the picks page), rendered as plain inline SVG --
@@ -351,7 +357,7 @@ the win/loss side of the comparison actually grows.
 - `lib/report.py` — ranks every game by score gap, prints/writes CSV + HTML, and logs picks
 - `lib/policy_page.py` — renders `docs/reports/policies/policy.html`, a reference page of every metric's weight/normalize/description
 - `lib/backtest.py` — standalone diagnostic: correlates each metric against actual goal margin, prints picks_log's real record per policy_version
-- `lib/policy_backtest.py` — standalone diagnostic: replays every completed game under every known policy_version to compare them fairly on the same history, instead of each only being judged on the stretch it was actually live for
+- `lib/policy_backtest.py` — standalone diagnostic: replays every completed game under every known policy_version to compare them fairly on the same history, instead of each only being judged on the stretch it was actually live for; also exposes a narrower live-policy-at-an-edge-threshold variant that `record_page.py` publishes
 - `lib/record_page.py` — renders `docs/reports/record.html`, the published overall straight-up/ATS record and moneyline ROI (reuses `backtest.py`'s numbers, not its own analysis)
 
 ## Next up (Phase 3+)
