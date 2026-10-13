@@ -5,9 +5,10 @@ for recently-completed games), grades any picks_log rows those final
 scores make gradeable, updates the overall performance/ROI record page,
 re-renders every past HTML report (not just the lookback window -- a
 team's all-time ATS record can change any of its past reports, not
-only the most recent ones), rebuilds travel/form metrics, pulls current
-odds and derives market_edge from them, scores the slate, and builds
-the full report (every game, CSV + HTML + picks_log).
+only the most recent ones), rebuilds travel/form metrics, fetches the
+current league-wide injury report and derives injury_edge from it,
+pulls current odds and derives market_edge from them, scores the
+slate, and builds the full report (every game, CSV + HTML + picks_log).
 
 Every step is cheap and idempotent (upsert or full-rebuild-on-run), so
 running the whole chain is simpler and safer than trying to detect
@@ -48,10 +49,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
 
 from db import init_db  # noqa: E402
+from fetch_injuries import fetch_and_store_injuries  # noqa: E402
 from fetch_odds import fetch_and_store_odds  # noqa: E402
 from fetch_schedule import fetch_range  # noqa: E402
 from form_metrics import rebuild_form_metrics  # noqa: E402
 from grade import grade_all  # noqa: E402
+from injury_metrics import rebuild_injury_metrics  # noqa: E402
 from market_metrics import rebuild_market_metrics  # noqa: E402
 from metrics import rebuild_schedule_metrics  # noqa: E402
 from policy_page import build_policy_page  # noqa: E402
@@ -132,6 +135,12 @@ def run_daily(target_date: str, lookback_days: int = 3, push: bool = True) -> No
 
     print("== Rebuilding recent form / goal differential ==")
     rebuild_form_metrics()
+
+    print("== Fetching current injury report ==")
+    fetch_and_store_injuries()
+
+    print("== Rebuilding injury_edge from injuries on record ==")
+    rebuild_injury_metrics()
 
     if os.environ.get("ODDS_API_KEY"):
         print("== Fetching odds ==")

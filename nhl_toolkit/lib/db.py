@@ -66,6 +66,20 @@ CREATE TABLE IF NOT EXISTS odds (
     FOREIGN KEY (game_id) REFERENCES games (game_id)
 );
 
+CREATE TABLE IF NOT EXISTS injuries (
+    injury_row_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+    fetched_at      TEXT NOT NULL,   -- ISO timestamp of this snapshot (shared by every
+                                     -- row from the same fetch, like odds.fetched_at)
+    team            TEXT NOT NULL,   -- abbrev, e.g. 'BOS'
+    player_name     TEXT NOT NULL,
+    position        TEXT,           -- 'G'/'D'/'C'/'LW'/'RW'
+    status          TEXT NOT NULL,   -- 'Out' | 'Day-To-Day' | 'Injured Reserve' | 'Suspension'
+    body_part       TEXT,            -- e.g. 'Upper Body', 'Undisclosed'
+    espn_player_id  TEXT,            -- nullable -- not every ESPN entry has a headshot to parse
+    espn_injury_id  TEXT NOT NULL,
+    report_date     TEXT             -- ESPN's own last-updated timestamp for this injury
+);
+
 CREATE TABLE IF NOT EXISTS metrics (
     metric_id    INTEGER PRIMARY KEY AUTOINCREMENT,
     name         TEXT NOT NULL UNIQUE,
@@ -134,6 +148,7 @@ CREATE TABLE IF NOT EXISTS picks_log (
     FOREIGN KEY (game_id) REFERENCES games (game_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_injuries_team_fetched ON injuries (team, fetched_at);
 CREATE INDEX IF NOT EXISTS idx_games_date ON games (game_date);
 CREATE INDEX IF NOT EXISTS idx_ctx_team ON schedule_context (team_id);
 CREATE INDEX IF NOT EXISTS idx_odds_game ON odds (game_id);

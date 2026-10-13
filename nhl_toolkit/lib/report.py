@@ -24,6 +24,7 @@ from zoneinfo import ZoneInfo
 
 from db import get_connection, init_db
 from grade import STAKE
+from injury_metrics import latest_injury_fetch_at_or_before
 from market_metrics import american_to_probability
 
 EASTERN = ZoneInfo("America/New_York")
@@ -293,14 +294,49 @@ def back_to_back_notes(conn: sqlite3.Connection, game_id: int) -> list[str]:
     return [f"{team_id} on a back-to-back" for (team_id,) in rows]
 
 
+def injury_notes(conn: sqlite3.Connection, team: str, game_date: str) -> list[str]:
+    """Notable current injuries for one team as of a game's date.
+
+    Deliberately narrower than the full injury_edge metric: surfaces only
+    "Out"/"Day-To-Day" skaters (the short-term, game-relevant statuses) plus
+    any goalie regardless of status (losing a starting goalie is always
+    worth flagging, long-term IR included) -- showing every long-term IR
+    skater here would bury the picks table in already-known, not-news
+    absences. Uses the same "latest snapshot at or before this date"
+    lookup injury_edge scores from, via injury_metrics.py, so the note and
+    the metric never disagree about which snapshot is in play.
+
+    :param conn: Open connection to the schedule database.
+    :param team: Team abbreviation.
+    :param game_date: This game's date, as YYYY-MM-DD.
+    :returns: Short strings, e.g. ["BOS: Swayman (G) - Day-To-Day"].
+    """
+    latest_fetch = latest_injury_fetch_at_or_before(conn, game_date)
+    if latest_fetch is None:
+        return []
+    rows = conn.execute(
+        """
+        SELECT player_name, position, status FROM injuries
+        WHERE team = ? AND fetched_at = ?
+        """,
+        (team, latest_fetch),
+    ).fetchall()
+    notes = []
+    for player_name, position, status in rows:
+        if position == "G" or status in ("Out", "Day-To-Day"):
+            notes.append(f"{team}: {player_name} ({position}) - {status}")
+    return notes
+
+
 def build_game_notes(
-    conn: sqlite3.Connection, game_id: int, home_team: str, game_date: str
+    conn: sqlite3.Connection, game_id: int, home_team: str, away_team: str, game_date: str
 ) -> list[str]:
-    """Collect special-context notes for a game (home opener, back-to-back, ...).
+    """Collect special-context notes for a game (home opener, back-to-back, injuries...).
 
     :param conn: Open connection to the schedule database.
     :param game_id: The game to annotate.
     :param home_team: The home team's abbreviation.
+    :param away_team: The away team's abbreviation.
     :param game_date: This game's date, as YYYY-MM-DD.
     :returns: Short note strings, e.g. ["Home opener", "PHI on a back-to-back"].
     """
@@ -309,6 +345,8 @@ def build_game_notes(
     if opener_note:
         notes.append(opener_note)
     notes.extend(back_to_back_notes(conn, game_id))
+    notes.extend(injury_notes(conn, home_team, game_date))
+    notes.extend(injury_notes(conn, away_team, game_date))
     return notes
 
 
@@ -667,7 +705,9 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
                 "total_at_pick": total,
                 "total_price_at_pick": total_price_at_pick,
                 "strategy_markets": strategy,
-                "notes": build_game_notes(conn, game_id, game["home_team"], game["game_date"]),
+                "notes": build_game_notes(
+                    conn, game_id, game["home_team"], game["away_team"], game["game_date"]
+                ),
                 "final_home_score": game["final_home_score"],
                 "final_away_score": game["final_away_score"],
                 "result": result,

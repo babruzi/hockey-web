@@ -362,6 +362,8 @@ the win/loss side of the comparison actually grows.
 - `lib/form_metrics.py` — computes `recent_form`/`goal_differential` from `games` scores
 - `lib/fetch_odds.py` — pulls odds from The Odds API and matches events to `games` rows
 - `lib/market_metrics.py` — derives `market_edge` (devigged implied win probability, from the moneyline) from `odds`, so the betting market is an actual weighted input to scoring, not just a display/grading detail
+- `lib/fetch_injuries.py` — pulls the current league-wide injury report from ESPN's public Site API (no key needed) and appends a snapshot to `injuries`
+- `lib/injury_metrics.py` — derives `injury_edge` (a severity-weighted team health score) from `injuries`
 - `policy.yaml` — the weighted scoring config; edit this to reweight or add/drop metrics
 - `lib/score.py` — normalizes metric values and applies `policy.yaml` to produce `daily_scores`
 - `lib/report.py` — ranks every game by score gap, prints/writes CSV + HTML, and logs picks
@@ -371,8 +373,6 @@ the win/loss side of the comparison actually grows.
 - `lib/record_page.py` — renders `docs/reports/record.html`, the published overall straight-up/ATS record and moneyline ROI (reuses `backtest.py`'s numbers, not its own analysis)
 
 ## Next up (Phase 3+)
-- `injuries` table (deferred as the messiest data source — likely needs scraping)
-- A cumulative-edge/streaks view over `picks_log` beyond the win/loss/ROI record `lib/record_page.py` now publishes -- e.g. a running bankroll chart, current streak, best/worst single pick
 - Head-to-head record and starting-goalie quality, feeding into the same generic `metrics` schema
 
 Further out (see `../betting-toolkit-design.md` section 10, not yet designed): player-level stats from MoneyPuck.com (especially goalie data), and eventually tracking/placing real bets rather than just paper picks.

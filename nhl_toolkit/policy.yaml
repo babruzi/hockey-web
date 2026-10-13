@@ -3,7 +3,13 @@
 # section 6. `normalize` must be one of: minmax, zscore, linear, none
 # (linear and none are both a pass-through of the raw value; the distinction
 # is documentation only until a metric needs different scaling behavior).
-policy_version: "2026-10-v3"
+# v4/v5 already exist in policy_weights as rejected weight-retuning
+# experiments from earlier this season (reverted back to v3's weights,
+# per the standing "leave weight-tuning alone for now" instruction) --
+# this jumps straight to v6 to avoid colliding with that history. v6
+# itself isn't a retune: it's v3's exact weights plus one new metric
+# (injury_edge) that didn't exist before.
+policy_version: "2026-10-v6"
 metrics:
   rest_days:
     weight: 0.15
@@ -59,3 +65,14 @@ metrics:
   market_edge:
     weight: 0.25
     normalize: zscore
+  # New as of 2026-10-13 (fetch_injuries.py/injury_metrics.py) -- there is no
+  # backtest history for this yet, since injury snapshots only started being
+  # collected today and backtest.py/policy_backtest.py can only correlate
+  # against games with data on record. This weight is a starting guess by
+  # analogy to back_to_back/home_ice's magnitude, not a validated one -- per
+  # the standing instruction to leave the *other* weights alone, this is a
+  # new metric being added, not a retune of an existing one. Revisit once
+  # backtest.py shows a real correlation sample for injury_edge.
+  injury_edge:
+    weight: 0.10
+    normalize: minmax

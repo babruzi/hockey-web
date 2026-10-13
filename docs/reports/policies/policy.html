@@ -129,7 +129,7 @@ a { color: var(--accent); }
 <p><a href="../../index.html">&larr; All reports</a></p>
 <h1>Scoring Policy</h1>
 <p class="subtitle">
-Version <strong>2026-10-v3</strong> &middot;
+Version <strong>2026-10-v6</strong> &middot;
 edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
 </p>
 <table>
@@ -232,6 +232,14 @@ edit nhl_toolkit/policy.yaml to change weights, then re-run score.py
             <td><span class="positive">+0.25</span></td>
             <td>zscore</td>
         </tr>
+
+        <tr>
+            <td>injury_edge</td>
+            <td class="notes">Health score from current injuries (higher = healthier)</td>
+            <td class="notes">severity</td>
+            <td><span class="positive">+0.10</span></td>
+            <td>minmax</td>
+        </tr>
 </tbody>
 </table>
 <p class="disclaimer">
@@ -240,6 +248,6 @@ Each metric's raw value is normalized (see the Normalize column) across
 that day's slate before the weight is applied, so metrics on different
 scales combine fairly.
 </p>
-<p class="updated">Last updated October 13, 2026 at 06:53 AM EDT</p>
+<p class="updated">Last updated October 13, 2026 at 07:14 AM EDT</p>
 </body>
 </html>
