@@ -266,7 +266,13 @@ run.
     Moneyline ROI and Puck Line ROI (the $ version of the Vs. Puck Line
     record) for the Money Line pick's own side -- not the same thing as the
     independent Puck Line recommendation the picks pages show, which can
-    name a different team.
+    name a different team. A small sub-table under it, **If You'd Sized
+    Puck Line Differently**, recombines the same Money Line/Puck Line
+    profit numbers at a few fixed stake ratios (full/full, full ML + half
+    PL, etc.) -- pure arithmetic, no new simulation -- and is explicitly
+    framed as illustrative rather than a recommendation: picking a ratio
+    because it maximized ROI on this same small sample would just be
+    curve-fitting to these specific games.
 
     Also includes a **Bankroll Over Time** chart: a day-by-day cumulative
     P&L line per bet type (Money Line, Puck Line, Over/Under, and the

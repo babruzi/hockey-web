@@ -268,6 +268,46 @@ def format_roi(total_profit: float, bet_count: int) -> tuple:
     return f"{total_profit:+.2f} on {bet_count} bets ({roi_pct:+.1f}%)", css_class
 
 
+STAKING_SPLIT_SCENARIOS = [
+    ("Full Money Line / Full Puck Line", 1.0, 1.0),
+    ("Full Money Line / Half Puck Line", 1.0, 0.5),
+    ("Half Money Line / Full Puck Line", 0.5, 1.0),
+    ("Full Money Line / Quarter Puck Line", 1.0, 0.25),
+]
+
+
+def staking_split_results(live_edge_totals: dict) -> list[tuple]:
+    """Combined P&L/ROI for a few ML/PL stake-size ratios, on the same
+    Live Policy at High Edge games.
+
+    Purely illustrative, not a staking recommendation: picking a ratio by
+    checking which one would have maximized ROI on this same small,
+    already-observed sample is curve-fitting, not a real edge -- there's
+    no reason whichever ratio looks best here would keep working on new
+    games just because it fit these specific ones. The real-world reason
+    to size a correlated secondary bet smaller is to reduce variance, not
+    to chase a backward-looking ROI number.
+
+    :param live_edge_totals: One policy's totals dict, from
+        :func:`policy_backtest.simulate_policy` (via
+        :func:`policy_backtest.build_live_policy_edge_backtest`).
+    :returns: (label, combined_profit, combined_staked, roi_pct) tuples --
+        roi_pct is None if nothing was staked in that scenario.
+    """
+    ml_profit = live_edge_totals["total_profit"]
+    ml_bets = live_edge_totals["graded_bet_count"]
+    pl_profit = live_edge_totals["puck_line_profit"]
+    pl_bets = live_edge_totals["puck_line_bet_count"]
+
+    results = []
+    for label, ml_frac, pl_frac in STAKING_SPLIT_SCENARIOS:
+        combined_profit = ml_profit * ml_frac + pl_profit * pl_frac
+        combined_staked = STAKE * ml_frac * ml_bets + STAKE * pl_frac * pl_bets
+        roi_pct = 100 * combined_profit / combined_staked if combined_staked else None
+        results.append((label, combined_profit, combined_staked, roi_pct))
+    return results
+
+
 def format_single_pick(row: Optional[tuple]) -> tuple:
     """ "+12.40 on SJS (2026-10-01)", or a dash if nothing's graded yet.
 
@@ -366,6 +406,18 @@ def render_record_html(
     )
     live_edge_pl_roi_str, live_edge_pl_roi_class = format_roi(
         live_edge_totals["puck_line_profit"], live_edge_totals["puck_line_bet_count"]
+    )
+    staking_rows = "\n".join(
+        f"""
+        <tr>
+            <td>{label}</td>
+            <td class="{"positive" if profit >= 0 else "negative"}">{profit:+.2f}</td>
+            <td class="edge">{staked:.0f}</td>
+            <td class="{"positive" if roi_pct is not None and roi_pct >= 0 else "negative"}">{
+            f"{roi_pct:+.1f}%" if roi_pct is not None else "n/a"
+        }</td>
+        </tr>"""
+        for label, profit, staked, roi_pct in staking_split_results(live_edge_totals)
     )
 
     chart_svg = render_bankroll_chart(bankroll)
@@ -485,6 +537,24 @@ pages show (a different team, based on goal_differential rather than this policy
     }</td></tr>
 <tr><td>Moneyline ROI</td><td class="{live_edge_roi_class}">{live_edge_roi_str}</td></tr>
 <tr><td>Puck Line ROI</td><td class="{live_edge_pl_roi_class}">{live_edge_pl_roi_str}</td></tr>
+</tbody>
+</table>
+
+<h3>If You'd Sized Puck Line Differently</h3>
+<p class="subtitle">
+Combined P&amp;L on the same Live Policy at High Edge games if Puck Line had been
+staked at a different fraction of the ${STAKE:.0f} Money Line stake, instead of the
+full ${STAKE:.0f} both rows above assume. Purely illustrative, not a staking
+recommendation -- picking a ratio because it maximized ROI on this same small,
+already-observed sample would just be curve-fitting to these specific games, not a
+real edge. The usual real-world reason to size a correlated second bet smaller is to
+reduce variance, not to chase a backward-looking ROI number.
+</p>
+<table>
+<thead>
+<tr><th>Staking</th><th>Combined P&amp;L</th><th>Staked</th><th>ROI</th></tr>
+</thead>
+<tbody>{staking_rows}
 </tbody>
 </table>
 
