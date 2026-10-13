@@ -107,6 +107,78 @@ def games_with_odds(conn, games_by_date: dict[str, list[tuple]]) -> dict[str, li
     return {game_date: games for game_date, games in filtered.items() if games}
 
 
+def _policy_weight_rows(conn, policy_version: str) -> list[tuple]:
+    """The (name, metric_id, weight, normalize) rows compute_scores() needs for one policy.
+
+    :param conn: Open connection to the schedule database.
+    :param policy_version: Which policy_weights version to look up.
+    :returns: Rows as compute_scores() expects them.
+    """
+    return conn.execute(
+        """
+        SELECT m.name, m.metric_id, pw.weight, pw.normalize
+        FROM policy_weights pw JOIN metrics m ON m.metric_id = pw.metric_id
+        WHERE pw.policy_version = ?
+        """,
+        (policy_version,),
+    ).fetchall()
+
+
+def _grade_simulated_game(conn, scores: dict, game: tuple, min_edge: float) -> Optional[dict]:
+    """Score and grade one game under one date's already-computed scores.
+
+    Shared by :func:`simulate_policy` (aggregates across all history) and
+    :func:`simulate_policy_daily` (keeps each date's result separate, for a
+    cumulative time series) so the two can never silently drift apart on
+    what counts as a win, a cover, or a graded bet.
+
+    :param conn: Open connection to the schedule database.
+    :param scores: This date's {(game_id, team_id): score}, from compute_scores().
+    :param game: (game_id, home_team, away_team, home_score, away_score).
+    :param min_edge: Skip (return None) if the score gap is below this.
+    :returns: None if skipped (missing scores or below min_edge), else a dict
+        with keys: won (bool), ats_result (Optional[str]), ml_profit
+        (Optional[float]), pl_profit (Optional[float]).
+    """
+    game_id, home_team, away_team, home_score, away_score = game
+    home_score_val = scores.get((game_id, home_team))
+    away_score_val = scores.get((game_id, away_team))
+    if home_score_val is None or away_score_val is None:
+        return None
+    if abs(home_score_val - away_score_val) < min_edge:
+        return None
+
+    if home_score_val >= away_score_val:
+        pick, pick_score, opp_score = home_team, home_score, away_score
+    else:
+        pick, pick_score, opp_score = away_team, away_score, home_score
+    margin = pick_score - opp_score
+    won = margin > 0
+
+    spread = latest_consensus_spread(conn, game_id, pick)
+    ats_result = None
+    if spread is not None:
+        covered = margin + spread
+        if covered > 0:
+            ats_result = "win"
+        elif covered < 0:
+            ats_result = "loss"
+        else:
+            ats_result = "push"
+
+    moneyline = latest_consensus_moneyline(conn, game_id, pick)
+    ml_profit = odds_profit(moneyline, "win" if won else "loss")
+
+    # Puck Line here is about the same team as the Money Line pick, graded
+    # against the spread -- not the same thing as report.py's independent
+    # puck_line_pick recommendation (a different team entirely, based on
+    # goal_differential, not this policy's weights).
+    spread_price = latest_consensus_spread_price(conn, game_id, pick)
+    pl_profit = odds_profit(spread_price, ats_result)
+
+    return {"won": won, "ats_result": ats_result, "ml_profit": ml_profit, "pl_profit": pl_profit}
+
+
 def simulate_policy(
     conn,
     policy_version: str,
@@ -123,14 +195,7 @@ def simulate_policy(
         edge dropdown, not a change to how a game would actually be picked.
     :returns: Aggregate record/ROI dict for this policy_version across all history.
     """
-    weight_rows = conn.execute(
-        """
-        SELECT m.name, m.metric_id, pw.weight, pw.normalize
-        FROM policy_weights pw JOIN metrics m ON m.metric_id = pw.metric_id
-        WHERE pw.policy_version = ?
-        """,
-        (policy_version,),
-    ).fetchall()
+    weight_rows = _policy_weight_rows(conn, policy_version)
 
     totals = {
         "games_evaluated": 0,
@@ -147,61 +212,79 @@ def simulate_policy(
 
     for game_date, games in games_by_date.items():
         scores = compute_scores(conn, game_date, weight_rows)
-        for game_id, home_team, away_team, home_score, away_score in games:
-            home_score_val = scores.get((game_id, home_team))
-            away_score_val = scores.get((game_id, away_team))
-            if home_score_val is None or away_score_val is None:
+        for game in games:
+            result = _grade_simulated_game(conn, scores, game, min_edge)
+            if result is None:
                 continue
-            if abs(home_score_val - away_score_val) < min_edge:
-                continue
-
-            if home_score_val >= away_score_val:
-                pick, pick_score, opp_score = home_team, home_score, away_score
-            else:
-                pick, pick_score, opp_score = away_team, away_score, home_score
-            margin = pick_score - opp_score
 
             totals["games_evaluated"] += 1
-            won = margin > 0
-            if won:
+            if result["won"]:
                 totals["su_wins"] += 1
             else:
                 totals["su_losses"] += 1
 
-            spread = latest_consensus_spread(conn, game_id, pick)
-            ats_result = None
-            if spread is not None:
-                covered = margin + spread
-                if covered > 0:
-                    totals["ats_wins"] += 1
-                    ats_result = "win"
-                elif covered < 0:
-                    totals["ats_losses"] += 1
-                    ats_result = "loss"
-                else:
-                    totals["ats_pushes"] += 1
-                    ats_result = "push"
+            if result["ats_result"] == "win":
+                totals["ats_wins"] += 1
+            elif result["ats_result"] == "loss":
+                totals["ats_losses"] += 1
+            elif result["ats_result"] == "push":
+                totals["ats_pushes"] += 1
 
-            moneyline = latest_consensus_moneyline(conn, game_id, pick)
-            profit = odds_profit(moneyline, "win" if won else "loss")
-            if profit is not None:
-                totals["total_profit"] += profit
+            if result["ml_profit"] is not None:
+                totals["total_profit"] += result["ml_profit"]
                 totals["graded_bet_count"] += 1
 
-            # Puck Line ROI here is about the same team as the Money Line
-            # pick, graded against the spread -- a $ version of the
-            # ats_wins/ats_losses/ats_pushes record just above, using
-            # whatever price that side's puck line was actually offered at.
-            # Not the same thing as report.py's independent puck_line_pick
-            # recommendation (a different team entirely, based on
-            # goal_differential, not this policy's weights).
-            spread_price = latest_consensus_spread_price(conn, game_id, pick)
-            pl_profit = odds_profit(spread_price, ats_result)
-            if pl_profit is not None:
-                totals["puck_line_profit"] += pl_profit
+            if result["pl_profit"] is not None:
+                totals["puck_line_profit"] += result["pl_profit"]
                 totals["puck_line_bet_count"] += 1
 
     return totals
+
+
+def simulate_policy_daily(
+    conn,
+    policy_version: str,
+    games_by_date: dict[str, list[tuple]],
+    min_edge: float = 0.0,
+) -> list[dict]:
+    """Per-date (not aggregate) Money Line/Puck Line profit under one policy.
+
+    Reuses :func:`_grade_simulated_game`, the exact same per-game grading
+    :func:`simulate_policy` uses, so summing this series' ml_profit/pl_profit
+    across every date reproduces that function's total_profit/
+    puck_line_profit exactly -- this is for record_page.py's Bankroll Over
+    Time chart, which needs a day-by-day breakdown rather than one aggregate.
+
+    :param conn: Open connection to the schedule database.
+    :param policy_version: Which policy_weights version to score with.
+    :param games_by_date: Result of :func:`completed_games_by_date`.
+    :param min_edge: Same meaning as in :func:`simulate_policy`.
+    :returns: One dict per date with at least one evaluated game:
+        {"date", "ml_profit", "pl_profit"} -- that date's own totals, not a
+        running cumulative sum (record_page.py accumulates these itself).
+        Dates with no evaluated game are omitted, not zero-filled.
+    """
+    weight_rows = _policy_weight_rows(conn, policy_version)
+
+    series = []
+    for game_date in sorted(games_by_date):
+        scores = compute_scores(conn, game_date, weight_rows)
+        ml_profit = 0.0
+        pl_profit = 0.0
+        evaluated = False
+        for game in games_by_date[game_date]:
+            result = _grade_simulated_game(conn, scores, game, min_edge)
+            if result is None:
+                continue
+            evaluated = True
+            if result["ml_profit"] is not None:
+                ml_profit += result["ml_profit"]
+            if result["pl_profit"] is not None:
+                pl_profit += result["pl_profit"]
+        if evaluated:
+            series.append({"date": game_date, "ml_profit": ml_profit, "pl_profit": pl_profit})
+
+    return series
 
 
 def _pct(wins: int, losses: int) -> str:
@@ -300,6 +383,31 @@ def build_live_policy_edge_backtest() -> tuple[str, dict]:
         totals = simulate_policy(conn, live_version, odds_games, min_edge=LIVE_POLICY_MIN_EDGE)
     conn.close()
     return live_version, totals
+
+
+def build_live_policy_edge_series() -> list[dict]:
+    """Day-by-day version of :func:`build_live_policy_edge_backtest`.
+
+    Same restriction (this season's odds-covered games, edge >=
+    LIVE_POLICY_MIN_EDGE) and the same policy, but kept per-date rather than
+    summed into one aggregate -- feeds record_page.py's Bankroll Over Time
+    chart, so that chart's live-policy line and the static Live Policy at
+    High Edge section above it are always describing the exact same
+    simulation (summing this series' ml_profit/pl_profit reproduces that
+    section's totals exactly).
+
+    :returns: Result of :func:`simulate_policy_daily` for the live policy.
+    """
+    init_db()
+    conn = get_connection()
+    with conn:
+        live_version = load_policy()["policy_version"]
+        odds_games = games_with_odds(conn, completed_games_by_date(conn))
+        series = simulate_policy_daily(
+            conn, live_version, odds_games, min_edge=LIVE_POLICY_MIN_EDGE
+        )
+    conn.close()
+    return series
 
 
 if __name__ == "__main__":

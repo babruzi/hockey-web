@@ -19,6 +19,8 @@
     --chart-pl: #7c3aed;
     --chart-ou: #ea580c;
     --chart-strategy: #15803d;
+    --chart-live-ml: #0891b2;
+    --chart-live-pl: #db2777;
 }
 @media (prefers-color-scheme: dark) {
     :root {
@@ -34,6 +36,8 @@
         --chart-pl: #c4b5fd;
         --chart-ou: #fb923c;
         --chart-strategy: #4ade80;
+        --chart-live-ml: #22d3ee;
+        --chart-live-pl: #f472b6;
     }
 }
 body {
@@ -139,29 +143,36 @@ been bet.
 <p class="subtitle">
 Cumulative P&amp;L on a flat $10 stake per pick, day by day, for each
 bet type -- a day with nothing graded yet is skipped rather than plotted
-flat.
+flat. The two "Live Edge" lines are different from the rest: not what was
+actually bet, but a day-by-day version of the Live Policy at High Edge
+simulation below (the currently-live policy, replayed against every
+odds-covered game, counted only once its edge clears 1)
+-- a day with no qualifying game adds $0 rather than being skipped, since
+that's a real "nothing to bet," not "not graded yet."
 </p>
 <div class="chart-wrap"><svg viewBox="0 0 760 260" class="bankroll-chart" role="img"
      aria-label="Cumulative profit and loss over the season, per bet type">
-<line x1="46" y1="72.9" x2="720" y2="72.9"
+<line x1="46" y1="110.3" x2="720" y2="110.3"
       stroke="var(--border)" stroke-width="1" stroke-dasharray="4 3" />
-<text x="40" y="72.9" fill="var(--muted)" font-size="10"
+<text x="40" y="110.3" fill="var(--muted)" font-size="10"
       text-anchor="end" dominant-baseline="middle">$0</text>
 <text x="40" y="16.0" fill="var(--muted)" font-size="10"
-      text-anchor="end" dominant-baseline="middle">+35</text>
+      text-anchor="end" dominant-baseline="middle">+76</text>
 <text x="40" y="236.0" fill="var(--muted)" font-size="10"
       text-anchor="end" dominant-baseline="middle">-101</text>
 <text x="46" y="254" fill="var(--muted)" font-size="10">2026-09-29</text>
 <text x="720" y="254" fill="var(--muted)" font-size="10"
       text-anchor="end">2026-10-12</text>
-<polyline points="46.0,115.0 102.2,98.3 158.3,60.5 214.5,108.0 270.7,108.7 326.8,140.8 383.0,125.9 439.2,103.2 495.3,96.9 551.5,80.4 607.7,59.4 663.8,67.7 720.0,51.7" fill="none" stroke="var(--chart-ml)" stroke-width="2" /><polyline points="46.0,72.9 102.2,72.9 158.3,32.0 214.5,16.0 270.7,63.2 326.8,24.9 383.0,52.4 439.2,108.5 495.3,110.9 551.5,166.5 607.7,158.1 663.8,142.4 720.0,167.5" fill="none" stroke="var(--chart-pl)" stroke-width="2" /><polyline points="46.0,80.3 102.2,128.6 158.3,142.3 214.5,132.2 270.7,116.1 326.8,135.7 383.0,105.0 439.2,191.3 495.3,181.0 551.5,214.8 607.7,202.4 663.8,189.8 720.0,210.1" fill="none" stroke="var(--chart-ou)" stroke-width="2" /><polyline points="46.0,98.9 102.2,115.0 158.3,24.4 214.5,24.5 270.7,97.0 326.8,85.2 383.0,128.7 439.2,190.5 495.3,196.7 551.5,236.0 607.7,206.6 663.8,199.2 720.0,222.0" fill="none" stroke="var(--chart-strategy)" stroke-width="2" />
-<text x="726.0" y="51.7" fill="var(--chart-ml)" font-size="11" dominant-baseline="middle">+13</text><text x="726.0" y="167.5" fill="var(--chart-pl)" font-size="11" dominant-baseline="middle">-59</text><text x="726.0" y="210.1" fill="var(--chart-ou)" font-size="11" dominant-baseline="middle">-85</text><text x="726.0" y="222.0" fill="var(--chart-strategy)" font-size="11" dominant-baseline="middle">-93</text>
+<polyline points="46.0,142.8 102.2,129.9 158.3,100.8 214.5,137.4 270.7,137.9 326.8,162.7 383.0,151.2 439.2,133.7 495.3,128.9 551.5,116.1 607.7,100.0 663.8,106.3 720.0,94.1" fill="none" stroke="var(--chart-ml)" stroke-width="2" /><polyline points="46.0,110.3 102.2,110.3 158.3,78.8 214.5,66.5 270.7,102.9 326.8,73.4 383.0,94.5 439.2,137.7 495.3,139.6 551.5,182.4 607.7,176.0 663.8,163.9 720.0,183.2" fill="none" stroke="var(--chart-pl)" stroke-width="2" /><polyline points="46.0,116.0 102.2,153.3 158.3,163.8 214.5,156.0 270.7,143.6 326.8,158.8 383.0,135.1 439.2,201.5 495.3,193.6 551.5,219.7 607.7,210.1 663.8,200.4 720.0,216.0" fill="none" stroke="var(--chart-ou)" stroke-width="2" /><polyline points="46.0,130.4 102.2,142.8 158.3,73.0 214.5,73.1 270.7,128.9 326.8,119.8 383.0,153.3 439.2,201.0 495.3,205.7 551.5,236.0 607.7,213.4 663.8,207.6 720.0,225.2" fill="none" stroke="var(--chart-strategy)" stroke-width="2" /><polyline points="46.0,117.9 102.2,123.9 158.3,112.5 214.5,124.1 270.7,100.8 326.8,96.4 383.0,101.7 439.2,86.8 495.3,91.5 551.5,75.2 607.7,75.2 663.8,74.9 720.0,74.9" fill="none" stroke="var(--chart-live-ml)" stroke-width="2" /><polyline points="46.0,110.3 102.2,110.3 158.3,82.5 214.5,79.6 270.7,72.3 326.8,84.7 383.0,79.1 439.2,40.4 495.3,33.7 551.5,23.1 607.7,23.1 663.8,16.0 720.0,16.0" fill="none" stroke="var(--chart-live-pl)" stroke-width="2" />
+<text x="726.0" y="94.1" fill="var(--chart-ml)" font-size="11" dominant-baseline="middle">+13</text><text x="726.0" y="183.2" fill="var(--chart-pl)" font-size="11" dominant-baseline="middle">-59</text><text x="726.0" y="216.0" fill="var(--chart-ou)" font-size="11" dominant-baseline="middle">-85</text><text x="726.0" y="225.2" fill="var(--chart-strategy)" font-size="11" dominant-baseline="middle">-93</text><text x="726.0" y="74.9" fill="var(--chart-live-ml)" font-size="11" dominant-baseline="middle">+29</text><text x="726.0" y="16.0" fill="var(--chart-live-pl)" font-size="11" dominant-baseline="middle">+76</text>
 </svg></div>
 <p class="chart-legend">
 <span class="swatch" style="color:var(--chart-ml)">&#9632;</span> Money Line &nbsp;
 <span class="swatch" style="color:var(--chart-pl)">&#9632;</span> Puck Line &nbsp;
 <span class="swatch" style="color:var(--chart-ou)">&#9632;</span> Over/Under &nbsp;
-<span class="swatch" style="color:var(--chart-strategy)">&#9632;</span> Strategy
+<span class="swatch" style="color:var(--chart-strategy)">&#9632;</span> Strategy &nbsp;
+<span class="swatch" style="color:var(--chart-live-ml)">&#9632;</span> Live Edge ML &nbsp;
+<span class="swatch" style="color:var(--chart-live-pl)">&#9632;</span> Live Edge PL
 </p>
 
 <table>
@@ -422,6 +433,6 @@ threshold -- a small sample by design, since it only includes this
 season's odds-covered games above a fairly high bar. Paper-trading
 analysis only, not betting advice.
 </p>
-<p class="updated">Last updated October 13, 2026 at 07:14 AM EDT</p>
+<p class="updated">Last updated October 13, 2026 at 07:43 AM EDT</p>
 </body>
 </html>

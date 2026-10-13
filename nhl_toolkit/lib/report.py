@@ -770,6 +770,8 @@ HTML_STYLE = """
     --chart-pl: #7c3aed;
     --chart-ou: #ea580c;
     --chart-strategy: #15803d;
+    --chart-live-ml: #0891b2;
+    --chart-live-pl: #db2777;
 }
 @media (prefers-color-scheme: dark) {
     :root {
@@ -785,6 +787,8 @@ HTML_STYLE = """
         --chart-pl: #c4b5fd;
         --chart-ou: #fb923c;
         --chart-strategy: #4ade80;
+        --chart-live-ml: #22d3ee;
+        --chart-live-pl: #f472b6;
     }
 }
 body {

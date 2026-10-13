@@ -31,6 +31,7 @@ from grade import STAKE
 from policy_backtest import (
     LIVE_POLICY_MIN_EDGE,
     build_live_policy_edge_backtest,
+    build_live_policy_edge_series,
     build_policy_backtest,
     rank_by_roi,
 )
@@ -43,6 +44,8 @@ CHART_TRACKS = [
     ("pl", "Puck Line", "--chart-pl"),
     ("ou", "Over/Under", "--chart-ou"),
     ("strategy", "Strategy", "--chart-strategy"),
+    ("live_ml", "Live Edge ML", "--chart-live-ml"),
+    ("live_pl", "Live Edge PL", "--chart-live-pl"),
 ]
 
 
@@ -122,6 +125,40 @@ def bankroll_series(conn) -> list[dict]:
             running[key] += day[key]
         series.append({"date": date, **running})
     return series
+
+
+def merge_live_edge_series(series: list[dict], live_edge_daily: list[dict]) -> list[dict]:
+    """Fold the live-policy-at-high-edge daily P&L into bankroll_series()'s series.
+
+    Unlike that series' own tracks (derived from whatever was actually bet
+    under whichever policy was live on a given day), this track is a
+    simulated replay of the *current* live policy against every date --
+    see policy_backtest.py's build_live_policy_edge_backtest() for why that
+    comparison is deliberately not "what was actually bet." Sharing one
+    merged series (rather than two separately-plotted ones) keeps both on
+    the same x-axis/date alignment for free, since every qualifying
+    high-edge date is already a date bankroll_series() has a point for (it
+    takes a completed, graded game to qualify, and every completed graded
+    game already has a picks_log row feeding bankroll_series()).
+
+    :param series: Result of :func:`bankroll_series` (date-ordered).
+    :param live_edge_daily: Result of
+        :func:`policy_backtest.build_live_policy_edge_series`.
+    :returns: The same series, each point extended with "live_ml"/"live_pl"
+        running cumulative totals (0 added on a date with no qualifying
+        game, not skipped, since that's a real "nothing cleared the edge
+        that day," not "not graded yet").
+    """
+    daily_by_date = {point["date"]: point for point in live_edge_daily}
+    running_ml = running_pl = 0.0
+    merged = []
+    for point in series:
+        day = daily_by_date.get(point["date"])
+        if day:
+            running_ml += day["ml_profit"]
+            running_pl += day["pl_profit"]
+        merged.append({**point, "live_ml": running_ml, "live_pl": running_pl})
+    return merged
 
 
 def current_streak(conn) -> Optional[tuple[str, int]]:
@@ -336,7 +373,8 @@ def render_record_html(
     :param performance: Rows from :func:`backtest.policy_performance`.
     :param bet_types: Result of :func:`backtest.bet_type_totals`.
     :param policy_backtest_results: Result of :func:`policy_backtest.build_policy_backtest`.
-    :param bankroll: Result of :func:`bankroll_series`.
+    :param bankroll: Result of :func:`bankroll_series`, merged with
+        :func:`merge_live_edge_series`.
     :param streak: Result of :func:`current_streak`.
     :param best_pick: Result of :func:`best_worst_pick` (first element).
     :param worst_pick: Result of :func:`best_worst_pick` (second element).
@@ -450,14 +488,21 @@ been bet.
 <p class="subtitle">
 Cumulative P&amp;L on a flat ${STAKE:.0f} stake per pick, day by day, for each
 bet type -- a day with nothing graded yet is skipped rather than plotted
-flat.
+flat. The two "Live Edge" lines are different from the rest: not what was
+actually bet, but a day-by-day version of the Live Policy at High Edge
+simulation below (the currently-live policy, replayed against every
+odds-covered game, counted only once its edge clears {LIVE_POLICY_MIN_EDGE:g})
+-- a day with no qualifying game adds $0 rather than being skipped, since
+that's a real "nothing to bet," not "not graded yet."
 </p>
 <div class="chart-wrap">{chart_svg}</div>
 <p class="chart-legend">
 <span class="swatch" style="color:var(--chart-ml)">&#9632;</span> Money Line &nbsp;
 <span class="swatch" style="color:var(--chart-pl)">&#9632;</span> Puck Line &nbsp;
 <span class="swatch" style="color:var(--chart-ou)">&#9632;</span> Over/Under &nbsp;
-<span class="swatch" style="color:var(--chart-strategy)">&#9632;</span> Strategy
+<span class="swatch" style="color:var(--chart-strategy)">&#9632;</span> Strategy &nbsp;
+<span class="swatch" style="color:var(--chart-live-ml)">&#9632;</span> Live Edge ML &nbsp;
+<span class="swatch" style="color:var(--chart-live-pl)">&#9632;</span> Live Edge PL
 </p>
 
 <table>
@@ -596,6 +641,7 @@ def build_record_page() -> None:
     conn.close()
     policy_backtest_results = build_policy_backtest()
     live_policy_edge_result = build_live_policy_edge_backtest()
+    bankroll = merge_live_edge_series(bankroll, build_live_policy_edge_series())
     path = render_record_html(
         performance,
         bet_types,
