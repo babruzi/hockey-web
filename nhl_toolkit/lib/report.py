@@ -134,6 +134,26 @@ def latest_consensus_moneyline(
     return round(value) if value is not None else None
 
 
+def latest_consensus_spread_price(
+    conn: sqlite3.Connection, game_id: int, team_id: str
+) -> Optional[int]:
+    """One team's puck-line price: DraftKings' own quote, or a cross-book
+    average if DraftKings hasn't posted a line for this game (see
+    :func:`_dk_or_consensus`).
+
+    Rounded like :func:`latest_consensus_moneyline`: American odds are
+    always whole numbers, but the cross-book-average fallback can return
+    a float.
+
+    :param conn: Open connection to the schedule database.
+    :param game_id: The game to look up odds for.
+    :param team_id: The team whose puck-line price to return.
+    :returns: The price, or None if no odds have been fetched for this game.
+    """
+    value = _dk_or_consensus(conn, game_id, team_id, "home_spread_price", "away_spread_price")
+    return round(value) if value is not None else None
+
+
 def latest_total(conn: sqlite3.Connection, game_id: int) -> tuple:
     """The game's over/under total and both sides' prices.
 
@@ -576,21 +596,8 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
 
         home_spread = latest_consensus_spread(conn, game_id, game["home_team"])
         away_spread = latest_consensus_spread(conn, game_id, game["away_team"])
-        home_spread_price_raw = _dk_or_consensus(
-            conn, game_id, game["home_team"], "home_spread_price", "away_spread_price"
-        )
-        away_spread_price_raw = _dk_or_consensus(
-            conn, game_id, game["away_team"], "home_spread_price", "away_spread_price"
-        )
-        # American odds are always whole numbers; _dk_or_consensus's cross-book
-        # average fallback (DraftKings-missing games only) can return a float,
-        # same as latest_consensus_moneyline() already rounds for the same reason.
-        home_spread_price = (
-            round(home_spread_price_raw) if home_spread_price_raw is not None else None
-        )
-        away_spread_price = (
-            round(away_spread_price_raw) if away_spread_price_raw is not None else None
-        )
+        home_spread_price = latest_consensus_spread_price(conn, game_id, game["home_team"])
+        away_spread_price = latest_consensus_spread_price(conn, game_id, game["away_team"])
         home_cover_pct, away_cover_pct = devig_pair(home_spread_price, away_spread_price)
         pick_spread_price = (
             home_spread_price if pick_team == game["home_team"] else away_spread_price

@@ -262,7 +262,11 @@ run.
     (read straight from `policy.yaml`, not hardcoded), restricted to this
     season's odds-covered games with a predicted edge of 1.0+ -- the same
     filter the picks page's Minimum Edge dropdown uses, applied here across
-    every qualifying game at once instead of one day at a time.
+    every qualifying game at once instead of one day at a time. Shows both
+    Moneyline ROI and Puck Line ROI (the $ version of the Vs. Puck Line
+    record) for the Money Line pick's own side -- not the same thing as the
+    independent Puck Line recommendation the picks pages show, which can
+    name a different team.
 
     Also includes a **Bankroll Over Time** chart: a day-by-day cumulative
     P&L line per bet type (Money Line, Puck Line, Over/Under, and the

@@ -364,6 +364,9 @@ def render_record_html(
     live_edge_roi_str, live_edge_roi_class = format_roi(
         live_edge_totals["total_profit"], live_edge_totals["graded_bet_count"]
     )
+    live_edge_pl_roi_str, live_edge_pl_roi_class = format_roi(
+        live_edge_totals["puck_line_profit"], live_edge_totals["puck_line_bet_count"]
+    )
 
     chart_svg = render_bankroll_chart(bankroll)
     if streak:
@@ -461,7 +464,9 @@ The currently-live policy (<strong>{live_policy_version}</strong>), restricted t
 season's games that actually have odds on record, and only the ones with a predicted
 edge of {LIVE_POLICY_MIN_EDGE:g}+ -- the same filter and threshold as the picks page's
 Minimum Edge dropdown, applied here to every qualifying game this season at once rather
-than one day at a time.
+than one day at a time. "Vs. Puck Line"/"Puck Line ROI" here grade the same Money Line
+pick against the spread, not the independent puck_line_pick recommendation the picks
+pages show (a different team, based on goal_differential rather than this policy).
 </p>
 <table>
 <thead><tr><th></th><th>Record</th></tr></thead>
@@ -479,6 +484,7 @@ than one day at a time.
         )
     }</td></tr>
 <tr><td>Moneyline ROI</td><td class="{live_edge_roi_class}">{live_edge_roi_str}</td></tr>
+<tr><td>Puck Line ROI</td><td class="{live_edge_pl_roi_class}">{live_edge_pl_roi_str}</td></tr>
 </tbody>
 </table>
 

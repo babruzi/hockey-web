@@ -30,7 +30,11 @@ from typing import Optional
 
 from db import COMPLETED_STATES, get_connection, init_db
 from grade import STAKE, odds_profit
-from report import latest_consensus_moneyline, latest_consensus_spread
+from report import (
+    latest_consensus_moneyline,
+    latest_consensus_spread,
+    latest_consensus_spread_price,
+)
 from score import compute_scores, load_policy
 
 # Minimum predicted edge for the live-policy section of record.html.
@@ -137,6 +141,8 @@ def simulate_policy(
         "ats_pushes": 0,
         "total_profit": 0.0,
         "graded_bet_count": 0,
+        "puck_line_profit": 0.0,
+        "puck_line_bet_count": 0,
     }
 
     for game_date, games in games_by_date.items():
@@ -163,20 +169,37 @@ def simulate_policy(
                 totals["su_losses"] += 1
 
             spread = latest_consensus_spread(conn, game_id, pick)
+            ats_result = None
             if spread is not None:
                 covered = margin + spread
                 if covered > 0:
                     totals["ats_wins"] += 1
+                    ats_result = "win"
                 elif covered < 0:
                     totals["ats_losses"] += 1
+                    ats_result = "loss"
                 else:
                     totals["ats_pushes"] += 1
+                    ats_result = "push"
 
             moneyline = latest_consensus_moneyline(conn, game_id, pick)
             profit = odds_profit(moneyline, "win" if won else "loss")
             if profit is not None:
                 totals["total_profit"] += profit
                 totals["graded_bet_count"] += 1
+
+            # Puck Line ROI here is about the same team as the Money Line
+            # pick, graded against the spread -- a $ version of the
+            # ats_wins/ats_losses/ats_pushes record just above, using
+            # whatever price that side's puck line was actually offered at.
+            # Not the same thing as report.py's independent puck_line_pick
+            # recommendation (a different team entirely, based on
+            # goal_differential, not this policy's weights).
+            spread_price = latest_consensus_spread_price(conn, game_id, pick)
+            pl_profit = odds_profit(spread_price, ats_result)
+            if pl_profit is not None:
+                totals["puck_line_profit"] += pl_profit
+                totals["puck_line_bet_count"] += 1
 
     return totals
 
