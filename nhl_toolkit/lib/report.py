@@ -415,6 +415,20 @@ PUCK_LINE = 1.5
 # picked, just which already-picked games the page highlights by default.
 DEFAULT_MIN_EDGE = 0.9
 
+# Display-only staking split for the Strategy track and Est. Winnings
+# preview: $10 on Puck Line, $5 on Money Line, reflecting how this is
+# actually being bet rather than the flat $STAKE every market is *graded*
+# at. grade.py's STAKE/profit_10/puck_line_profit_10 stay flat $10 each --
+# changing those would mean re-grading, and ROI would no longer mean "per
+# dollar risked" uniformly across bet types. Instead these just rescale the
+# already-computed $10-stake profit figures (same pure-arithmetic approach
+# as record_page.py's staking_split_results(), which already showed this
+# exact ratio -- Half ML/Full PL -- among its scenarios). Over/Under has no
+# stated preference here (the Strategy rule never recommends it anyway), so
+# its own display stays at the flat STAKE.
+STRATEGY_ML_STAKE = 5.0
+STRATEGY_PL_STAKE = 10.0
+
 
 def puck_line_recommendation(
     home_team: str,
@@ -993,7 +1007,11 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         markets = pick["strategy_markets"]
         if not markets:
             return '<span class="notes">&mdash;</span>'
-        label = "PL + ML" if "ml" in markets else "PL only"
+        label = (
+            f"PL ${STRATEGY_PL_STAKE:.0f} + ML ${STRATEGY_ML_STAKE:.0f}"
+            if "ml" in markets
+            else f"PL ${STRATEGY_PL_STAKE:.0f} only"
+        )
         team = pick["puck_line_pick"]
         return f'<strong class="strategy">{team}</strong> <span class="notes">({label})</span>'
 
@@ -1005,7 +1023,7 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         ml_price = pick["moneyline_at_pick"]
         pl_price = pick["pick_spread_price"]
         ou_price = pick["total_price_at_pick"]
-        default_payout = potential_payout(ml_price, STAKE)
+        default_payout = potential_payout(ml_price, STRATEGY_ML_STAKE)
         default_str = f"${default_payout:.2f}" if default_payout is not None else "&mdash;"
         ml_attr = "" if ml_price is None else str(ml_price)
         pl_attr = "" if pl_price is None else str(pl_price)
@@ -1109,6 +1127,12 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         return f'<span class="{css_class}">{total:+.2f}</span>{note}'
 
     def format_strategy_total() -> str:
+        """Strategy's own P&L at its real stakes (PL $STRATEGY_PL_STAKE,
+        ML $STRATEGY_ML_STAKE), not the flat $STAKE every leg is actually
+        graded/stored at -- rescales profit_10/puck_line_profit_10 by each
+        leg's stake ratio before summing, same pure-arithmetic approach as
+        record_page.py's staking_split_results().
+        """
         applicable = [pick for pick in picks if pick["strategy_markets"]]
         if not applicable:
             return '<span class="notes">No recommendation today</span>'
@@ -1120,9 +1144,9 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         for pick in applicable:
             leg_profits = []
             if "pl" in pick["strategy_markets"] and pick["puck_line_profit_10"] is not None:
-                leg_profits.append(pick["puck_line_profit_10"])
+                leg_profits.append(pick["puck_line_profit_10"] * (STRATEGY_PL_STAKE / STAKE))
             if "ml" in pick["strategy_markets"] and pick["profit_10"] is not None:
-                leg_profits.append(pick["profit_10"])
+                leg_profits.append(pick["profit_10"] * (STRATEGY_ML_STAKE / STAKE))
             if leg_profits:
                 total += sum(leg_profits)
                 bet_count += len(leg_profits)
@@ -1136,16 +1160,17 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
     day_totals_html = f"""
 <h2>If You Bet Every Pick</h2>
 <table>
-<thead><tr><th></th><th>Total P&amp;L (${STAKE:.0f}/pick)</th></tr></thead>
+<thead><tr><th></th><th>Total P&amp;L</th></tr></thead>
 <tbody>
-<tr><td>Money Line</td><td>{format_day_total(len(picks), "profit_10")}</td></tr>
-<tr><td>Puck Line</td><td>{
+<tr><td>Money Line (${STAKE:.0f}/pick)</td><td>{format_day_total(len(picks), "profit_10")}</td></tr>
+<tr><td>Puck Line (${STAKE:.0f}/pick)</td><td>{
         format_day_total(sum(1 for pick in picks if pick["puck_line_pick"]), "puck_line_profit_10")
     }</td></tr>
-<tr><td>Over/Under</td><td>{
+<tr><td>Over/Under (${STAKE:.0f}/pick)</td><td>{
         format_day_total(sum(1 for pick in picks if pick["total_pick"]), "total_profit_10")
     }</td></tr>
-<tr><td><strong class="strategy">Strategy</strong> (PL + ML when they agree)</td>
+<tr><td><strong class="strategy">Strategy</strong>
+    (PL ${STRATEGY_PL_STAKE:.0f} + ML ${STRATEGY_ML_STAKE:.0f} when they agree)</td>
     <td>{format_strategy_total()}</td></tr>
 </tbody>
 </table>"""
@@ -1167,7 +1192,8 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 <option value="ou">Over/Under</option>
 </select>
 <span class="notes">(shows only that market's columns; Est. Winnings is the
-payout on a ${STAKE:.0f} bet on the pick, if it wins)</span>"""
+payout if the pick wins, at ${STRATEGY_ML_STAKE:.0f} Money Line / ${STRATEGY_PL_STAKE:.0f}
+Puck Line / ${STAKE:.0f} Over-Under)</span>"""
         if is_today
         else ""
     )
@@ -1196,9 +1222,13 @@ function updateWinnings() {
             return;
         }
         var price = parseInt(raw, 10);
-        var stake = """
+        var stake = marketType === "ml" ? """
+        + f"{STRATEGY_ML_STAKE}"
+        + """ : (marketType === "pl" ? """
+        + f"{STRATEGY_PL_STAKE}"
+        + """ : """
         + f"{STAKE}"
-        + """;
+        + """);
         var payout = price > 0 ? (stake * price) / 100 : (stake * 100) / Math.abs(price);
         cell.textContent = "$" + payout.toFixed(2);
     });

@@ -3,13 +3,17 @@
 # section 6. `normalize` must be one of: minmax, zscore, linear, none
 # (linear and none are both a pass-through of the raw value; the distinction
 # is documentation only until a metric needs different scaling behavior).
-# v4/v5 already exist in policy_weights as rejected weight-retuning
-# experiments from earlier this season (reverted back to v3's weights,
-# per the standing "leave weight-tuning alone for now" instruction) --
-# this jumps straight to v6 to avoid colliding with that history. v6
-# itself isn't a retune: it's v3's exact weights plus one new metric
-# (injury_edge) that didn't exist before.
-policy_version: "2026-10-v6"
+# Reverted back to v3 on 2026-10-15 at the user's explicit request, after
+# policy_backtest.py showed v3 still on top (-0.1% ROI) with v6 -- v3 plus
+# an unvalidated injury_edge weight -- running behind it (-2.4% ROI) on the
+# same 87-bet odds-covered sample. injury_edge is still fully computed and
+# shown in picks-page notes either way; it's just unweighted here (absent
+# from this file), same as goals_for_avg already was before it got a
+# weight -- score.py only applies weights for metrics explicitly listed
+# below, so leaving it out means zero influence on total_score, not that
+# the metric stopped existing. v4/v5 (different, already-rejected
+# weight-retuning experiments) remain in policy_weights' history too.
+policy_version: "2026-10-v3"
 metrics:
   rest_days:
     weight: 0.15
@@ -65,14 +69,9 @@ metrics:
   market_edge:
     weight: 0.25
     normalize: zscore
-  # New as of 2026-10-13 (fetch_injuries.py/injury_metrics.py) -- there is no
-  # backtest history for this yet, since injury snapshots only started being
-  # collected today and backtest.py/policy_backtest.py can only correlate
-  # against games with data on record. This weight is a starting guess by
-  # analogy to back_to_back/home_ice's magnitude, not a validated one -- per
-  # the standing instruction to leave the *other* weights alone, this is a
-  # new metric being added, not a retune of an existing one. Revisit once
-  # backtest.py shows a real correlation sample for injury_edge.
-  injury_edge:
-    weight: 0.10
-    normalize: minmax
+  # injury_edge (fetch_injuries.py/injury_metrics.py) is intentionally left
+  # out of this version -- it's a real metric with real metric_values rows
+  # and still shows up in picks-page notes/backtest.py's correlation table,
+  # just with no weight here, so it has zero influence on total_score until
+  # there's a real correlation sample to tune it from. See policy_version's
+  # comment above.
