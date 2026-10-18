@@ -502,31 +502,38 @@ def total_recommendation(
 
 
 def strategy_markets(pick_team: str, puck_line_pick: Optional[str]) -> list[str]:
-    """Which markets a simple, data-driven betting rule recommends for this game.
+    """Which market a simple, data-driven betting rule recommends for this game.
 
-    Derived from comparing predicted_edge/profit_10/puck_line_profit_10 across
-    the first few weeks of graded picks (see the "safest bets" conversation,
-    not a formula in this codebase): Puck Line has been the single
-    best-performing bet type on its own, while Money Line has only been
-    profitable specifically on games where it agrees with the Puck Line pick
-    -- when the two disagree, Puck Line has been the righter side more often
-    than Money Line. Over/Under has been a net loser across the sample and is
-    never recommended here regardless of its own column's pick. This is a
-    small-sample read (barely 20 graded games at the time it was derived),
-    not a proven system -- expect it to be revisited as more games get graded.
+    Revised 2026-10-18 after re-checking the original rule (bet Puck Line
+    always, add Money Line only when it agrees with the Puck Line pick)
+    against a much larger sample than the ~20 games it was derived from.
+    At n=120, split by agreement, the original rule turned out to have it
+    backwards: on agree games (n=41) Puck Line ROI'd +6.6% but Money Line
+    was -5.0%; on disagree games (n=59) it flipped -- Puck Line -3.8%,
+    Money Line +7.7%. The original rule bet Money Line exactly where it
+    lost and skipped it exactly where it won, while also betting Puck Line
+    on the disagree games where Puck Line itself was underwater.
+
+    The revised rule bets exactly one leg per game instead of up to two:
+    Puck Line when the two picks agree, Money Line when they don't. This
+    beat every other candidate tried on the same full history (betting
+    both legs unconditionally, Money Line alone every game, Puck Line
+    alone every game), by a wide margin on both total P&L and ROI%, using
+    fewer total bets than the original rule. Over/Under remains excluded
+    (even more clearly a net loser on the larger sample now: roughly -$210
+    across the same history). Still a small-enough sample (134 bets under
+    the old rule's conditions) that this could partly be noise -- expect
+    this to keep getting revisited as more games get graded.
 
     :param pick_team: The Money Line pick (whichever team scored higher).
     :param puck_line_pick: The Puck Line recommendation, or None if there
         isn't enough data/odds for one.
-    :returns: Market codes to bet for this game, e.g. ["pl", "ml"] or ["pl"]
-        or [] if there's no Puck Line recommendation to build a strategy on.
+    :returns: Exactly one market code (["pl"] or ["ml"]), or [] if there's
+        no Puck Line recommendation to build a strategy on.
     """
     if puck_line_pick is None:
         return []
-    markets = ["pl"]
-    if pick_team == puck_line_pick:
-        markets.append("ml")
-    return markets
+    return ["pl"] if pick_team == puck_line_pick else ["ml"]
 
 
 def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
@@ -1007,12 +1014,10 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         markets = pick["strategy_markets"]
         if not markets:
             return '<span class="notes">&mdash;</span>'
-        label = (
-            f"PL ${STRATEGY_PL_STAKE:.0f} + ML ${STRATEGY_ML_STAKE:.0f}"
-            if "ml" in markets
-            else f"PL ${STRATEGY_PL_STAKE:.0f} only"
-        )
-        team = pick["puck_line_pick"]
+        if "pl" in markets:
+            team, label = pick["puck_line_pick"], f"PL ${STRATEGY_PL_STAKE:.0f} only"
+        else:
+            team, label = pick["pick"], f"ML ${STRATEGY_ML_STAKE:.0f} only"
         return f'<strong class="strategy">{team}</strong> <span class="notes">({label})</span>'
 
     is_today = target_date == date_cls.today().isoformat()
@@ -1170,7 +1175,7 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         format_day_total(sum(1 for pick in picks if pick["total_pick"]), "total_profit_10")
     }</td></tr>
 <tr><td><strong class="strategy">Strategy</strong>
-    (PL ${STRATEGY_PL_STAKE:.0f} + ML ${STRATEGY_ML_STAKE:.0f} when they agree)</td>
+    (PL ${STRATEGY_PL_STAKE:.0f} when PL/ML agree, else ML ${STRATEGY_ML_STAKE:.0f})</td>
     <td>{format_strategy_total()}</td></tr>
 </tbody>
 </table>"""
@@ -1304,10 +1309,11 @@ is followed in parens by the market's devigged implied probability for that side
 &middot; ML Result/Vs. Puck Line columns grade the pick once the
 game is final &middot; Team ATS Record is the picked team's all-time record against the
 puck line across every graded pick so far &middot; <strong class="strategy">Strategy</strong>
-is a simple, data-driven rule derived from the first few weeks of graded picks: always bet
-Puck Line when it has a recommendation, and only bet Money Line too on games where it agrees
-with the Puck Line pick (Over/Under is never recommended -- it's been a net loser across the
-sample so far) &middot; this is a small-sample read, not a guaranteed system, and may get
+is a simple, data-driven rule, revised 2026-10-18 after the original version (bet Puck Line
+always, add Money Line only when it agreed) turned out backwards on a larger sample: bet
+Puck Line when it agrees with the Money Line pick, otherwise bet Money Line instead
+(Over/Under is never recommended -- it's been a clear net loser across the sample so far)
+&middot; this is a small-sample read, not a guaranteed system, and may get
 revised as more games get graded &middot; the <strong>Minimum edge</strong> dropdown above
 the table hides games below a chosen `predicted_edge` -- defaults to {DEFAULT_MIN_EDGE:g}+,
 which had the best win rate (64.2%) with a still-reasonable sample (134 games) when the live
