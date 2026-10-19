@@ -261,7 +261,8 @@ see policy_backtest.py)</span>
 <tr><td>Puck Line ($10/pick)</td><td><span class="notes">No recommendation today</span></td></tr>
 <tr><td>Over/Under ($10/pick)</td><td><span class="notes">No recommendation today</span></td></tr>
 <tr><td><strong class="strategy">Strategy</strong>
-    (PL $10 when PL/ML agree, else ML $5)</td>
+    (ML $10 always + PL $10 if agree,
+    else PL $5)</td>
     <td><span class="notes">No recommendation today</span></td></tr>
 </tbody>
 </table>
@@ -280,11 +281,11 @@ is followed in parens by the market's devigged implied probability for that side
 &middot; ML Result/Vs. Puck Line columns grade the pick once the
 game is final &middot; Team ATS Record is the picked team's all-time record against the
 puck line across every graded pick so far &middot; <strong class="strategy">Strategy</strong>
-is a simple, data-driven rule, revised 2026-10-18 after the original version (bet Puck Line
-always, add Money Line only when it agreed) turned out backwards on a larger sample: bet
-Puck Line when it agrees with the Money Line pick, otherwise bet Money Line instead
-(Over/Under is never recommended -- it's been a clear net loser across the sample so far)
-&middot; this is a small-sample read, not a guaranteed system, and may get
+is a simple, data-driven rule: bet Money Line on every game at a flat
+$10, plus Puck Line too, sized by whether it agrees with the Money Line
+pick -- $10 if it does, $5 if it
+doesn't (Over/Under is never recommended -- it's been a clear net loser across the sample so
+far) &middot; this is a small-sample read, not a guaranteed system, and may get
 revised as more games get graded &middot; the <strong>Minimum edge</strong> dropdown above
 the table hides games below a chosen `predicted_edge` -- defaults to 0.9+,
 which had the best win rate (64.2%) with a still-reasonable sample (134 games) when the live
@@ -295,7 +296,7 @@ policy was replayed against the full season history; past that the sample gets t
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 19, 2026 at 07:19 AM EDT</p>
+<p class="updated">Last updated October 19, 2026 at 07:34 AM EDT</p>
 
 <script>
 function updateEdgeFilter() {

@@ -75,10 +75,12 @@ def bankroll_series(conn) -> list[dict]:
     """Day-by-day cumulative P&L for Money Line, Puck Line, Over/Under, and Strategy.
 
     The Strategy track is computed the same way report.py's day-total does
-    (see strategy_markets()): exactly one leg per game -- Puck Line's profit
-    when it agrees with the Money Line pick, Money Line's profit otherwise.
-    A date with nothing graded at all is skipped rather than plotted flat,
-    so an ungraded "today" doesn't visually flatten the chart.
+    (see strategy_markets()): both legs, on every game that has a Puck
+    Line recommendation -- this track stays at the flat $STAKE/leg basis
+    like the other three, not the real ML/PL stake split (see report.py's
+    STRATEGY_ML_STAKE/strategy_pl_stake() for that). A date with nothing
+    graded at all is skipped rather than plotted flat, so an ungraded
+    "today" doesn't visually flatten the chart.
 
     :param conn: Open connection to the schedule database.
     :returns: One dict per graded date: {"date", "ml", "pl", "ou", "strategy"},
