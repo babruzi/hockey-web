@@ -148,15 +148,13 @@ a { color: var(--accent); }
 <span class="notes">(hides games below this edge; 0.9+ had the
 best win rate with a large-enough sample across the full season history --
 see policy_backtest.py)</span>
-
 </div>
 <div class="table-scroll">
 <table>
 <thead>
 <tr>
-    <th>#</th><th>Team</th><th class="col-pl">Puck Line</th>
-    <th class="col-ou">Over/Under</th><th class="col-ml">Money Line</th>
-    
+    <th>#</th><th>Team</th><th>Puck Line</th>
+    <th>Over/Under</th><th>Money Line</th>
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
     <th>Team ATS Record</th><th>Strategy</th><th>Notes</th>
 </tr>
@@ -165,10 +163,9 @@ see policy_backtest.py)</span>
         <tr class="game-odd row-away" data-edge="1.829">
             <td class="rank" rowspan="2">1</td>
             <td>VAN</td>
-            <td class="col-pl">+1.5 -105 (48.9%)</td>
-            <td class="col-ou"><strong class="pick">O 6.5 +110 (45.7%)</strong></td>
-            <td class="col-ml">+240 (28.2%)</td>
-            
+            <td>+1.5 -105 (48.9%)</td>
+            <td><strong class="pick">O 6.5 +110 (45.7%)</strong></td>
+            <td>+240 (28.2%)</td>
             <td class="edge" rowspan="2">1.829</td>
             <td class="edge" rowspan="2">2&ndash;3 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
@@ -179,18 +176,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-odd row-home" data-edge="1.829">
             <td class="home-cell"><strong class="pick">FLA</strong></td>
-            <td class="col-pl"><strong class="pick">-1.5 -115 (51.1%)</strong></td>
-            <td class="col-ou">U 6.5 -130 (54.3%)</td>
-            <td class="col-ml"><strong class="pick">-298 (71.8%)</strong></td>
+            <td><strong class="pick">-1.5 -115 (51.1%)</strong></td>
+            <td>U 6.5 -130 (54.3%)</td>
+            <td><strong class="pick">-298 (71.8%)</strong></td>
         </tr>
 
         <tr class="game-even row-away" data-edge="1.581">
             <td class="rank" rowspan="2">2</td>
             <td>CGY</td>
-            <td class="col-pl">+1.5 +105 (46.8%)</td>
-            <td class="col-ou">O 6.5 +105 (46.8%)</td>
-            <td class="col-ml">+245 (27.8%)</td>
-            
+            <td>+1.5 +105 (46.8%)</td>
+            <td>O 6.5 +105 (46.8%)</td>
+            <td>+245 (27.8%)</td>
             <td class="edge" rowspan="2">1.581</td>
             <td class="edge" rowspan="2">2&ndash;6 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
@@ -201,18 +197,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-even row-home" data-edge="1.581">
             <td class="home-cell"><strong class="pick">VGK</strong></td>
-            <td class="col-pl"><strong class="pick">-1.5 -125 (53.2%)</strong></td>
-            <td class="col-ou"><strong class="pick">U 6.5 -125 (53.2%)</strong></td>
-            <td class="col-ml"><strong class="pick">-305 (72.2%)</strong></td>
+            <td><strong class="pick">-1.5 -125 (53.2%)</strong></td>
+            <td><strong class="pick">U 6.5 -125 (53.2%)</strong></td>
+            <td><strong class="pick">-305 (72.2%)</strong></td>
         </tr>
 
         <tr class="game-odd row-away" data-edge="0.923">
             <td class="rank" rowspan="2">3</td>
             <td>STL</td>
-            <td class="col-pl"><strong class="pick">+1.5 -218 (65.7%)</strong></td>
-            <td class="col-ou"><strong class="pick">O 5.5 -135 (55.1%)</strong></td>
-            <td class="col-ml">+124 (42.8%)</td>
-            
+            <td><strong class="pick">+1.5 -218 (65.7%)</strong></td>
+            <td><strong class="pick">O 5.5 -135 (55.1%)</strong></td>
+            <td>+124 (42.8%)</td>
             <td class="edge" rowspan="2">0.923</td>
             <td class="edge" rowspan="2">4&ndash;5 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
@@ -223,18 +218,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-odd row-home" data-edge="0.923">
             <td class="home-cell"><strong class="pick">MIN</strong></td>
-            <td class="col-pl">-1.5 +180 (34.3%)</td>
-            <td class="col-ou">U 5.5 +114 (44.9%)</td>
-            <td class="col-ml"><strong class="pick">-148 (57.2%)</strong></td>
+            <td>-1.5 +180 (34.3%)</td>
+            <td>U 5.5 +114 (44.9%)</td>
+            <td><strong class="pick">-148 (57.2%)</strong></td>
         </tr>
 
         <tr class="game-even row-away" data-edge="0.811" style="display:none">
             <td class="rank" rowspan="2">4</td>
             <td>NYI</td>
-            <td class="col-pl"><strong class="pick">+1.5 -198 (63.7%)</strong></td>
-            <td class="col-ou"><strong class="pick">O 5.5 -112 (50.4%)</strong></td>
-            <td class="col-ml">+130 (41.7%)</td>
-            
+            <td><strong class="pick">+1.5 -198 (63.7%)</strong></td>
+            <td><strong class="pick">O 5.5 -112 (50.4%)</strong></td>
+            <td>+130 (41.7%)</td>
             <td class="edge" rowspan="2">0.811</td>
             <td class="edge" rowspan="2">1&ndash;2 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
@@ -245,18 +239,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-even row-home" data-edge="0.811" style="display:none">
             <td class="home-cell"><strong class="pick">OTT</strong></td>
-            <td class="col-pl">-1.5 +164 (36.3%)</td>
-            <td class="col-ou">U 5.5 -108 (49.6%)</td>
-            <td class="col-ml"><strong class="pick">-155 (58.3%)</strong></td>
+            <td>-1.5 +164 (36.3%)</td>
+            <td>U 5.5 -108 (49.6%)</td>
+            <td><strong class="pick">-155 (58.3%)</strong></td>
         </tr>
 
         <tr class="game-odd row-away" data-edge="0.781" style="display:none">
             <td class="rank" rowspan="2">5</td>
             <td>SEA</td>
-            <td class="col-pl"><strong class="pick">+1.5 -125 (53.2%)</strong></td>
-            <td class="col-ou">O 6.5 +102 (47.4%)</td>
-            <td class="col-ml">+210 (30.9%)</td>
-            
+            <td><strong class="pick">+1.5 -125 (53.2%)</strong></td>
+            <td>O 6.5 +102 (47.4%)</td>
+            <td>+210 (30.9%)</td>
             <td class="edge" rowspan="2">0.781</td>
             <td class="edge" rowspan="2">3&ndash;4 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
@@ -267,18 +260,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-odd row-home" data-edge="0.781" style="display:none">
             <td class="home-cell"><strong class="pick">TBL</strong></td>
-            <td class="col-pl">-1.5 +105 (46.8%)</td>
-            <td class="col-ou"><strong class="pick">U 6.5 -122 (52.6%)</strong></td>
-            <td class="col-ml"><strong class="pick">-258 (69.1%)</strong></td>
+            <td>-1.5 +105 (46.8%)</td>
+            <td><strong class="pick">U 6.5 -122 (52.6%)</strong></td>
+            <td><strong class="pick">-258 (69.1%)</strong></td>
         </tr>
 
         <tr class="game-even row-away" data-edge="0.644" style="display:none">
             <td class="rank" rowspan="2">6</td>
             <td>SJS</td>
-            <td class="col-pl"><strong class="pick">+1.5 -218 (65.7%)</strong></td>
-            <td class="col-ou">O 6.5 +102 (47.4%)</td>
-            <td class="col-ml">+120 (43.7%)</td>
-            
+            <td><strong class="pick">+1.5 -218 (65.7%)</strong></td>
+            <td>O 6.5 +102 (47.4%)</td>
+            <td>+120 (43.7%)</td>
             <td class="edge" rowspan="2">0.644</td>
             <td class="edge" rowspan="2">3&ndash;2 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
@@ -289,18 +281,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-even row-home" data-edge="0.644" style="display:none">
             <td class="home-cell"><strong class="pick">NSH</strong></td>
-            <td class="col-pl">-1.5 +180 (34.3%)</td>
-            <td class="col-ou"><strong class="pick">U 6.5 -122 (52.6%)</strong></td>
-            <td class="col-ml"><strong class="pick">-142 (56.3%)</strong></td>
+            <td>-1.5 +180 (34.3%)</td>
+            <td><strong class="pick">U 6.5 -122 (52.6%)</strong></td>
+            <td><strong class="pick">-142 (56.3%)</strong></td>
         </tr>
 
         <tr class="game-odd row-away" data-edge="0.553" style="display:none">
             <td class="rank" rowspan="2">7</td>
             <td><strong class="pick">NYR</strong></td>
-            <td class="col-pl"><strong class="pick">+1.5 -218 (65.7%)</strong></td>
-            <td class="col-ou">O 6.5 +114 (44.9%)</td>
-            <td class="col-ml"><strong class="pick">+120 (43.7%)</strong></td>
-            
+            <td><strong class="pick">+1.5 -218 (65.7%)</strong></td>
+            <td>O 6.5 +114 (44.9%)</td>
+            <td><strong class="pick">+120 (43.7%)</strong></td>
             <td class="edge" rowspan="2">0.553</td>
             <td class="edge" rowspan="2">1&ndash;7 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
@@ -311,18 +302,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-odd row-home" data-edge="0.553" style="display:none">
             <td class="home-cell">NJD</td>
-            <td class="col-pl">-1.5 +180 (34.3%)</td>
-            <td class="col-ou"><strong class="pick">U 6.5 -135 (55.1%)</strong></td>
-            <td class="col-ml">-142 (56.3%)</td>
+            <td>-1.5 +180 (34.3%)</td>
+            <td><strong class="pick">U 6.5 -135 (55.1%)</strong></td>
+            <td>-142 (56.3%)</td>
         </tr>
 
         <tr class="game-even row-away" data-edge="0.385" style="display:none">
             <td class="rank" rowspan="2">8</td>
             <td><strong class="pick">BUF</strong></td>
-            <td class="col-pl"><strong class="pick">+1.5 -245 (68.1%)</strong></td>
-            <td class="col-ou"><strong class="pick">O 6.5 -122 (52.6%)</strong></td>
-            <td class="col-ml"><strong class="pick">-102 (48.3%)</strong></td>
-            
+            <td><strong class="pick">+1.5 -245 (68.1%)</strong></td>
+            <td><strong class="pick">O 6.5 -122 (52.6%)</strong></td>
+            <td><strong class="pick">-102 (48.3%)</strong></td>
             <td class="edge" rowspan="2">0.385</td>
             <td class="edge" rowspan="2">5&ndash;4 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
@@ -333,18 +323,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-even row-home" data-edge="0.385" style="display:none">
             <td class="home-cell">TOR</td>
-            <td class="col-pl">-1.5 +200 (31.9%)</td>
-            <td class="col-ou">U 6.5 +102 (47.4%)</td>
-            <td class="col-ml">-118 (51.7%)</td>
+            <td>-1.5 +200 (31.9%)</td>
+            <td>U 6.5 +102 (47.4%)</td>
+            <td>-118 (51.7%)</td>
         </tr>
 
         <tr class="game-odd row-away" data-edge="0.144" style="display:none">
             <td class="rank" rowspan="2">9</td>
             <td>PHI</td>
-            <td class="col-pl"><strong class="pick">+1.5 -225 (66.4%)</strong></td>
-            <td class="col-ou"><strong class="pick">O 5.5 -120 (52.2%)</strong></td>
-            <td class="col-ml">+120 (43.7%)</td>
-            
+            <td><strong class="pick">+1.5 -225 (66.4%)</strong></td>
+            <td><strong class="pick">O 5.5 -120 (52.2%)</strong></td>
+            <td>+120 (43.7%)</td>
             <td class="edge" rowspan="2">0.144</td>
             <td class="edge" rowspan="2">1&ndash;2 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
@@ -355,18 +344,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-odd row-home" data-edge="0.144" style="display:none">
             <td class="home-cell"><strong class="pick">DET</strong></td>
-            <td class="col-pl">-1.5 +185 (33.6%)</td>
-            <td class="col-ou">U 5.5 +100 (47.8%)</td>
-            <td class="col-ml"><strong class="pick">-142 (56.3%)</strong></td>
+            <td>-1.5 +185 (33.6%)</td>
+            <td>U 5.5 +100 (47.8%)</td>
+            <td><strong class="pick">-142 (56.3%)</strong></td>
         </tr>
 
         <tr class="game-even row-away" data-edge="0.135" style="display:none">
             <td class="rank" rowspan="2">10</td>
             <td>WPG</td>
-            <td class="col-pl">-1.5 +190 (33.1%)</td>
-            <td class="col-ou">O 6.5 +110 (45.7%)</td>
-            <td class="col-ml">-135 (55.1%)</td>
-            
+            <td>-1.5 +190 (33.1%)</td>
+            <td>O 6.5 +110 (45.7%)</td>
+            <td>-135 (55.1%)</td>
             <td class="edge" rowspan="2">0.135</td>
             <td class="edge" rowspan="2">3&ndash;4 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
@@ -377,18 +365,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-even row-home" data-edge="0.135" style="display:none">
             <td class="home-cell"><strong class="pick">CHI</strong></td>
-            <td class="col-pl"><strong class="pick">+1.5 -230 (66.9%)</strong></td>
-            <td class="col-ou"><strong class="pick">U 6.5 -130 (54.3%)</strong></td>
-            <td class="col-ml"><strong class="pick">+114 (44.9%)</strong></td>
+            <td><strong class="pick">+1.5 -230 (66.9%)</strong></td>
+            <td><strong class="pick">U 6.5 -130 (54.3%)</strong></td>
+            <td><strong class="pick">+114 (44.9%)</strong></td>
         </tr>
 
         <tr class="game-odd row-away" data-edge="0.094" style="display:none">
             <td class="rank" rowspan="2">11</td>
             <td>UTA</td>
-            <td class="col-pl"><strong class="pick">+1.5 -230 (66.9%)</strong></td>
-            <td class="col-ou"><strong class="pick">O 6.5 -112 (50.4%)</strong></td>
-            <td class="col-ml">+105 (46.8%)</td>
-            
+            <td><strong class="pick">+1.5 -230 (66.9%)</strong></td>
+            <td><strong class="pick">O 6.5 -112 (50.4%)</strong></td>
+            <td>+105 (46.8%)</td>
             <td class="edge" rowspan="2">0.094</td>
             <td class="edge" rowspan="2">4&ndash;2 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
@@ -399,9 +386,9 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-odd row-home" data-edge="0.094" style="display:none">
             <td class="home-cell"><strong class="pick">EDM</strong></td>
-            <td class="col-pl">-1.5 +190 (33.1%)</td>
-            <td class="col-ou">U 6.5 -108 (49.6%)</td>
-            <td class="col-ml"><strong class="pick">-125 (53.2%)</strong></td>
+            <td>-1.5 +190 (33.1%)</td>
+            <td>U 6.5 -108 (49.6%)</td>
+            <td><strong class="pick">-125 (53.2%)</strong></td>
         </tr>
 </tbody>
 </table>
@@ -450,7 +437,7 @@ policy was replayed against the full season history; past that the sample gets t
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 19, 2026 at 07:46 AM EDT</p>
+<p class="updated">Last updated October 19, 2026 at 07:56 AM EDT</p>
 
 <script>
 function updateEdgeFilter() {
@@ -460,6 +447,5 @@ function updateEdgeFilter() {
     });
 }
 </script>
-
 </body>
 </html>

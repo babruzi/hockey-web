@@ -227,25 +227,6 @@ def devig_pair(odds_a: Optional[int], odds_b: Optional[int]) -> tuple:
     return 100 * raw_a / overround, 100 * raw_b / overround
 
 
-def potential_payout(price: Optional[int], stake: float) -> Optional[float]:
-    """Profit on a $stake bet at American odds `price`, if it wins.
-
-    Not the same thing as grade.py's odds_profit(), which needs to know
-    whether the bet actually won -- this is the forward-looking "if this
-    pick hits, how much do I win" question for an *ungraded* pick, so there's
-    no loss case here.
-
-    :param price: American odds, e.g. -142 or +180, or None if no quote.
-    :param stake: Dollar amount wagered.
-    :returns: Profit in dollars if the bet wins, or None if there's no price.
-    """
-    if price is None:
-        return None
-    if price > 0:
-        return stake * price / 100
-    return stake * 100 / abs(price)
-
-
 def home_opener_note(conn: sqlite3.Connection, home_team: str, game_date: str) -> Optional[str]:
     """Flag whether this is the home team's first home game of the current season.
 
@@ -415,9 +396,9 @@ PUCK_LINE = 1.5
 # picked, just which already-picked games the page highlights by default.
 DEFAULT_MIN_EDGE = 0.9
 
-# Display-only staking split for the Strategy track and Est. Winnings
-# preview, reflecting how this is actually being bet rather than the flat
-# $STAKE every market is *graded* at. grade.py's STAKE/profit_10/
+# Display-only staking split for the Strategy track, reflecting how this
+# is actually being bet rather than the flat $STAKE every market is
+# *graded* at. grade.py's STAKE/profit_10/
 # puck_line_profit_10 stay flat $10 each -- changing those would mean
 # re-grading, and ROI would no longer mean "per dollar risked" uniformly
 # across bet types. Instead these just rescale the already-computed
@@ -1040,37 +1021,6 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
             f"(PL ${pl_stake:.0f})</span>"
         )
 
-    is_today = target_date == date_cls.today().isoformat()
-
-    def format_winnings_cell(pick: dict) -> str:
-        if not is_today:
-            return ""
-        ml_price = pick["moneyline_at_pick"]
-        pl_price = pick["pick_spread_price"]
-        ou_price = pick["total_price_at_pick"]
-        pl_stake = strategy_pl_stake(pick["pick"], pick["puck_line_pick"])
-        default_payout = potential_payout(ml_price, STRATEGY_ML_STAKE)
-        default_str = f"${default_payout:.2f}" if default_payout is not None else "&mdash;"
-        ml_attr = "" if ml_price is None else str(ml_price)
-        pl_attr = "" if pl_price is None else str(pl_price)
-        ou_attr = "" if ou_price is None else str(ou_price)
-        return (
-            f'<td class="edge winnings-cell" rowspan="2" data-ml="{ml_attr}" '
-            f'data-pl="{pl_attr}" data-ou="{ou_attr}" data-pl-stake="{pl_stake}">{default_str}</td>'
-        )
-
-    def market_col_attrs(category: str) -> str:
-        """class (+ hidden by default, on today's page only) for a Puck Line/
-        Over-Under/Money Line column cell, so the dropdown's JS can filter the
-        table down to just the selected market's columns. Money Line matches
-        the dropdown's default selection, so it starts visible; the other two
-        start hidden -- past-date pages have no dropdown/JS, so this never
-        hides anything there (the class is added but inert).
-        """
-        hidden = is_today and category != "ml"
-        style = ' style="display:none"' if hidden else ""
-        return f' class="col-{category}"{style}'
-
     def edge_row_attrs(pick: dict) -> str:
         """data-edge (+ hidden by default, below DEFAULT_MIN_EDGE) for a
         game's two <tr>s, so the edge-filter dropdown's JS can hide whole
@@ -1115,10 +1065,9 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         <tr class="{game_class} row-away"{edge_row_attrs(pick)}>
             <td class="rank" rowspan="2">{i}</td>
             <td>{format_team_name(pick["away_team"], not pick["pick_is_home"])}</td>
-            <td{market_col_attrs("pl")}>{away_puck}</td>
-            <td{market_col_attrs("ou")}>{over_cell}</td>
-            <td{market_col_attrs("ml")}>{away_ml}</td>
-            {format_winnings_cell(pick)}
+            <td>{away_puck}</td>
+            <td>{over_cell}</td>
+            <td>{away_ml}</td>
             <td class="edge" rowspan="2">{pick["predicted_edge"]:.3f}</td>
             <td class="edge" rowspan="2">{format_final_score(pick)}</td>
             <td rowspan="2">{format_outcome_colored(pick["straight_up_result"])}</td>
@@ -1129,9 +1078,9 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         </tr>
         <tr class="{game_class} row-home"{edge_row_attrs(pick)}>
             <td class="home-cell">{format_team_name(pick["home_team"], pick["pick_is_home"])}</td>
-            <td{market_col_attrs("pl")}>{home_puck}</td>
-            <td{market_col_attrs("ou")}>{under_cell}</td>
-            <td{market_col_attrs("ml")}>{home_ml}</td>
+            <td>{home_puck}</td>
+            <td>{under_cell}</td>
+            <td>{home_ml}</td>
         </tr>"""
 
     rows = "\n".join(render_game_rows(i, pick) for i, pick in enumerate(picks, start=1))
@@ -1203,29 +1152,12 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 </tbody>
 </table>"""
 
-    winnings_header = "<th>Est. Winnings</th>" if is_today else ""
-
     def edge_option(value: float) -> str:
         label = "All games" if value == 0 else f"{value:g}+"
         selected = ' selected="selected"' if value == DEFAULT_MIN_EDGE else ""
         return f'<option value="{value}"{selected}>{label}</option>'
 
     edge_options = "\n".join(edge_option(v) for v in (0, 0.5, 0.7, 0.8, DEFAULT_MIN_EDGE, 1.0, 1.2))
-    market_controls = (
-        f"""
-<label for="odds-type">Show picks for:</label>
-<select id="odds-type" onchange="onMarketChange()">
-<option value="ml" selected>Money Line</option>
-<option value="pl">Puck Line</option>
-<option value="ou">Over/Under</option>
-</select>
-<span class="notes">(shows only that market's columns; Est. Winnings is the
-payout if the pick wins, at ${STRATEGY_ML_STAKE:.0f} Money Line / ${STAKE:.0f} Over-Under,
-and ${STRATEGY_PL_STAKE_AGREE:.0f}/${STRATEGY_PL_STAKE_DISAGREE:.0f} Puck Line depending on
-whether it agrees with the Money Line pick)</span>"""
-        if is_today
-        else ""
-    )
     controls_html = f"""
 <div class="controls">
 <label for="edge-filter">Minimum edge:</label>
@@ -1235,48 +1167,7 @@ whether it agrees with the Money Line pick)</span>"""
 <span class="notes">(hides games below this edge; {DEFAULT_MIN_EDGE:g}+ had the
 best win rate with a large-enough sample across the full season history --
 see policy_backtest.py)</span>
-{market_controls}
 </div>"""
-    winnings_script = (
-        """
-<script>
-function updateWinnings() {
-    var marketType = document.getElementById("odds-type").value;
-    var attr = marketType === "ml" ? "data-ml" : (marketType === "pl" ? "data-pl" : "data-ou");
-    var cells = document.querySelectorAll(".winnings-cell");
-    cells.forEach(function (cell) {
-        var raw = cell.getAttribute(attr);
-        if (!raw) {
-            cell.textContent = "\\u2014";
-            return;
-        }
-        var price = parseInt(raw, 10);
-        var stake = marketType === "ml" ? """
-        + f"{STRATEGY_ML_STAKE}"
-        + """ : (marketType === "pl" ? parseFloat(cell.getAttribute("data-pl-stake")) : """
-        + f"{STAKE}"
-        + """);
-        var payout = price > 0 ? (stake * price) / 100 : (stake * 100) / Math.abs(price);
-        cell.textContent = "$" + payout.toFixed(2);
-    });
-}
-function updateColumns() {
-    var marketType = document.getElementById("odds-type").value;
-    ["pl", "ou", "ml"].forEach(function (category) {
-        var display = category === marketType ? "" : "none";
-        document.querySelectorAll(".col-" + category).forEach(function (cell) {
-            cell.style.display = display;
-        });
-    });
-}
-function onMarketChange() {
-    updateWinnings();
-    updateColumns();
-}
-</script>"""
-        if is_today
-        else ""
-    )
     edge_filter_script = """
 <script>
 function updateEdgeFilter() {
@@ -1304,9 +1195,8 @@ function updateEdgeFilter() {
 <table>
 <thead>
 <tr>
-    <th>#</th><th>Team</th><th{market_col_attrs("pl")}>Puck Line</th>
-    <th{market_col_attrs("ou")}>Over/Under</th><th{market_col_attrs("ml")}>Money Line</th>
-    {winnings_header}
+    <th>#</th><th>Team</th><th>Puck Line</th>
+    <th>Over/Under</th><th>Money Line</th>
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
     <th>Team ATS Record</th><th>Strategy</th><th>Notes</th>
 </tr>
@@ -1348,7 +1238,6 @@ weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
 <p class="updated">Last updated {generation_timestamp()}</p>
 {edge_filter_script}
-{winnings_script}
 </body>
 </html>
 """

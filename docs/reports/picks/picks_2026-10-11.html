@@ -148,15 +148,13 @@ a { color: var(--accent); }
 <span class="notes">(hides games below this edge; 0.9+ had the
 best win rate with a large-enough sample across the full season history --
 see policy_backtest.py)</span>
-
 </div>
 <div class="table-scroll">
 <table>
 <thead>
 <tr>
-    <th>#</th><th>Team</th><th class="col-pl">Puck Line</th>
-    <th class="col-ou">Over/Under</th><th class="col-ml">Money Line</th>
-    
+    <th>#</th><th>Team</th><th>Puck Line</th>
+    <th>Over/Under</th><th>Money Line</th>
     <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
     <th>Team ATS Record</th><th>Strategy</th><th>Notes</th>
 </tr>
@@ -165,10 +163,9 @@ see policy_backtest.py)</span>
         <tr class="game-odd row-away" data-edge="1.212">
             <td class="rank" rowspan="2">1</td>
             <td>VAN</td>
-            <td class="col-pl">+2.5 +135 (40.1%)</td>
-            <td class="col-ou">O 7.5 -160 (58.0%)</td>
-            <td class="col-ml">+1500 (6.0%)</td>
-            
+            <td>+2.5 +135 (40.1%)</td>
+            <td>O 7.5 -160 (58.0%)</td>
+            <td>+1500 (6.0%)</td>
             <td class="edge" rowspan="2">1.212</td>
             <td class="edge" rowspan="2">2&ndash;6 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
@@ -179,18 +176,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-odd row-home" data-edge="1.212">
             <td class="home-cell"><strong class="pick">NYR</strong></td>
-            <td class="col-pl"><strong class="pick">-2.5 -175 (59.9%)</strong></td>
-            <td class="col-ou"><strong class="pick">U 7.5 +124 (42.0%)</strong></td>
-            <td class="col-ml"><strong class="pick">-4000 (94.0%)</strong></td>
+            <td><strong class="pick">-2.5 -175 (59.9%)</strong></td>
+            <td><strong class="pick">U 7.5 +124 (42.0%)</strong></td>
+            <td><strong class="pick">-4000 (94.0%)</strong></td>
         </tr>
 
         <tr class="game-even row-away" data-edge="0.724" style="display:none">
             <td class="rank" rowspan="2">2</td>
             <td><strong class="pick">CAR</strong></td>
-            <td class="col-pl"><strong class="pick">-1.5 +140 (39.3%)</strong></td>
-            <td class="col-ou"><strong class="pick">O 4.5 -105 (48.0%)</strong></td>
-            <td class="col-ml"><strong class="pick">-215 (64.4%)</strong></td>
-            
+            <td><strong class="pick">-1.5 +140 (39.3%)</strong></td>
+            <td><strong class="pick">O 4.5 -105 (48.0%)</strong></td>
+            <td><strong class="pick">-215 (64.4%)</strong></td>
             <td class="edge" rowspan="2">0.724</td>
             <td class="edge" rowspan="2">4&ndash;1 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
@@ -201,18 +197,17 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-even row-home" data-edge="0.724" style="display:none">
             <td class="home-cell">PHI</td>
-            <td class="col-pl">+1.5 -180 (60.7%)</td>
-            <td class="col-ou">U 4.5 -125 (52.0%)</td>
-            <td class="col-ml">+165 (35.6%)</td>
+            <td>+1.5 -180 (60.7%)</td>
+            <td>U 4.5 -125 (52.0%)</td>
+            <td>+165 (35.6%)</td>
         </tr>
 
         <tr class="game-odd row-away" data-edge="0.025" style="display:none">
             <td class="rank" rowspan="2">3</td>
             <td>SEA</td>
-            <td class="col-pl">+1.5 -520 (79.1%)</td>
-            <td class="col-ou">O 8.5 -110 (49.0%)</td>
-            <td class="col-ml">-105 (48.0%)</td>
-            
+            <td>+1.5 -520 (79.1%)</td>
+            <td>O 8.5 -110 (49.0%)</td>
+            <td>-105 (48.0%)</td>
             <td class="edge" rowspan="2">0.025</td>
             <td class="edge" rowspan="2">5&ndash;3 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
@@ -223,9 +218,9 @@ see policy_backtest.py)</span>
         </tr>
         <tr class="game-odd row-home" data-edge="0.025" style="display:none">
             <td class="home-cell"><strong class="pick">WSH</strong></td>
-            <td class="col-pl"><strong class="pick">-1.5 +350 (20.9%)</strong></td>
-            <td class="col-ou"><strong class="pick">U 8.5 -120 (51.0%)</strong></td>
-            <td class="col-ml"><strong class="pick">-125 (52.0%)</strong></td>
+            <td><strong class="pick">-1.5 +350 (20.9%)</strong></td>
+            <td><strong class="pick">U 8.5 -120 (51.0%)</strong></td>
+            <td><strong class="pick">-125 (52.0%)</strong></td>
         </tr>
 </tbody>
 </table>
@@ -274,7 +269,7 @@ policy was replayed against the full season history; past that the sample gets t
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 19, 2026 at 07:46 AM EDT</p>
+<p class="updated">Last updated October 19, 2026 at 07:56 AM EDT</p>
 
 <script>
 function updateEdgeFilter() {
@@ -284,6 +279,5 @@ function updateEdgeFilter() {
     });
 }
 </script>
-
 </body>
 </html>
