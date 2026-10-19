@@ -23,7 +23,6 @@ Usage:
 """
 
 from pathlib import Path
-from typing import Optional
 
 from backtest import bet_type_totals, policy_performance
 from db import get_connection
@@ -159,52 +158,6 @@ def merge_live_edge_series(series: list[dict], live_edge_daily: list[dict]) -> l
             running_pl += day["pl_profit"]
         merged.append({**point, "live_ml": running_ml, "live_pl": running_pl})
     return merged
-
-
-def current_streak(conn) -> Optional[tuple[str, int]]:
-    """The most recent run of consecutive straight-up Money Line wins or losses.
-
-    :param conn: Open connection to the schedule database.
-    :returns: ("win"/"loss", length), or None if nothing's graded yet.
-    """
-    rows = conn.execute(
-        """
-        SELECT straight_up_result FROM picks_log
-        WHERE straight_up_result IS NOT NULL
-        ORDER BY date, game_id
-        """
-    ).fetchall()
-    if not rows:
-        return None
-    results = [row[0] for row in rows]
-    last = results[-1]
-    length = 0
-    for result in reversed(results):
-        if result != last:
-            break
-        length += 1
-    return last, length
-
-
-def best_worst_pick(conn) -> tuple[Optional[tuple], Optional[tuple]]:
-    """The single best and worst graded Money Line picks by dollar profit.
-
-    :param conn: Open connection to the schedule database.
-    :returns: (best, worst), each (date, pick, profit_10), or None if nothing's graded.
-    """
-    best = conn.execute(
-        """
-        SELECT date, pick, profit_10 FROM picks_log
-        WHERE profit_10 IS NOT NULL ORDER BY profit_10 DESC LIMIT 1
-        """
-    ).fetchone()
-    worst = conn.execute(
-        """
-        SELECT date, pick, profit_10 FROM picks_log
-        WHERE profit_10 IS NOT NULL ORDER BY profit_10 ASC LIMIT 1
-        """
-    ).fetchone()
-    return best, worst
 
 
 def render_bankroll_chart(series: list[dict]) -> str:
@@ -345,27 +298,11 @@ def staking_split_results(live_edge_totals: dict) -> list[tuple]:
     return results
 
 
-def format_single_pick(row: Optional[tuple]) -> tuple:
-    """ "+12.40 on SJS (2026-10-01)", or a dash if nothing's graded yet.
-
-    :param row: (date, pick, profit_10), as returned by :func:`best_worst_pick`.
-    :returns: (display string, css class) -- class is "positive"/"negative"/"notes".
-    """
-    if row is None:
-        return "&mdash;", "notes"
-    date, pick, profit = row
-    css_class = "positive" if profit >= 0 else "negative"
-    return f"{profit:+.2f} on {pick} ({date})", css_class
-
-
 def render_record_html(
     performance: list,
     bet_types: dict,
     policy_backtest_results: list[tuple[str, dict]],
     bankroll: list[dict],
-    streak: Optional[tuple[str, int]],
-    best_pick: Optional[tuple],
-    worst_pick: Optional[tuple],
     live_policy_edge_result: tuple[str, dict],
 ) -> Path:
     """Render the overall + per-policy_version record as a static HTML page.
@@ -375,9 +312,6 @@ def render_record_html(
     :param policy_backtest_results: Result of :func:`policy_backtest.build_policy_backtest`.
     :param bankroll: Result of :func:`bankroll_series`, merged with
         :func:`merge_live_edge_series`.
-    :param streak: Result of :func:`current_streak`.
-    :param best_pick: Result of :func:`best_worst_pick` (first element).
-    :param worst_pick: Result of :func:`best_worst_pick` (second element).
     :param live_policy_edge_result: Result of
         :func:`policy_backtest.build_live_policy_edge_backtest`.
     :returns: Path to the written HTML file.
@@ -459,12 +393,6 @@ def render_record_html(
     )
 
     chart_svg = render_bankroll_chart(bankroll)
-    if streak:
-        result, length = streak
-        noun = ("win" if result == "win" else "loss") + ("s" if length != 1 else "")
-        streak_text = f"{length} {noun}"
-    else:
-        streak_text = "&mdash;"
 
     page = f"""<!doctype html>
 <html lang="en">
@@ -504,17 +432,6 @@ that's a real "nothing to bet," not "not graded yet."
 <span class="swatch" style="color:var(--chart-live-ml)">&#9632;</span> Live Edge ML &nbsp;
 <span class="swatch" style="color:var(--chart-live-pl)">&#9632;</span> Live Edge PL
 </p>
-
-<table>
-<thead><tr><th></th><th></th></tr></thead>
-<tbody>
-<tr><td>Current Streak (Money Line)</td><td>{streak_text}</td></tr>
-<tr><td>Best Single Pick (Money Line)</td>
-    <td class="{format_single_pick(best_pick)[1]}">{format_single_pick(best_pick)[0]}</td></tr>
-<tr><td>Worst Single Pick (Money Line)</td>
-    <td class="{format_single_pick(worst_pick)[1]}">{format_single_pick(worst_pick)[0]}</td></tr>
-</tbody>
-</table>
 
 <table>
 <thead><tr><th></th><th>Record</th></tr></thead>
@@ -636,8 +553,6 @@ def build_record_page() -> None:
         performance = policy_performance(conn)
         bet_types = bet_type_totals(conn)
         bankroll = bankroll_series(conn)
-        streak = current_streak(conn)
-        best_pick, worst_pick = best_worst_pick(conn)
     conn.close()
     policy_backtest_results = build_policy_backtest()
     live_policy_edge_result = build_live_policy_edge_backtest()
@@ -647,9 +562,6 @@ def build_record_page() -> None:
         bet_types,
         policy_backtest_results,
         bankroll,
-        streak,
-        best_pick,
-        worst_pick,
         live_policy_edge_result,
     )
     print(f"Wrote {path}")
