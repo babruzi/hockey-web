@@ -188,154 +188,6 @@ that's a real "nothing to bet," not "not graded yet."
 </tbody>
 </table>
 
-<h2>By Policy Version</h2>
-<table>
-<thead>
-<tr><th>Version</th><th>Moneyline</th><th>Vs. Puck Line</th><th>Moneyline ROI</th></tr>
-</thead>
-<tbody>
-        <tr>
-            <td>2026-08-v2</td>
-            <td>2-1 (66.7%)</td>
-            <td>1-2-0 (33.3%)</td>
-            <td class="positive">
-                +10.33 on 3 bets (+34.4%)
-            </td>
-        </tr>
-
-        <tr>
-            <td>2026-10-v1</td>
-            <td>8-10 (44.4%)</td>
-            <td>6-10-0 (37.5%)</td>
-            <td class="negative">
-                -32.13 on 16 bets (-20.1%)
-            </td>
-        </tr>
-
-        <tr>
-            <td>2026-10-v2</td>
-            <td>19-12 (61.3%)</td>
-            <td>13-17-0 (43.3%)</td>
-            <td class="positive">
-                +3.00 on 30 bets (+1.0%)
-            </td>
-        </tr>
-
-        <tr>
-            <td>2026-10-v3</td>
-            <td>50-31 (61.7%)</td>
-            <td>27-37-0 (42.2%)</td>
-            <td class="positive">
-                +11.35 on 64 bets (+1.8%)
-            </td>
-        </tr>
-
-        <tr>
-            <td>2026-10-v5</td>
-            <td>2-1 (66.7%)</td>
-            <td>2-1-0 (66.7%)</td>
-            <td class="negative">
-                -5.10 on 3 bets (-17.0%)
-            </td>
-        </tr>
-
-        <tr>
-            <td>2026-10-v6</td>
-            <td>17-12 (58.6%)</td>
-            <td>7-22-0 (24.1%)</td>
-            <td class="negative">
-                -2.40 on 29 bets (-0.8%)
-            </td>
-        </tr>
-</tbody>
-</table>
-
-<h2>Policy Backtest</h2>
-<p class="subtitle">
-Every policy_version replayed against the exact same full slate of completed
-games, instead of only the different (non-overlapping) stretch each one
-actually happened to be live for -- a fair head-to-head comparison, ranked
-by moneyline ROI%. See policy_backtest.py.
-</p>
-<table>
-<thead>
-<tr>
-    <th>Version</th><th>Games</th><th>Moneyline</th><th>Vs. Puck Line</th><th>Moneyline ROI</th>
-</tr>
-</thead>
-<tbody>
-        <tr>
-            <td>2026-10-v3</td>
-            <td class="edge">1506</td>
-            <td>802-704 (53.3%)</td>
-            <td>61-84-0 (42.1%)</td>
-            <td class="negative">
-                -4.23 on 145 bets (-0.3%)
-            </td>
-        </tr>
-
-        <tr>
-            <td>2026-10-v1</td>
-            <td class="edge">1506</td>
-            <td>805-701 (53.5%)</td>
-            <td>57-88-0 (39.3%)</td>
-            <td class="negative">
-                -10.35 on 145 bets (-0.7%)
-            </td>
-        </tr>
-
-        <tr>
-            <td>2026-10-v6</td>
-            <td class="edge">1506</td>
-            <td>801-705 (53.2%)</td>
-            <td>60-85-0 (41.4%)</td>
-            <td class="negative">
-                -23.54 on 145 bets (-1.6%)
-            </td>
-        </tr>
-
-        <tr>
-            <td>2026-10-v2</td>
-            <td class="edge">1506</td>
-            <td>806-700 (53.5%)</td>
-            <td>55-90-0 (37.9%)</td>
-            <td class="negative">
-                -51.93 on 145 bets (-3.6%)
-            </td>
-        </tr>
-
-        <tr>
-            <td>2026-10-v5</td>
-            <td class="edge">1506</td>
-            <td>811-695 (53.9%)</td>
-            <td>52-93-0 (35.9%)</td>
-            <td class="negative">
-                -85.21 on 145 bets (-5.9%)
-            </td>
-        </tr>
-
-        <tr>
-            <td>2026-10-v4</td>
-            <td class="edge">1506</td>
-            <td>798-708 (53.0%)</td>
-            <td>57-88-0 (39.3%)</td>
-            <td class="negative">
-                -88.84 on 145 bets (-6.1%)
-            </td>
-        </tr>
-
-        <tr>
-            <td>2026-08-v2</td>
-            <td class="edge">1506</td>
-            <td>793-713 (52.7%)</td>
-            <td>59-86-0 (40.7%)</td>
-            <td class="negative">
-                -156.38 on 145 bets (-10.8%)
-            </td>
-        </tr>
-</tbody>
-</table>
-
 <h2>Live Policy at High Edge</h2>
 <p class="subtitle">
 The currently-live policy (<strong>2026-10-v3</strong>), restricted to this
@@ -412,16 +264,14 @@ one pick (policy.yaml's weighted total_score); "Puck Line Record" and
 name a different team or side (see the picks pages for why) -- each ROI
 figure assumes a flat $10 stake per pick at the price recorded
 when that type's recommendation was made, and only counts picks that had
-odds on record. The Policy Backtest table is a simulation, not a record of
-real picks -- it's what each policy_version's Money Line pick would have
-been on every completed game, graded against the real final score and
-whatever odds were on record, not what was actually logged in picks_log
-at the time. Live Policy at High Edge is also a simulation for the same
-reason, filtered down further to one policy_version and one edge
-threshold -- a small sample by design, since it only includes this
-season's odds-covered games above a fairly high bar. Paper-trading
+odds on record. Live Policy at High Edge is a simulation, not a record of
+real picks -- it's what the currently-live policy's Money Line pick would
+have been on every completed game, graded against the real final score
+and whatever odds were on record, not what was actually logged in
+picks_log at the time, filtered down to this season's odds-covered games
+above a fairly high edge bar (a small sample by design). Paper-trading
 analysis only, not betting advice.
 </p>
-<p class="updated">Last updated October 23, 2026 at 02:14 PM EDT</p>
+<p class="updated">Last updated October 23, 2026 at 02:26 PM EDT</p>
 </body>
 </html>

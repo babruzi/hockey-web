@@ -1,19 +1,23 @@
 """
 Renders docs/reports/record.html: picks_log's overall record and ROI for
 all three independent bet types -- Money Line, Puck Line, and Over/Under
-(see report.py's puck_line_recommendation()/total_recommendation()) --
-plus a per-policy_version Money Line breakdown for comparing before/after
-a weight change (Puck Line/Over-Under aren't policy.yaml-driven, so a
-per-policy_version breakdown wouldn't mean anything for those two), and a
-third section replaying every policy_version against the exact same full
-slate of completed games (policy_backtest.py) -- unlike the "By Policy
-Version" section above it, which only shows how each version did during
-the different, non-overlapping stretch it happened to be live for, this
-one is a fair head-to-head comparison. This is the published,
-no-terminal-needed view of the same numbers backtest.py/policy_backtest.py
-already print to the console -- it reuses their
-policy_performance()/bet_type_totals()/build_policy_backtest() rather
+(see report.py's puck_line_recommendation()/total_recommendation()), plus
+the Live Policy at High Edge section -- the currently-live policy,
+simulated against this season's odds-covered games above a high edge
+bar (policy_backtest.py). This is the published, no-terminal-needed view
+of the same numbers backtest.py/policy_backtest.py already print to the
+console -- it reuses their policy_performance()/bet_type_totals() rather
 than re-deriving them.
+
+Used to also carry a "By Policy Version" table (per-policy_version Money
+Line breakdown from real picks_log) and a "Policy Backtest" table
+(policy_backtest.py's build_policy_backtest(), replaying every known
+policy_version fairly against the same full history) -- both removed
+2026-10-23 at the user's request, once the live policy settled on
+2026-10-v3 and those cross-version comparisons stopped being useful day
+to day. policy_backtest.py itself is unchanged and still prints both via
+its own `python lib/policy_backtest.py` CLI if that comparison is ever
+needed again.
 
 Regenerated automatically by run_daily.py (right after grading, so this
 is always current as of the last graded games), or run standalone:
@@ -31,8 +35,6 @@ from policy_backtest import (
     LIVE_POLICY_MIN_EDGE,
     build_live_policy_edge_backtest,
     build_live_policy_edge_series,
-    build_policy_backtest,
-    rank_by_roi,
 )
 from report import DOCS_DIR, HTML_STYLE, generation_timestamp, strategy_markets
 
@@ -303,15 +305,13 @@ def staking_split_results(live_edge_totals: dict) -> list[tuple]:
 def render_record_html(
     performance: list,
     bet_types: dict,
-    policy_backtest_results: list[tuple[str, dict]],
     bankroll: list[dict],
     live_policy_edge_result: tuple[str, dict],
 ) -> Path:
-    """Render the overall + per-policy_version record as a static HTML page.
+    """Render the overall record as a static HTML page.
 
     :param performance: Rows from :func:`backtest.policy_performance`.
     :param bet_types: Result of :func:`backtest.bet_type_totals`.
-    :param policy_backtest_results: Result of :func:`policy_backtest.build_policy_backtest`.
     :param bankroll: Result of :func:`bankroll_series`, merged with
         :func:`merge_live_edge_series`.
     :param live_policy_edge_result: Result of
@@ -336,43 +336,6 @@ def render_record_html(
     pl_roi_str, pl_roi_class = format_roi(pl["total_profit"], pl["graded_bet_count"])
     ou_record = format_record_with_pushes(ou["wins"], ou["losses"], ou["pushes"])
     ou_roi_str, ou_roi_class = format_roi(ou["total_profit"], ou["graded_bet_count"])
-
-    version_rows = "\n".join(
-        f"""
-        <tr>
-            <td>{row["policy_version"]}</td>
-            <td>{format_record_pct(row["su_wins"], row["su_losses"])}</td>
-            <td>{
-            format_record_with_pushes(row["ats_wins"], row["ats_losses"], row["ats_pushes"])
-        }</td>
-            <td class="{format_roi(row["total_profit"] or 0.0, row["graded_bet_count"])[1]}">
-                {format_roi(row["total_profit"] or 0.0, row["graded_bet_count"])[0]}
-            </td>
-        </tr>"""
-        for row in performance
-    )
-    if not version_rows:
-        version_rows = '<tr><td colspan="4" class="notes">No graded picks yet.</td></tr>'
-
-    backtest_rows = "\n".join(
-        f"""
-        <tr>
-            <td>{policy_version}</td>
-            <td class="edge">{totals["games_evaluated"]}</td>
-            <td>{format_record_pct(totals["su_wins"], totals["su_losses"])}</td>
-            <td>{
-            format_record_with_pushes(
-                totals["ats_wins"], totals["ats_losses"], totals["ats_pushes"]
-            )
-        }</td>
-            <td class="{format_roi(totals["total_profit"], totals["graded_bet_count"])[1]}">
-                {format_roi(totals["total_profit"], totals["graded_bet_count"])[0]}
-            </td>
-        </tr>"""
-        for policy_version, totals in rank_by_roi(policy_backtest_results)
-    )
-    if not backtest_rows:
-        backtest_rows = '<tr><td colspan="5" class="notes">No completed games yet.</td></tr>'
 
     live_policy_version, live_edge_totals = live_policy_edge_result
     live_edge_roi_str, live_edge_roi_class = format_roi(
@@ -448,32 +411,6 @@ that's a real "nothing to bet," not "not graded yet."
 </tbody>
 </table>
 
-<h2>By Policy Version</h2>
-<table>
-<thead>
-<tr><th>Version</th><th>Moneyline</th><th>Vs. Puck Line</th><th>Moneyline ROI</th></tr>
-</thead>
-<tbody>{version_rows}
-</tbody>
-</table>
-
-<h2>Policy Backtest</h2>
-<p class="subtitle">
-Every policy_version replayed against the exact same full slate of completed
-games, instead of only the different (non-overlapping) stretch each one
-actually happened to be live for -- a fair head-to-head comparison, ranked
-by moneyline ROI%. See policy_backtest.py.
-</p>
-<table>
-<thead>
-<tr>
-    <th>Version</th><th>Games</th><th>Moneyline</th><th>Vs. Puck Line</th><th>Moneyline ROI</th>
-</tr>
-</thead>
-<tbody>{backtest_rows}
-</tbody>
-</table>
-
 <h2>Live Policy at High Edge</h2>
 <p class="subtitle">
 The currently-live policy (<strong>{live_policy_version}</strong>), restricted to this
@@ -529,14 +466,12 @@ one pick (policy.yaml's weighted total_score); "Puck Line Record" and
 name a different team or side (see the picks pages for why) -- each ROI
 figure assumes a flat ${STAKE:.0f} stake per pick at the price recorded
 when that type's recommendation was made, and only counts picks that had
-odds on record. The Policy Backtest table is a simulation, not a record of
-real picks -- it's what each policy_version's Money Line pick would have
-been on every completed game, graded against the real final score and
-whatever odds were on record, not what was actually logged in picks_log
-at the time. Live Policy at High Edge is also a simulation for the same
-reason, filtered down further to one policy_version and one edge
-threshold -- a small sample by design, since it only includes this
-season's odds-covered games above a fairly high bar. Paper-trading
+odds on record. Live Policy at High Edge is a simulation, not a record of
+real picks -- it's what the currently-live policy's Money Line pick would
+have been on every completed game, graded against the real final score
+and whatever odds were on record, not what was actually logged in
+picks_log at the time, filtered down to this season's odds-covered games
+above a fairly high edge bar (a small sample by design). Paper-trading
 analysis only, not betting advice.
 </p>
 <p class="updated">Last updated {generation_timestamp()}</p>
@@ -556,13 +491,11 @@ def build_record_page() -> None:
         bet_types = bet_type_totals(conn)
         bankroll = bankroll_series(conn)
     conn.close()
-    policy_backtest_results = build_policy_backtest()
     live_policy_edge_result = build_live_policy_edge_backtest()
     bankroll = merge_live_edge_series(bankroll, build_live_policy_edge_series())
     path = render_record_html(
         performance,
         bet_types,
-        policy_backtest_results,
         bankroll,
         live_policy_edge_result,
     )
