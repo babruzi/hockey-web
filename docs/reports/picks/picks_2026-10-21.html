@@ -110,12 +110,45 @@ a { color: var(--accent); }
 .chart-legend { font-size: 0.85rem; color: var(--muted); margin-top: 0.25rem; }
 .chart-legend .swatch { font-size: 1rem; line-height: 1; }
 .updated { color: var(--muted); font-size: 0.75rem; margin-top: 0.5rem; }
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+}
+.controls select {
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 0.3rem;
+    padding: 0.25rem 0.5rem;
+}
 </style>
 </head>
 <body>
 <p><a href="../../index.html">&larr; All reports</a></p>
-<h1>0 Picks</h1>
+<h1>2 Picks</h1>
 <p class="subtitle">October 21, 2026</p>
+
+<div class="controls">
+<label for="edge-filter">Minimum edge:</label>
+<select id="edge-filter" onchange="updateEdgeFilter()">
+<option value="0">All games</option>
+<option value="0.5">0.5+</option>
+<option value="0.7">0.7+</option>
+<option value="0.8">0.8+</option>
+<option value="0.9" selected="selected">0.9+</option>
+<option value="1.0">1+</option>
+<option value="1.2">1.2+</option>
+</select>
+<span class="notes">(hides games below this edge; 0.9+ had the
+best win rate with a large-enough sample across the full season history --
+see policy_backtest.py)</span>
+</div>
 <div class="table-scroll">
 <table>
 <thead>
@@ -127,6 +160,47 @@ a { color: var(--accent); }
 </tr>
 </thead>
 <tbody>
+        <tr class="game-odd row-away" data-edge="0.476" style="display:none">
+            <td class="rank" rowspan="2">1</td>
+            <td>PHI</td>
+            <td><strong class="pick">+1.5 -162 (59.3%)</strong></td>
+            <td><strong class="pick">O 5.5 -135 (55.1%)</strong></td>
+            <td>+154 (37.8%)</td>
+            <td class="edge" rowspan="2">0.476</td>
+            <td class="edge" rowspan="2">3&ndash;1 <span class="notes">(Under)</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td class="edge" rowspan="2">1-2 (33.3%)</td>
+            <td rowspan="2"><strong class="strategy">BUF</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">PHI</strong> <span class="notes">(PL $5)</span></td>
+            <td class="notes" rowspan="2">BUF: Sam Carrick (C) - Day-To-Day; BUF: Justin Danforth (RW) - Day-To-Day; BUF: Rasmus Dahlin (D) - Day-To-Day; BUF: Alex Lyon (G) - Injured Reserve; PHI: Tyson Foerster (RW) - Day-To-Day</td>
+        </tr>
+        <tr class="game-odd row-home" data-edge="0.476" style="display:none">
+            <td class="home-cell"><strong class="pick">BUF</strong></td>
+            <td>-1.5 +136 (40.7%)</td>
+            <td>U 5.5 +114 (44.9%)</td>
+            <td><strong class="pick">-185 (62.2%)</strong></td>
+        </tr>
+
+        <tr class="game-even row-away" data-edge="0.203" style="display:none">
+            <td class="rank" rowspan="2">2</td>
+            <td>FLA</td>
+            <td>-1.5 +230 (29.0%)</td>
+            <td><strong class="pick">O 5.5 -125 (53.2%)</strong></td>
+            <td>-112 (50.4%)</td>
+            <td class="edge" rowspan="2">0.203</td>
+            <td class="edge" rowspan="2">1&ndash;5 <span class="notes">(Over)</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td class="edge" rowspan="2">3-5 (37.5%)</td>
+            <td rowspan="2"><strong class="strategy">OTT</strong> <span class="notes">(ML $10 + PL $10)</span></td>
+            <td class="notes" rowspan="2">OTT: Thomas Chabot (D) - Out; FLA: Jacob Markstrom (G) - Injured Reserve</td>
+        </tr>
+        <tr class="game-even row-home" data-edge="0.203" style="display:none">
+            <td class="home-cell"><strong class="pick">OTT</strong></td>
+            <td><strong class="pick">+1.5 -285 (71.0%)</strong></td>
+            <td>U 5.5 +105 (46.8%)</td>
+            <td><strong class="pick">-108 (49.6%)</strong></td>
+        </tr>
 </tbody>
 </table>
 </div>
@@ -135,17 +209,17 @@ a { color: var(--accent); }
 <table>
 <thead><tr><th></th><th>Total P&amp;L</th></tr></thead>
 <tbody>
-<tr><td>Money Line ($10/pick)</td><td><span class="notes">No recommendation today</span></td></tr>
-<tr><td>Puck Line ($10/pick)</td><td><span class="notes">No recommendation today</span></td></tr>
-<tr><td>Over/Under ($10/pick)</td><td><span class="notes">No recommendation today</span></td></tr>
+<tr><td>Money Line ($10/pick)</td><td><span class="negative">-0.74</span></td></tr>
+<tr><td>Puck Line ($10/pick)</td><td><span class="positive">+9.68</span></td></tr>
+<tr><td>Over/Under ($10/pick)</td><td><span class="negative">-2.00</span></td></tr>
 <tr><td><strong class="strategy">Strategy</strong>
     (ML $10 always + PL $10 if agree,
     else PL $5)</td>
-    <td><span class="notes">No recommendation today</span></td></tr>
+    <td><span class="positive">+5.85</span> (2 of 2 games, 4 bets)</td></tr>
 </tbody>
 </table>
 <p class="legend">
-Every game clearing the minimum edge bar, ranked by edge &middot; generated by the NHL paper-betting
+Every game on the slate, ranked by edge &middot; generated by the NHL paper-betting
 toolkit &middot; away team's row on top, home team's row below (home team's name is
 lightly shaded) &middot; each game's two rows are boxed off with a thicker border,
 same layout as a sportsbook board (Score column is also Away&ndash;Home, with whether
@@ -164,15 +238,25 @@ $10, plus Puck Line too, sized by whether it agrees with the Money Line
 pick -- $10 if it does, $5 if it
 doesn't (Over/Under is never recommended -- it's been a clear net loser across the sample so
 far) &middot; this is a small-sample read, not a guaranteed system, and may get
-revised as more games get graded &middot; every game on this page already has a predicted
-edge of 0.9+ -- below that, both Money Line and Puck Line have lost money on
-the live policy's own real, odds-covered bets, so lower-edge games aren't shown as picks at
-all here, not just hidden
+revised as more games get graded &middot; the <strong>Minimum edge</strong> dropdown above
+the table hides games below a chosen `predicted_edge` -- defaults to 0.9+,
+which had the best win rate (64.2%) with a still-reasonable sample (134 games) when the live
+policy was replayed against the full season history; past that the sample gets too thin
+(under 60 games) to trust
 </p>
 <p class="disclaimer">
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 23, 2026 at 02:43 PM EDT</p>
+<p class="updated">Last updated October 23, 2026 at 02:26 PM EDT</p>
+
+<script>
+function updateEdgeFilter() {
+    var minEdge = parseFloat(document.getElementById("edge-filter").value);
+    document.querySelectorAll("tr[data-edge]").forEach(function (row) {
+        row.style.display = parseFloat(row.getAttribute("data-edge")) >= minEdge ? "" : "none";
+    });
+}
+</script>
 </body>
 </html>

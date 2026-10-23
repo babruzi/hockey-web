@@ -38,13 +38,13 @@ from report import (
 from score import compute_scores, load_policy
 
 # Minimum predicted edge for the live-policy section of record.html.
-# Derived differently from report.py's MIN_PICK_EDGE (0.9, the hard cutoff
-# for what counts as a pick at all -- most recently re-derived from this
-# season's own odds-covered bets): this one came from an earlier sweep
-# against just this season's odds-covered games under the live policy
-# specifically, where 1.0 gave the best combination of win rate (76.2%)
-# and sample size (21 games) at the time -- 1.2 had a slightly worse rate
-# on fewer games, lower thresholds had worse rates on more games.
+# Derived differently from report.py's DEFAULT_MIN_EDGE (0.9, from sweeping
+# thresholds against the full season-backfilled history, most of which has
+# no odds): this one came from sweeping thresholds against just this
+# season's odds-covered games under the live policy specifically, where
+# 1.0 gave the best combination of win rate (76.2%) and sample size (21
+# games) -- 1.2 had a slightly worse rate on fewer games, lower thresholds
+# had worse rates on more games.
 LIVE_POLICY_MIN_EDGE = 1.0
 
 
