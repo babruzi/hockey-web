@@ -110,45 +110,12 @@ a { color: var(--accent); }
 .chart-legend { font-size: 0.85rem; color: var(--muted); margin-top: 0.25rem; }
 .chart-legend .swatch { font-size: 1rem; line-height: 1; }
 .updated { color: var(--muted); font-size: 0.75rem; margin-top: 0.5rem; }
-.controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
-    padding: 0.6rem 0.9rem;
-    border: 1px solid var(--border);
-    border-radius: 0.4rem;
-}
-.controls select {
-    background: var(--bg);
-    color: var(--fg);
-    border: 1px solid var(--border);
-    border-radius: 0.3rem;
-    padding: 0.25rem 0.5rem;
-}
 </style>
 </head>
 <body>
 <p><a href="../../index.html">&larr; All reports</a></p>
-<h1>11 Picks</h1>
+<h1>3 Picks</h1>
 <p class="subtitle">October 15, 2026</p>
-
-<div class="controls">
-<label for="edge-filter">Minimum edge:</label>
-<select id="edge-filter" onchange="updateEdgeFilter()">
-<option value="0">All games</option>
-<option value="0.5">0.5+</option>
-<option value="0.7">0.7+</option>
-<option value="0.8">0.8+</option>
-<option value="0.9" selected="selected">0.9+</option>
-<option value="1.0">1+</option>
-<option value="1.2">1.2+</option>
-</select>
-<span class="notes">(hides games below this edge; 0.9+ had the
-best win rate with a large-enough sample across the full season history --
-see policy_backtest.py)</span>
-</div>
 <div class="table-scroll">
 <table>
 <thead>
@@ -160,7 +127,7 @@ see policy_backtest.py)</span>
 </tr>
 </thead>
 <tbody>
-        <tr class="game-odd row-away" data-edge="1.829">
+        <tr class="game-odd row-away">
             <td class="rank" rowspan="2">1</td>
             <td>VAN</td>
             <td>+1.5 -105 (48.9%)</td>
@@ -174,14 +141,14 @@ see policy_backtest.py)</span>
             <td rowspan="2"><strong class="strategy">FLA</strong> <span class="notes">(ML $10 + PL $10)</span></td>
             <td class="notes" rowspan="2">FLA: Jacob Markstrom (G) - Day-To-Day; FLA: Radko Gudas (D) - Day-To-Day; VAN: Thatcher Demko (G) - Injured Reserve</td>
         </tr>
-        <tr class="game-odd row-home" data-edge="1.829">
+        <tr class="game-odd row-home">
             <td class="home-cell"><strong class="pick">FLA</strong></td>
             <td><strong class="pick">-1.5 -115 (51.1%)</strong></td>
             <td>U 6.5 -130 (54.3%)</td>
             <td><strong class="pick">-298 (71.8%)</strong></td>
         </tr>
 
-        <tr class="game-even row-away" data-edge="1.581">
+        <tr class="game-even row-away">
             <td class="rank" rowspan="2">2</td>
             <td>CGY</td>
             <td>+1.5 +105 (46.8%)</td>
@@ -195,14 +162,14 @@ see policy_backtest.py)</span>
             <td rowspan="2"><strong class="strategy">VGK</strong> <span class="notes">(ML $10 + PL $10)</span></td>
             <td class="notes" rowspan="2">VGK: Parker Wotherspoon (D) - Out; CGY: Samuel Honzek (LW) - Out</td>
         </tr>
-        <tr class="game-even row-home" data-edge="1.581">
+        <tr class="game-even row-home">
             <td class="home-cell"><strong class="pick">VGK</strong></td>
             <td><strong class="pick">-1.5 -125 (53.2%)</strong></td>
             <td><strong class="pick">U 6.5 -125 (53.2%)</strong></td>
             <td><strong class="pick">-305 (72.2%)</strong></td>
         </tr>
 
-        <tr class="game-odd row-away" data-edge="0.923">
+        <tr class="game-odd row-away">
             <td class="rank" rowspan="2">3</td>
             <td>STL</td>
             <td><strong class="pick">+1.5 -218 (65.7%)</strong></td>
@@ -216,179 +183,11 @@ see policy_backtest.py)</span>
             <td rowspan="2"><strong class="strategy">MIN</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">STL</strong> <span class="notes">(PL $5)</span></td>
             <td class="notes" rowspan="2">MIN: Jared Spurgeon (D) - Day-To-Day; MIN: Filip Gustavsson (G) - Injured Reserve</td>
         </tr>
-        <tr class="game-odd row-home" data-edge="0.923">
+        <tr class="game-odd row-home">
             <td class="home-cell"><strong class="pick">MIN</strong></td>
             <td>-1.5 +180 (34.3%)</td>
             <td>U 5.5 +114 (44.9%)</td>
             <td><strong class="pick">-148 (57.2%)</strong></td>
-        </tr>
-
-        <tr class="game-even row-away" data-edge="0.811" style="display:none">
-            <td class="rank" rowspan="2">4</td>
-            <td>NYI</td>
-            <td><strong class="pick">+1.5 -198 (63.7%)</strong></td>
-            <td><strong class="pick">O 5.5 -112 (50.4%)</strong></td>
-            <td>+130 (41.7%)</td>
-            <td class="edge" rowspan="2">0.811</td>
-            <td class="edge" rowspan="2">1&ndash;2 <span class="notes">(Under)</span></td>
-            <td rowspan="2"><span class="positive">Win</span></td>
-            <td rowspan="2"><span class="negative">Loss</span></td>
-            <td class="edge" rowspan="2">3-5 (37.5%)</td>
-            <td rowspan="2"><strong class="strategy">OTT</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">NYI</strong> <span class="notes">(PL $5)</span></td>
-            <td class="notes" rowspan="2">OTT: Jake Sanderson (D) - Day-To-Day; OTT: Ridly Greig (C) - Day-To-Day; OTT: Nikolas Matinpalo (D) - Out; NYI: Alexander Romanov (D) - Out</td>
-        </tr>
-        <tr class="game-even row-home" data-edge="0.811" style="display:none">
-            <td class="home-cell"><strong class="pick">OTT</strong></td>
-            <td>-1.5 +164 (36.3%)</td>
-            <td>U 5.5 -108 (49.6%)</td>
-            <td><strong class="pick">-155 (58.3%)</strong></td>
-        </tr>
-
-        <tr class="game-odd row-away" data-edge="0.781" style="display:none">
-            <td class="rank" rowspan="2">5</td>
-            <td>SEA</td>
-            <td><strong class="pick">+1.5 -125 (53.2%)</strong></td>
-            <td>O 6.5 +102 (47.4%)</td>
-            <td>+210 (30.9%)</td>
-            <td class="edge" rowspan="2">0.781</td>
-            <td class="edge" rowspan="2">3&ndash;4 <span class="notes">(Over)</span></td>
-            <td rowspan="2"><span class="positive">Win</span></td>
-            <td rowspan="2"><span class="negative">Loss</span></td>
-            <td class="edge" rowspan="2">3-4 (42.9%)</td>
-            <td rowspan="2"><strong class="strategy">TBL</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">SEA</strong> <span class="notes">(PL $5)</span></td>
-            <td class="notes" rowspan="2">TBL: Dennis Hildeby (G) - Day-To-Day</td>
-        </tr>
-        <tr class="game-odd row-home" data-edge="0.781" style="display:none">
-            <td class="home-cell"><strong class="pick">TBL</strong></td>
-            <td>-1.5 +105 (46.8%)</td>
-            <td><strong class="pick">U 6.5 -122 (52.6%)</strong></td>
-            <td><strong class="pick">-258 (69.1%)</strong></td>
-        </tr>
-
-        <tr class="game-even row-away" data-edge="0.644" style="display:none">
-            <td class="rank" rowspan="2">6</td>
-            <td>SJS</td>
-            <td><strong class="pick">+1.5 -218 (65.7%)</strong></td>
-            <td>O 6.5 +102 (47.4%)</td>
-            <td>+120 (43.7%)</td>
-            <td class="edge" rowspan="2">0.644</td>
-            <td class="edge" rowspan="2">3&ndash;2 <span class="notes">(Under)</span></td>
-            <td rowspan="2"><span class="negative">Loss</span></td>
-            <td rowspan="2"><span class="negative">Loss</span></td>
-            <td class="edge" rowspan="2">0-1 (0.0%)</td>
-            <td rowspan="2"><strong class="strategy">NSH</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">SJS</strong> <span class="notes">(PL $5)</span></td>
-            <td class="notes" rowspan="2">NSH: Mavrik Bourque (C) - Day-To-Day; SJS: Darnell Nurse (D) - Day-To-Day; SJS: Kyle Keyser (G) - Injured Reserve</td>
-        </tr>
-        <tr class="game-even row-home" data-edge="0.644" style="display:none">
-            <td class="home-cell"><strong class="pick">NSH</strong></td>
-            <td>-1.5 +180 (34.3%)</td>
-            <td><strong class="pick">U 6.5 -122 (52.6%)</strong></td>
-            <td><strong class="pick">-142 (56.3%)</strong></td>
-        </tr>
-
-        <tr class="game-odd row-away" data-edge="0.553" style="display:none">
-            <td class="rank" rowspan="2">7</td>
-            <td><strong class="pick">NYR</strong></td>
-            <td><strong class="pick">+1.5 -218 (65.7%)</strong></td>
-            <td>O 6.5 +114 (44.9%)</td>
-            <td><strong class="pick">+120 (43.7%)</strong></td>
-            <td class="edge" rowspan="2">0.553</td>
-            <td class="edge" rowspan="2">1&ndash;7 <span class="notes">(Over)</span></td>
-            <td rowspan="2"><span class="negative">Loss</span></td>
-            <td rowspan="2"><span class="negative">Loss</span></td>
-            <td class="edge" rowspan="2">4-3 (57.1%)</td>
-            <td rowspan="2"><strong class="strategy">NYR</strong> <span class="notes">(ML $10 + PL $10)</span></td>
-            <td class="notes" rowspan="2">NJD: Luke Evangelista (RW) - Day-To-Day; NYR: Igor Shesterkin (G) - Injured Reserve; NYR: Joonas Korpisalo (G) - Injured Reserve</td>
-        </tr>
-        <tr class="game-odd row-home" data-edge="0.553" style="display:none">
-            <td class="home-cell">NJD</td>
-            <td>-1.5 +180 (34.3%)</td>
-            <td><strong class="pick">U 6.5 -135 (55.1%)</strong></td>
-            <td>-142 (56.3%)</td>
-        </tr>
-
-        <tr class="game-even row-away" data-edge="0.385" style="display:none">
-            <td class="rank" rowspan="2">8</td>
-            <td><strong class="pick">BUF</strong></td>
-            <td><strong class="pick">+1.5 -245 (68.1%)</strong></td>
-            <td><strong class="pick">O 6.5 -122 (52.6%)</strong></td>
-            <td><strong class="pick">-102 (48.3%)</strong></td>
-            <td class="edge" rowspan="2">0.385</td>
-            <td class="edge" rowspan="2">5&ndash;4 <span class="notes">(Over)</span></td>
-            <td rowspan="2"><span class="positive">Win</span></td>
-            <td rowspan="2"><span class="positive">Win</span></td>
-            <td class="edge" rowspan="2">1-2 (33.3%)</td>
-            <td rowspan="2"><strong class="strategy">BUF</strong> <span class="notes">(ML $10 + PL $10)</span></td>
-            <td class="notes" rowspan="2">TOR: Elvis Merzlikins (G) - Injured Reserve; BUF: Rasmus Dahlin (D) - Day-To-Day; BUF: Alex Lyon (G) - Injured Reserve; BUF: Topias Leinonen (G) - Injured Reserve</td>
-        </tr>
-        <tr class="game-even row-home" data-edge="0.385" style="display:none">
-            <td class="home-cell">TOR</td>
-            <td>-1.5 +200 (31.9%)</td>
-            <td>U 6.5 +102 (47.4%)</td>
-            <td>-118 (51.7%)</td>
-        </tr>
-
-        <tr class="game-odd row-away" data-edge="0.144" style="display:none">
-            <td class="rank" rowspan="2">9</td>
-            <td>PHI</td>
-            <td><strong class="pick">+1.5 -225 (66.4%)</strong></td>
-            <td><strong class="pick">O 5.5 -120 (52.2%)</strong></td>
-            <td>+120 (43.7%)</td>
-            <td class="edge" rowspan="2">0.144</td>
-            <td class="edge" rowspan="2">1&ndash;2 <span class="notes">(Under)</span></td>
-            <td rowspan="2"><span class="positive">Win</span></td>
-            <td rowspan="2"><span class="negative">Loss</span></td>
-            <td class="edge" rowspan="2">3-4 (42.9%)</td>
-            <td rowspan="2"><strong class="strategy">DET</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">PHI</strong> <span class="notes">(PL $5)</span></td>
-            <td class="notes" rowspan="2">PHI: Cam York (D) - Out</td>
-        </tr>
-        <tr class="game-odd row-home" data-edge="0.144" style="display:none">
-            <td class="home-cell"><strong class="pick">DET</strong></td>
-            <td>-1.5 +185 (33.6%)</td>
-            <td>U 5.5 +100 (47.8%)</td>
-            <td><strong class="pick">-142 (56.3%)</strong></td>
-        </tr>
-
-        <tr class="game-even row-away" data-edge="0.135" style="display:none">
-            <td class="rank" rowspan="2">10</td>
-            <td>WPG</td>
-            <td>-1.5 +190 (33.1%)</td>
-            <td>O 6.5 +110 (45.7%)</td>
-            <td>-135 (55.1%)</td>
-            <td class="edge" rowspan="2">0.135</td>
-            <td class="edge" rowspan="2">3&ndash;4 <span class="notes">(Over)</span></td>
-            <td rowspan="2"><span class="positive">Win</span></td>
-            <td rowspan="2"><span class="positive">Win</span></td>
-            <td class="edge" rowspan="2">1-0 (100.0%)</td>
-            <td rowspan="2"><strong class="strategy">CHI</strong> <span class="notes">(ML $10 + PL $10)</span></td>
-            <td class="notes" rowspan="2">WPG: Josh Morrissey (D) - Day-To-Day; WPG: Connor Hellebuyck (G) - Injured Reserve</td>
-        </tr>
-        <tr class="game-even row-home" data-edge="0.135" style="display:none">
-            <td class="home-cell"><strong class="pick">CHI</strong></td>
-            <td><strong class="pick">+1.5 -230 (66.9%)</strong></td>
-            <td><strong class="pick">U 6.5 -130 (54.3%)</strong></td>
-            <td><strong class="pick">+114 (44.9%)</strong></td>
-        </tr>
-
-        <tr class="game-odd row-away" data-edge="0.094" style="display:none">
-            <td class="rank" rowspan="2">11</td>
-            <td>UTA</td>
-            <td><strong class="pick">+1.5 -230 (66.9%)</strong></td>
-            <td><strong class="pick">O 6.5 -112 (50.4%)</strong></td>
-            <td>+105 (46.8%)</td>
-            <td class="edge" rowspan="2">0.094</td>
-            <td class="edge" rowspan="2">4&ndash;2 <span class="notes">(Under)</span></td>
-            <td rowspan="2"><span class="negative">Loss</span></td>
-            <td rowspan="2"><span class="negative">Loss</span></td>
-            <td class="edge" rowspan="2">4-3 (57.1%)</td>
-            <td rowspan="2"><strong class="strategy">EDM</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">UTA</strong> <span class="notes">(PL $5)</span></td>
-            <td class="notes" rowspan="2">EDM: Jake Walman (D) - Day-To-Day; EDM: Zach Hyman (LW) - Day-To-Day; EDM: Frederik Andersen (G) - Injured Reserve; UTA: Michael Carcone (LW) - Out</td>
-        </tr>
-        <tr class="game-odd row-home" data-edge="0.094" style="display:none">
-            <td class="home-cell"><strong class="pick">EDM</strong></td>
-            <td>-1.5 +190 (33.1%)</td>
-            <td>U 6.5 -108 (49.6%)</td>
-            <td><strong class="pick">-125 (53.2%)</strong></td>
         </tr>
 </tbody>
 </table>
@@ -398,17 +197,17 @@ see policy_backtest.py)</span>
 <table>
 <thead><tr><th></th><th>Total P&amp;L</th></tr></thead>
 <tbody>
-<tr><td>Money Line ($10/pick)</td><td><span class="positive">+21.96</span></td></tr>
-<tr><td>Puck Line ($10/pick)</td><td><span class="positive">+27.45</span></td></tr>
-<tr><td>Over/Under ($10/pick)</td><td><span class="negative">-56.20</span></td></tr>
+<tr><td>Money Line ($10/pick)</td><td><span class="positive">+13.39</span></td></tr>
+<tr><td>Puck Line ($10/pick)</td><td><span class="positive">+2.59</span></td></tr>
+<tr><td>Over/Under ($10/pick)</td><td><span class="negative">-12.59</span></td></tr>
 <tr><td><strong class="strategy">Strategy</strong>
     (ML $10 always + PL $10 if agree,
     else PL $5)</td>
-    <td><span class="positive">+33.90</span> (11 of 11 games, 22 bets)</td></tr>
+    <td><span class="positive">+13.68</span> (3 of 3 games, 6 bets)</td></tr>
 </tbody>
 </table>
 <p class="legend">
-Every game on the slate, ranked by edge &middot; generated by the NHL paper-betting
+Every game clearing the minimum edge bar, ranked by edge &middot; generated by the NHL paper-betting
 toolkit &middot; away team's row on top, home team's row below (home team's name is
 lightly shaded) &middot; each game's two rows are boxed off with a thicker border,
 same layout as a sportsbook board (Score column is also Away&ndash;Home, with whether
@@ -427,25 +226,15 @@ $10, plus Puck Line too, sized by whether it agrees with the Money Line
 pick -- $10 if it does, $5 if it
 doesn't (Over/Under is never recommended -- it's been a clear net loser across the sample so
 far) &middot; this is a small-sample read, not a guaranteed system, and may get
-revised as more games get graded &middot; the <strong>Minimum edge</strong> dropdown above
-the table hides games below a chosen `predicted_edge` -- defaults to 0.9+,
-which had the best win rate (64.2%) with a still-reasonable sample (134 games) when the live
-policy was replayed against the full season history; past that the sample gets too thin
-(under 60 games) to trust
+revised as more games get graded &middot; every game on this page already has a predicted
+edge of 0.9+ -- below that, both Money Line and Puck Line have lost money on
+the live policy's own real, odds-covered bets, so lower-edge games aren't shown as picks at
+all here, not just hidden
 </p>
 <p class="disclaimer">
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 23, 2026 at 02:26 PM EDT</p>
-
-<script>
-function updateEdgeFilter() {
-    var minEdge = parseFloat(document.getElementById("edge-filter").value);
-    document.querySelectorAll("tr[data-edge]").forEach(function (row) {
-        row.style.display = parseFloat(row.getAttribute("data-edge")) >= minEdge ? "" : "none";
-    });
-}
-</script>
+<p class="updated">Last updated October 23, 2026 at 02:43 PM EDT</p>
 </body>
 </html>

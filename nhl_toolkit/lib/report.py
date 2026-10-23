@@ -385,16 +385,23 @@ FORM_METRIC_NAMES = ["goal_differential", "goals_for_avg", "goals_against_avg"]
 # than this many goals."
 PUCK_LINE = 1.5
 
-# Default minimum predicted_edge for the picks page's edge filter. Derived
-# from replaying the live policy against the full 1424-game history
-# (last season backfilled in) and sweeping edge thresholds: win rate climbs
-# fairly smoothly from 52.9% (every game) up to 64.2% right around this
-# value, on a still-reasonable 134-game sample -- past it, the sample drops
-# below 60 games and the win rate just bounces around on noise rather than
-# continuing to climb. Not stored in policy.yaml since it's a display
-# filter, not a scoring weight -- changing it doesn't affect which team is
-# picked, just which already-picked games the page highlights by default.
-DEFAULT_MIN_EDGE = 0.9
+# Minimum predicted_edge for a game to count as a real pick at all.
+# Originally just a display filter (a dropdown defaulting to this value,
+# hiding lower-edge rows but still listing/logging them) -- changed
+# 2026-10-23 at the user's request to be a hard cutoff instead, after
+# re-sweeping thresholds against the live policy's real, odds-covered
+# bets specifically (not the older, mostly-odds-less full-history sweep
+# this value was first derived from) showed low-edge games losing money
+# on both legs (Money Line and Puck Line) while 0.9 sat right at the
+# point where both were simultaneously strong (+9.4%/+8.8% ROI on a
+# 55-bet sample) -- see the conversation that prompted this, not a
+# formula anywhere in this codebase. Below-threshold games are no longer
+# shown, logged to picks_log, or counted anywhere -- they're not a
+# "hidden" pick, they're not a pick. Not stored in policy.yaml since it's
+# a pick/no-pick filter applied after scoring, not a scoring weight --
+# changing it doesn't affect which team *would be* picked, just whether
+# the game counts as a real recommendation at all.
+MIN_PICK_EDGE = 0.9
 
 # Display-only staking split for the Strategy track, reflecting how this
 # is actually being bet rather than the flat $STAKE every market is
@@ -875,23 +882,6 @@ a { color: var(--accent); }
 .chart-legend { font-size: 0.85rem; color: var(--muted); margin-top: 0.25rem; }
 .chart-legend .swatch { font-size: 1rem; line-height: 1; }
 .updated { color: var(--muted); font-size: 0.75rem; margin-top: 0.5rem; }
-.controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
-    padding: 0.6rem 0.9rem;
-    border: 1px solid var(--border);
-    border-radius: 0.4rem;
-}
-.controls select {
-    background: var(--bg);
-    color: var(--fg);
-    border: 1px solid var(--border);
-    border-radius: 0.3rem;
-    padding: 0.25rem 0.5rem;
-}
 """
 
 
@@ -909,10 +899,11 @@ def generation_timestamp() -> str:
 
 
 def render_html_report(target_date: str, picks: list[dict]) -> Path:
-    """Render the day's Top-N picks as a static HTML page under docs/reports/.
+    """Render the day's picks as a static HTML page under docs/reports/.
 
     :param target_date: Date the report covers, as YYYY-MM-DD.
-    :param picks: Picks as returned by :func:`build_picks`.
+    :param picks: Picks as returned by :func:`build_picks`, already
+        filtered to predicted_edge >= MIN_PICK_EDGE by the caller.
     :returns: Path to the written HTML file.
     """
     DOCS_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -1021,17 +1012,6 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
             f"(PL ${pl_stake:.0f})</span>"
         )
 
-    def edge_row_attrs(pick: dict) -> str:
-        """data-edge (+ hidden by default, below DEFAULT_MIN_EDGE) for a
-        game's two <tr>s, so the edge-filter dropdown's JS can hide whole
-        games below whatever threshold is selected. Present on every page
-        (not just today), since this is a pure display filter over
-        already-graded or already-picked games either way.
-        """
-        hidden = pick["predicted_edge"] < DEFAULT_MIN_EDGE
-        style = ' style="display:none"' if hidden else ""
-        return f' data-edge="{pick["predicted_edge"]:.3f}"{style}'
-
     def render_game_rows(i: int, pick: dict) -> str:
         game_class = "game-even" if i % 2 == 0 else "game-odd"
         away_puck = format_puck_line_cell(
@@ -1062,7 +1042,7 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         home_ml = format_ml_cell(pick["home_moneyline"], pick["home_win_pct"], pick["pick_is_home"])
 
         return f"""
-        <tr class="{game_class} row-away"{edge_row_attrs(pick)}>
+        <tr class="{game_class} row-away">
             <td class="rank" rowspan="2">{i}</td>
             <td>{format_team_name(pick["away_team"], not pick["pick_is_home"])}</td>
             <td>{away_puck}</td>
@@ -1076,7 +1056,7 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
             <td rowspan="2">{format_strategy_cell(pick)}</td>
             <td class="notes" rowspan="2">{format_notes(pick)}</td>
         </tr>
-        <tr class="{game_class} row-home"{edge_row_attrs(pick)}>
+        <tr class="{game_class} row-home">
             <td class="home-cell">{format_team_name(pick["home_team"], pick["pick_is_home"])}</td>
             <td>{home_puck}</td>
             <td>{under_cell}</td>
@@ -1152,32 +1132,6 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
 </tbody>
 </table>"""
 
-    def edge_option(value: float) -> str:
-        label = "All games" if value == 0 else f"{value:g}+"
-        selected = ' selected="selected"' if value == DEFAULT_MIN_EDGE else ""
-        return f'<option value="{value}"{selected}>{label}</option>'
-
-    edge_options = "\n".join(edge_option(v) for v in (0, 0.5, 0.7, 0.8, DEFAULT_MIN_EDGE, 1.0, 1.2))
-    controls_html = f"""
-<div class="controls">
-<label for="edge-filter">Minimum edge:</label>
-<select id="edge-filter" onchange="updateEdgeFilter()">
-{edge_options}
-</select>
-<span class="notes">(hides games below this edge; {DEFAULT_MIN_EDGE:g}+ had the
-best win rate with a large-enough sample across the full season history --
-see policy_backtest.py)</span>
-</div>"""
-    edge_filter_script = """
-<script>
-function updateEdgeFilter() {
-    var minEdge = parseFloat(document.getElementById("edge-filter").value);
-    document.querySelectorAll("tr[data-edge]").forEach(function (row) {
-        row.style.display = parseFloat(row.getAttribute("data-edge")) >= minEdge ? "" : "none";
-    });
-}
-</script>"""
-
     page = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -1190,7 +1144,6 @@ function updateEdgeFilter() {
 <p><a href="../../index.html">&larr; All reports</a></p>
 <h1>{len(picks)} Picks</h1>
 <p class="subtitle">{pretty_date}</p>
-{controls_html}
 <div class="table-scroll">
 <table>
 <thead>
@@ -1207,7 +1160,7 @@ function updateEdgeFilter() {
 </div>
 {day_totals_html}
 <p class="legend">
-Every game on the slate, ranked by edge &middot; generated by the NHL paper-betting
+Every game clearing the minimum edge bar, ranked by edge &middot; generated by the NHL paper-betting
 toolkit &middot; away team's row on top, home team's row below (home team's name is
 lightly shaded) &middot; each game's two rows are boxed off with a thicker border,
 same layout as a sportsbook board (Score column is also Away&ndash;Home, with whether
@@ -1226,18 +1179,16 @@ ${STRATEGY_ML_STAKE:.0f}, plus Puck Line too, sized by whether it agrees with th
 pick -- ${STRATEGY_PL_STAKE_AGREE:.0f} if it does, ${STRATEGY_PL_STAKE_DISAGREE:.0f} if it
 doesn't (Over/Under is never recommended -- it's been a clear net loser across the sample so
 far) &middot; this is a small-sample read, not a guaranteed system, and may get
-revised as more games get graded &middot; the <strong>Minimum edge</strong> dropdown above
-the table hides games below a chosen `predicted_edge` -- defaults to {DEFAULT_MIN_EDGE:g}+,
-which had the best win rate (64.2%) with a still-reasonable sample (134 games) when the live
-policy was replayed against the full season history; past that the sample gets too thin
-(under 60 games) to trust
+revised as more games get graded &middot; every game on this page already has a predicted
+edge of {MIN_PICK_EDGE:g}+ -- below that, both Money Line and Puck Line have lost money on
+the live policy's own real, odds-covered bets, so lower-edge games aren't shown as picks at
+all here, not just hidden
 </p>
 <p class="disclaimer">
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
 <p class="updated">Last updated {generation_timestamp()}</p>
-{edge_filter_script}
 </body>
 </html>
 """
@@ -1398,21 +1349,34 @@ def print_report(target_date: str, picks: list[dict]) -> None:
 
 
 def build_report(target_date: str) -> None:
-    """Score, rank, print, and log every one of the day's picks.
+    """Score, filter to real picks (edge >= MIN_PICK_EDGE), print, and log them.
+
+    Games below MIN_PICK_EDGE are scored (they're still in daily_scores) but
+    never treated as a pick anywhere past this point -- not printed, not in
+    the CSV/HTML, and not logged to picks_log. log_picks() is still called
+    even when the filtered list is empty, so a game whose edge drops below
+    the bar between runs (e.g. after an odds update) gets pruned from
+    picks_log rather than left stranded as a stale, now-below-bar "pick."
 
     :param target_date: Date to report on, as YYYY-MM-DD.
     """
     init_db()
     conn = get_connection()
     with conn:
-        picks = build_picks(conn, target_date)
-        if picks:
-            log_picks(conn, target_date, picks)
+        all_picks = build_picks(conn, target_date)
+        picks = [pick for pick in all_picks if pick["predicted_edge"] >= MIN_PICK_EDGE]
+        log_picks(conn, target_date, picks)
 
-    if not picks:
+    if not all_picks:
         print(f"No scored games found for {target_date}. Run score.py first.")
         conn.close()
         return
+
+    if not picks:
+        print(
+            f"{len(all_picks)} games scored for {target_date}, "
+            f"none cleared the {MIN_PICK_EDGE:g} minimum edge."
+        )
 
     print_report(target_date, picks)
     csv_path = write_csv(target_date, picks)
