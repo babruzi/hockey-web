@@ -167,10 +167,10 @@ see policy_backtest.py)</span>
             <td><strong class="pick">O 6.5 +102 (47.4%)</strong></td>
             <td><strong class="pick">-170 (60.4%)</strong></td>
             <td class="edge" rowspan="2">0.648</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2">0-4 (0.0%)</td>
+            <td class="edge" rowspan="2">4&ndash;1 <span class="notes">(Under)</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td class="edge" rowspan="2">1-4 (20.0%)</td>
             <td rowspan="2"><strong class="strategy">MTL</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">CHI</strong> <span class="notes">(PL $5)</span></td>
             <td class="notes" rowspan="2">CHI: Bowen Byram (D) - Day-To-Day; MTL: Nick Suzuki (C) - Out; MTL: Sam Montembeault (G) - Injured Reserve</td>
         </tr>
@@ -188,10 +188,10 @@ see policy_backtest.py)</span>
             <td><strong class="pick">O 6.5 +102 (47.4%)</strong></td>
             <td><strong class="pick">+105 (46.8%)</strong></td>
             <td class="edge" rowspan="2">0.032</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td class="edge" rowspan="2">3-4 (42.9%)</td>
+            <td class="edge" rowspan="2">3&ndash;6 <span class="notes">(Over)</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td class="edge" rowspan="2">3-5 (37.5%)</td>
             <td rowspan="2"><strong class="strategy">TBL</strong> <span class="notes">(ML $10 + PL $10)</span></td>
             <td class="notes" rowspan="2">COL: Nicolas Roy (C) - Out; COL: Zachary L'Heureux (LW) - Out</td>
         </tr>
@@ -209,13 +209,13 @@ see policy_backtest.py)</span>
 <table>
 <thead><tr><th></th><th>Total P&amp;L</th></tr></thead>
 <tbody>
-<tr><td>Money Line ($10/pick)</td><td><span class="notes">Not yet graded</span></td></tr>
-<tr><td>Puck Line ($10/pick)</td><td><span class="notes">Not yet graded</span></td></tr>
-<tr><td>Over/Under ($10/pick)</td><td><span class="notes">Not yet graded</span></td></tr>
+<tr><td>Money Line ($10/pick)</td><td><span class="negative">-4.12</span></td></tr>
+<tr><td>Puck Line ($10/pick)</td><td><span class="negative">-20.00</span></td></tr>
+<tr><td>Over/Under ($10/pick)</td><td><span class="positive">+0.20</span></td></tr>
 <tr><td><strong class="strategy">Strategy</strong>
     (ML $10 always + PL $10 if agree,
     else PL $5)</td>
-    <td><span class="notes">Not yet graded</span></td></tr>
+    <td><span class="negative">-19.12</span> (2 of 2 games, 4 bets)</td></tr>
 </tbody>
 </table>
 <p class="legend">
@@ -248,7 +248,7 @@ policy was replayed against the full season history; past that the sample gets t
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 23, 2026 at 04:54 PM EDT</p>
+<p class="updated">Last updated October 24, 2026 at 11:40 AM EDT</p>
 
 <script>
 function updateEdgeFilter() {
