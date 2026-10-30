@@ -372,35 +372,14 @@ PUCK_LINE = 1.5
 # picked, just which already-picked games the page highlights by default.
 DEFAULT_MIN_EDGE = 0.9
 
-# Display-only staking split for the Strategy track, reflecting how this
-# is actually being bet rather than the flat $STAKE every market is
-# *graded* at. grade.py's STAKE/profit_10/
-# puck_line_profit_10 stay flat $10 each -- changing those would mean
-# re-grading, and ROI would no longer mean "per dollar risked" uniformly
-# across bet types. Instead these just rescale the already-computed
+# Display-only stake for the Strategy track, reflecting how this is
+# actually being bet rather than the flat $STAKE every market is *graded*
+# at. grade.py's STAKE/profit_10 stays flat $10 -- changing that would
+# mean re-grading, and ROI would no longer mean "per dollar risked"
+# uniformly across bet types. This just rescales the already-computed
 # $10-stake profit figures (same pure-arithmetic approach as
-# record_page.py's staking_split_results()). Over/Under has no stated
-# preference here (the Strategy rule never recommends it anyway), so its
-# own display stays at the flat STAKE.
-#
-# As of 2026-10-19: Money Line is always a flat $10. Puck Line's stake
-# varies by whether it agrees with the Money Line pick -- full $10 on
-# agree games (where Puck Line has outperformed, see strategy_markets()),
-# half that ($5) on disagree games (where it hasn't) -- see
-# strategy_pl_stake().
+# record_page.py's staking_split_results()).
 STRATEGY_ML_STAKE = 10.0
-STRATEGY_PL_STAKE_AGREE = 10.0
-STRATEGY_PL_STAKE_DISAGREE = 5.0
-
-
-def strategy_pl_stake(pick_team: str, puck_line_pick: Optional[str]) -> float:
-    """Puck Line's own stake for the Strategy track (Money Line stays flat).
-
-    :param pick_team: The Money Line pick.
-    :param puck_line_pick: The Puck Line recommendation.
-    :returns: $STRATEGY_PL_STAKE_AGREE if the two agree, else $STRATEGY_PL_STAKE_DISAGREE.
-    """
-    return STRATEGY_PL_STAKE_AGREE if pick_team == puck_line_pick else STRATEGY_PL_STAKE_DISAGREE
 
 
 def puck_line_recommendation(
@@ -477,32 +456,41 @@ def total_recommendation(
 def strategy_markets(pick_team: str, puck_line_pick: Optional[str]) -> list[str]:
     """Which markets a simple, data-driven betting rule recommends for this game.
 
-    Revised 2026-10-18, then again 2026-10-19 at the user's request. The
-    original rule (bet Puck Line always, add Money Line only on agree
-    games) turned out backwards on a 120-game check: Puck Line ROI'd
-    +6.6% on agree games but Money Line was -5.0% there; on disagree
-    games Puck Line was -3.8% but Money Line was +7.7%. The 10-18 revision
-    bet exactly one leg per game (Puck Line on agree, Money Line on
-    disagree) and clearly beat the original.
+    Revised three times so far, each time at the user's request after
+    re-checking the rule against a larger sample:
 
-    The 10-19 revision bets both legs on every game again, but no longer
-    at equal stakes: Money Line is always a flat $STRATEGY_ML_STAKE,
-    while Puck Line's own stake (not whether it's bet at all) is sized by
-    agreement via strategy_pl_stake() -- full stake on agree games, where
-    Puck Line has outperformed, half that on disagree games, where it
-    hasn't. Over/Under remains excluded (a clear net loser across the
-    sample so far). Still a small-enough sample that this could partly be
-    noise -- expect this to keep getting revisited as more games get graded.
+    - 2026-10-18: the original rule (bet Puck Line always, add Money Line
+      only on agree games) turned out backwards on a 120-game check --
+      Puck Line ROI'd +6.6% on agree games but Money Line was -5.0% there;
+      on disagree games Puck Line was -3.8% but Money Line was +7.7%. The
+      revision bet exactly one leg per game (Puck Line on agree, Money
+      Line on disagree) and clearly beat the original.
+    - 2026-10-19: switched to betting both legs on every game, at uneven
+      stakes (Money Line flat, Puck Line full on agree / half on
+      disagree).
+    - 2026-10-30: re-checked again at n=202 and found the agree/disagree
+      split had flipped since 10-18 -- agree games (n=68) were now losing
+      on *both* legs (ML -16.9%, PL -6.4%), while disagree games (n=110)
+      were still ML-positive (+4.8%) though PL-negative there too (-3.3%).
+      Of every staking combination tried against the full history, only
+      one was profitable: Money Line alone, on disagree games only,
+      skipping agree games and Puck Line entirely (+$52.41 on 110 bets,
+      +4.8% ROI, vs. every other combination including the then-live
+      both-legs rule, which was -4.1%). This is that rule.
+
+    Over/Under remains excluded (a clear net loser across the sample so
+    far). Still a finite sample that could partly be noise -- expect this
+    to keep getting revisited as more games get graded.
 
     :param pick_team: The Money Line pick (whichever team scored higher).
     :param puck_line_pick: The Puck Line recommendation, or None if there
         isn't enough data/odds for one.
-    :returns: ["ml", "pl"] if there's a Puck Line recommendation to build
-        a strategy on, else [].
+    :returns: ["ml"] on a disagree game, else [] (no recommendation at
+        all, or an agree game -- both skipped).
     """
-    if puck_line_pick is None:
+    if puck_line_pick is None or pick_team == puck_line_pick:
         return []
-    return ["ml", "pl"]
+    return ["ml"]
 
 
 def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
@@ -985,18 +973,9 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         if not pick["strategy_markets"]:
             return '<span class="notes">&mdash;</span>'
         ml_team = pick["pick"]
-        pl_team = pick["puck_line_pick"]
-        pl_stake = strategy_pl_stake(ml_team, pl_team)
-        if ml_team == pl_team:
-            label = f"ML ${STRATEGY_ML_STAKE:.0f} + PL ${pl_stake:.0f}"
-            return (
-                f'<strong class="strategy">{ml_team}</strong> <span class="notes">({label})</span>'
-            )
         return (
-            f'<strong class="strategy">{ml_team}</strong> <span class="notes">'
-            f"(ML ${STRATEGY_ML_STAKE:.0f})</span> + "
-            f'<strong class="strategy">{pl_team}</strong> <span class="notes">'
-            f"(PL ${pl_stake:.0f})</span>"
+            f'<strong class="strategy">{ml_team}</strong> '
+            f'<span class="notes">(ML ${STRATEGY_ML_STAKE:.0f})</span>'
         )
 
     def edge_row_attrs(pick: dict) -> str:
@@ -1079,11 +1058,10 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         return f'<span class="{css_class}">{total:+.2f}</span>{note}'
 
     def format_strategy_total() -> str:
-        """Strategy's own P&L at its real stakes (ML always $STRATEGY_ML_STAKE,
-        PL sized by strategy_pl_stake()), not the flat $STAKE every leg is
-        actually graded/stored at -- rescales profit_10/puck_line_profit_10
-        by each leg's stake ratio before summing, same pure-arithmetic
-        approach as record_page.py's staking_split_results().
+        """Strategy's own P&L at its real stake (ML only, $STRATEGY_ML_STAKE,
+        disagree games only), not the flat $STAKE profit_10 is actually
+        graded/stored at -- rescales by the stake ratio before summing, same
+        pure-arithmetic approach as record_page.py's staking_split_results().
         """
         applicable = [pick for pick in picks if pick["strategy_markets"]]
         if not applicable:
@@ -1092,22 +1070,14 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
             return '<span class="notes">Not yet graded</span>'
         total = 0.0
         bet_count = 0
-        graded_games = 0
         for pick in applicable:
-            leg_profits = []
-            if pick["puck_line_profit_10"] is not None:
-                pl_stake = strategy_pl_stake(pick["pick"], pick["puck_line_pick"])
-                leg_profits.append(pick["puck_line_profit_10"] * (pl_stake / STAKE))
             if pick["profit_10"] is not None:
-                leg_profits.append(pick["profit_10"] * (STRATEGY_ML_STAKE / STAKE))
-            if leg_profits:
-                total += sum(leg_profits)
-                bet_count += len(leg_profits)
-                graded_games += 1
+                total += pick["profit_10"] * (STRATEGY_ML_STAKE / STAKE)
+                bet_count += 1
         if not bet_count:
             return '<span class="notes">No odds on record</span>'
         css_class = "positive" if total >= 0 else "negative"
-        note = f" ({graded_games} of {len(applicable)} games, {bet_count} bets)"
+        note = f" ({bet_count} of {len(applicable)} games)"
         return f'<span class="{css_class}">{total:+.2f}</span>{note}'
 
     day_totals_html = f"""
@@ -1123,8 +1093,7 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
         format_day_total(sum(1 for pick in picks if pick["total_pick"]), "total_profit_10")
     }</td></tr>
 <tr><td><strong class="strategy">Strategy</strong>
-    (ML ${STRATEGY_ML_STAKE:.0f} always + PL ${STRATEGY_PL_STAKE_AGREE:.0f} if agree,
-    else PL ${STRATEGY_PL_STAKE_DISAGREE:.0f})</td>
+    (ML ${STRATEGY_ML_STAKE:.0f}, disagree games only)</td>
     <td>{format_strategy_total()}</td></tr>
 </tbody>
 </table>"""
@@ -1200,12 +1169,13 @@ column); PL Result grades the independent Puck Line pick (the green/bold team in
 Puck Line column) -- they can be, and often are, different teams, so each gets its own
 win/loss/push against its own line, graded once the game is final &middot;
 <strong class="strategy">Strategy</strong>
-is a simple, data-driven rule: bet Money Line on every game at a flat
-${STRATEGY_ML_STAKE:.0f}, plus Puck Line too, sized by whether it agrees with the Money Line
-pick -- ${STRATEGY_PL_STAKE_AGREE:.0f} if it does, ${STRATEGY_PL_STAKE_DISAGREE:.0f} if it
-doesn't (Over/Under is never recommended -- it's been a clear net loser across the sample so
-far) &middot; this is a small-sample read, not a guaranteed system, and may get
-revised as more games get graded &middot; the <strong>Minimum edge</strong> dropdown above
+is a simple, data-driven rule: bet Money Line at a flat ${STRATEGY_ML_STAKE:.0f}, but only
+on games where it disagrees with the independent Puck Line pick -- skip the game entirely
+when the two agree, and skip Puck Line/Over-Under always (across the full graded history,
+agree games have lost money on both legs, and this is the only staking combination tried
+that's come out ahead overall) &middot; this is a finite-sample read, not a guaranteed
+system, and may get revised again as more games get graded &middot; the <strong>Minimum
+edge</strong> dropdown above
 the table hides games below a chosen `predicted_edge` -- defaults to {DEFAULT_MIN_EDGE:g}+,
 which had the best win rate (64.2%) with a still-reasonable sample (134 games) when the live
 policy was replayed against the full season history; past that the sample gets too thin

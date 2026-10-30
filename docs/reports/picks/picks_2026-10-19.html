@@ -170,7 +170,7 @@ see policy_backtest.py)</span>
             <td class="edge" rowspan="2">2&ndash;5 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
-            <td rowspan="2"><strong class="strategy">NYR</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">ANA</strong> <span class="notes">(PL $5)</span></td>
+            <td rowspan="2"><strong class="strategy">NYR</strong> <span class="notes">(ML $10)</span></td>
             <td class="notes" rowspan="2">NYR: Igor Shesterkin (G) - Injured Reserve; NYR: Joonas Korpisalo (G) - Injured Reserve; ANA: Mikael Granlund (C) - Day-To-Day</td>
         </tr>
         <tr class="game-odd row-home" data-edge="1.678">
@@ -190,7 +190,7 @@ see policy_backtest.py)</span>
             <td class="edge" rowspan="2">2&ndash;3 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
-            <td rowspan="2"><strong class="strategy">COL</strong> <span class="notes">(ML $10 + PL $10)</span></td>
+            <td rowspan="2"><span class="notes">&mdash;</span></td>
             <td class="notes" rowspan="2">PHI: Tyson Foerster (RW) - Day-To-Day; PHI: Sean Couturier (C) - Day-To-Day; PHI: Owen Tippett (RW) - Day-To-Day; COL: Zachary L'Heureux (LW) - Out; COL: Nicolas Roy (C) - Out</td>
         </tr>
         <tr class="game-even row-home" data-edge="1.265">
@@ -210,7 +210,7 @@ see policy_backtest.py)</span>
             <td class="edge" rowspan="2">4&ndash;5 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
-            <td rowspan="2"><strong class="strategy">UTA</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">PIT</strong> <span class="notes">(PL $5)</span></td>
+            <td rowspan="2"><strong class="strategy">UTA</strong> <span class="notes">(ML $10)</span></td>
             <td class="notes" rowspan="2">UTA: Michael Carcone (LW) - Out; PIT: Egor Chinakhov (RW) - Day-To-Day; PIT: Samuel Girard (D) - Day-To-Day</td>
         </tr>
         <tr class="game-odd row-home" data-edge="1.236">
@@ -230,7 +230,7 @@ see policy_backtest.py)</span>
             <td class="edge" rowspan="2">1&ndash;3 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
-            <td rowspan="2"><strong class="strategy">TOR</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">SJS</strong> <span class="notes">(PL $5)</span></td>
+            <td rowspan="2"><strong class="strategy">TOR</strong> <span class="notes">(ML $10)</span></td>
             <td class="notes" rowspan="2">TOR: Elvis Merzlikins (G) - Injured Reserve; SJS: Kyle Keyser (G) - Injured Reserve</td>
         </tr>
         <tr class="game-even row-home" data-edge="0.131" style="display:none">
@@ -251,9 +251,8 @@ see policy_backtest.py)</span>
 <tr><td>Puck Line ($10/pick)</td><td><span class="negative">-23.83</span></td></tr>
 <tr><td>Over/Under ($10/pick)</td><td><span class="negative">-1.59</span></td></tr>
 <tr><td><strong class="strategy">Strategy</strong>
-    (ML $10 always + PL $10 if agree,
-    else PL $5)</td>
-    <td><span class="negative">-7.42</span> (4 of 4 games, 8 bets)</td></tr>
+    (ML $10, disagree games only)</td>
+    <td><span class="positive">+19.49</span> (3 of 3 games)</td></tr>
 </tbody>
 </table>
 <p class="legend">
@@ -273,12 +272,13 @@ column); PL Result grades the independent Puck Line pick (the green/bold team in
 Puck Line column) -- they can be, and often are, different teams, so each gets its own
 win/loss/push against its own line, graded once the game is final &middot;
 <strong class="strategy">Strategy</strong>
-is a simple, data-driven rule: bet Money Line on every game at a flat
-$10, plus Puck Line too, sized by whether it agrees with the Money Line
-pick -- $10 if it does, $5 if it
-doesn't (Over/Under is never recommended -- it's been a clear net loser across the sample so
-far) &middot; this is a small-sample read, not a guaranteed system, and may get
-revised as more games get graded &middot; the <strong>Minimum edge</strong> dropdown above
+is a simple, data-driven rule: bet Money Line at a flat $10, but only
+on games where it disagrees with the independent Puck Line pick -- skip the game entirely
+when the two agree, and skip Puck Line/Over-Under always (across the full graded history,
+agree games have lost money on both legs, and this is the only staking combination tried
+that's come out ahead overall) &middot; this is a finite-sample read, not a guaranteed
+system, and may get revised again as more games get graded &middot; the <strong>Minimum
+edge</strong> dropdown above
 the table hides games below a chosen `predicted_edge` -- defaults to 0.9+,
 which had the best win rate (64.2%) with a still-reasonable sample (134 games) when the live
 policy was replayed against the full season history; past that the sample gets too thin
@@ -288,7 +288,7 @@ policy was replayed against the full season history; past that the sample gets t
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 29, 2026 at 08:14 PM EDT</p>
+<p class="updated">Last updated October 30, 2026 at 01:06 AM EDT</p>
 
 <script>
 function updateEdgeFilter() {
