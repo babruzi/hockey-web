@@ -155,8 +155,8 @@ see policy_backtest.py)</span>
 <tr>
     <th>#</th><th>Team</th><th>Puck Line</th>
     <th>Over/Under</th><th>Money Line</th>
-    <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
-    <th>Team ATS Record</th><th>Strategy</th><th>Notes</th>
+    <th>Edge</th><th>Score</th><th>ML Result</th><th>PL Result</th>
+    <th>Strategy</th><th>Notes</th>
 </tr>
 </thead>
 <tbody>
@@ -170,7 +170,6 @@ see policy_backtest.py)</span>
             <td class="edge" rowspan="2">2&ndash;6 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
-            <td class="edge" rowspan="2">3-5 (37.5%)</td>
             <td rowspan="2"><strong class="strategy">COL</strong> <span class="notes">(ML $10 + PL $10)</span></td>
             <td class="notes" rowspan="2">NSH on a back-to-back; COL: Nicolas Roy (C) - Day-To-Day</td>
         </tr>
@@ -190,8 +189,7 @@ see policy_backtest.py)</span>
             <td class="edge" rowspan="2">1.151</td>
             <td class="edge" rowspan="2">3&ndash;6 <span class="notes">(Over)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
-            <td rowspan="2"><span class="positive">Win</span></td>
-            <td class="edge" rowspan="2">4-4 (50.0%)</td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
             <td rowspan="2"><strong class="strategy">DAL</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">NYI</strong> <span class="notes">(PL $5)</span></td>
             <td class="notes" rowspan="2">DAL: Radek Faksa (C) - Day-To-Day; DAL: Esa Lindell (D) - Out; NYI: Calum Ritchie (C) - Out; NYI: Matias Maccelli (LW) - Out</td>
         </tr>
@@ -212,7 +210,6 @@ see policy_backtest.py)</span>
             <td class="edge" rowspan="2">4&ndash;2 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
-            <td class="edge" rowspan="2">7-5 (58.3%)</td>
             <td rowspan="2"><strong class="strategy">MIN</strong> <span class="notes">(ML $10 + PL $10)</span></td>
             <td class="notes" rowspan="2">MIN on a back-to-back; VAN: Thatcher Demko (G) - Injured Reserve; MIN: Maxim Shabanov (RW) - Day-To-Day; MIN: Filip Gustavsson (G) - Injured Reserve</td>
         </tr>
@@ -232,8 +229,7 @@ see policy_backtest.py)</span>
             <td class="edge" rowspan="2">0.862</td>
             <td class="edge" rowspan="2">3&ndash;2 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
-            <td rowspan="2"><span class="negative">Loss</span></td>
-            <td class="edge" rowspan="2">2-6 (25.0%)</td>
+            <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><strong class="strategy">FLA</strong> <span class="notes">(ML $10)</span> + <strong class="strategy">CHI</strong> <span class="notes">(PL $5)</span></td>
             <td class="notes" rowspan="2">CHI: Bowen Byram (D) - Day-To-Day; FLA: Gustav Forsling (D) - Day-To-Day; FLA: Jacob Markstrom (G) - Injured Reserve</td>
         </tr>
@@ -254,7 +250,6 @@ see policy_backtest.py)</span>
             <td class="edge" rowspan="2">2&ndash;1 <span class="notes">(Under)</span></td>
             <td rowspan="2"><span class="negative">Loss</span></td>
             <td rowspan="2"><span class="positive">Win</span></td>
-            <td class="edge" rowspan="2">1-1 (50.0%)</td>
             <td rowspan="2"><strong class="strategy">WPG</strong> <span class="notes">(ML $10 + PL $10)</span></td>
             <td class="notes" rowspan="2">WPG: Nino Niederreiter (RW) - Day-To-Day; MTL: Nick Suzuki (C) - Out; MTL: Sam Montembeault (G) - Injured Reserve</td>
         </tr>
@@ -293,9 +288,11 @@ total_score) &middot; Puck Line and Over/Under are each a separate, simpler proj
 (recent average goal margin, and recent average goals for/against vs. the market's
 total) and so can recommend a different side than Money Line does &middot; each price
 is followed in parens by the market's devigged implied probability for that side
-&middot; ML Result/Vs. Puck Line columns grade the pick once the
-game is final &middot; Team ATS Record is the picked team's all-time record against the
-puck line across every graded pick so far &middot; <strong class="strategy">Strategy</strong>
+&middot; ML Result grades the Money Line pick (the green/bold team in the Money Line
+column); PL Result grades the independent Puck Line pick (the green/bold team in the
+Puck Line column) -- they can be, and often are, different teams, so each gets its own
+win/loss/push against its own line, graded once the game is final &middot;
+<strong class="strategy">Strategy</strong>
 is a simple, data-driven rule: bet Money Line on every game at a flat
 $10, plus Puck Line too, sized by whether it agrees with the Money Line
 pick -- $10 if it does, $5 if it
@@ -311,7 +308,7 @@ policy was replayed against the full season history; past that the sample gets t
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated October 29, 2026 at 10:46 AM EDT</p>
+<p class="updated">Last updated October 29, 2026 at 08:10 PM EDT</p>
 
 <script>
 function updateEdgeFilter() {

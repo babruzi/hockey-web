@@ -331,30 +331,6 @@ def build_game_notes(
     return notes
 
 
-def team_ats_records(conn: sqlite3.Connection) -> dict[str, tuple[int, int]]:
-    """Each team's all-time (wins, losses) against the spread, across every graded pick.
-
-    Pushes don't count toward either side. This is a running total as of
-    whenever it's queried -- a team's record here changes as soon as another
-    of its picks gets graded, which is why every published report needs to be
-    re-rendered whenever grading runs, not just the date that was graded.
-
-    :param conn: Open connection to the schedule database.
-    :returns: {team_abbrev: (wins, losses)} for every team with at least one graded pick.
-    """
-    rows = conn.execute(
-        """
-        SELECT pick,
-               SUM(CASE WHEN result = 'win' THEN 1 ELSE 0 END),
-               SUM(CASE WHEN result = 'loss' THEN 1 ELSE 0 END)
-        FROM picks_log
-        WHERE result IN ('win', 'loss')
-        GROUP BY pick
-        """
-    ).fetchall()
-    return {team: (wins, losses) for team, wins, losses in rows}
-
-
 def team_metric_values(
     conn: sqlite3.Connection, game_id: int, team_id: str, metric_names: list[str]
 ) -> dict[str, float]:
@@ -628,7 +604,6 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
         "total_result": None,
         "total_profit_10": None,
     }
-    ats_records = team_ats_records(conn)
 
     picks = []
     for game_id, game in scores_by_game.items():
@@ -731,7 +706,6 @@ def build_picks(conn: sqlite3.Connection, target_date: str) -> list[dict]:
                 "puck_line_profit_10": grading["puck_line_profit_10"],
                 "total_result": grading["total_result"],
                 "total_profit_10": grading["total_profit_10"],
-                "pick_ats_record": ats_records.get(pick_team),
             }
         )
 
@@ -986,22 +960,26 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
             return '<span class="notes">Push</span>'
         return '<span class="notes">&mdash;</span>'
 
-    def format_ats(pick: dict) -> str:
-        if pick["result"] is not None:
-            return format_outcome_colored(pick["result"])
-        # Game is final but there was never a spread to grade against --
-        # distinct from "not played yet", which falls through to the dash.
-        if pick["final_home_score"] is not None and pick["spread_at_pick"] is None:
+    def format_puck_line_result(pick: dict) -> str:
+        """Win/loss/push for the Puck Line column's own green/bold pick.
+
+        Grades `puck_line_result` (the independent puck_line_pick
+        recommendation -- goal_differential-based, can name a different
+        team than the Money Line pick) rather than `result` (whether the
+        *Money Line* pick covered its own spread -- a different bet). A
+        reader following the highlighted pick in the Puck Line column
+        should see that exact bet's outcome here, not the Money Line
+        pick's ATS result.
+        """
+        if pick["puck_line_result"] is not None:
+            return format_outcome_colored(pick["puck_line_result"])
+        if pick["final_home_score"] is not None and (
+            pick["puck_line_pick"] is None or pick["puck_line_price_at_pick"] is None
+        ):
+            # Game is final but there was no recommendation, or no price to
+            # grade it against -- distinct from "not played yet".
             return '<span class="notes">n/a</span>'
         return format_outcome_colored(None)
-
-    def format_team_ats_record(pick: dict) -> str:
-        record = pick["pick_ats_record"]
-        if record is None:
-            return '<span class="notes">&mdash;</span>'
-        wins, losses = record
-        pct = 100 * wins / (wins + losses)
-        return f"{wins}-{losses} ({pct:.1f}%)"
 
     def format_strategy_cell(pick: dict) -> str:
         if not pick["strategy_markets"]:
@@ -1071,8 +1049,7 @@ def render_html_report(target_date: str, picks: list[dict]) -> Path:
             <td class="edge" rowspan="2">{pick["predicted_edge"]:.3f}</td>
             <td class="edge" rowspan="2">{format_final_score(pick)}</td>
             <td rowspan="2">{format_outcome_colored(pick["straight_up_result"])}</td>
-            <td rowspan="2">{format_ats(pick)}</td>
-            <td class="edge" rowspan="2">{format_team_ats_record(pick)}</td>
+            <td rowspan="2">{format_puck_line_result(pick)}</td>
             <td rowspan="2">{format_strategy_cell(pick)}</td>
             <td class="notes" rowspan="2">{format_notes(pick)}</td>
         </tr>
@@ -1197,8 +1174,8 @@ function updateEdgeFilter() {
 <tr>
     <th>#</th><th>Team</th><th>Puck Line</th>
     <th>Over/Under</th><th>Money Line</th>
-    <th>Edge</th><th>Score</th><th>ML Result</th><th>Vs. Puck Line</th>
-    <th>Team ATS Record</th><th>Strategy</th><th>Notes</th>
+    <th>Edge</th><th>Score</th><th>ML Result</th><th>PL Result</th>
+    <th>Strategy</th><th>Notes</th>
 </tr>
 </thead>
 <tbody>{rows}
@@ -1218,9 +1195,11 @@ total_score) &middot; Puck Line and Over/Under are each a separate, simpler proj
 (recent average goal margin, and recent average goals for/against vs. the market's
 total) and so can recommend a different side than Money Line does &middot; each price
 is followed in parens by the market's devigged implied probability for that side
-&middot; ML Result/Vs. Puck Line columns grade the pick once the
-game is final &middot; Team ATS Record is the picked team's all-time record against the
-puck line across every graded pick so far &middot; <strong class="strategy">Strategy</strong>
+&middot; ML Result grades the Money Line pick (the green/bold team in the Money Line
+column); PL Result grades the independent Puck Line pick (the green/bold team in the
+Puck Line column) -- they can be, and often are, different teams, so each gets its own
+win/loss/push against its own line, graded once the game is final &middot;
+<strong class="strategy">Strategy</strong>
 is a simple, data-driven rule: bet Money Line on every game at a flat
 ${STRATEGY_ML_STAKE:.0f}, plus Puck Line too, sized by whether it agrees with the Money Line
 pick -- ${STRATEGY_PL_STAKE_AGREE:.0f} if it does, ${STRATEGY_PL_STAKE_DISAGREE:.0f} if it
@@ -1425,10 +1404,10 @@ def build_report(target_date: str) -> None:
 def all_report_dates() -> list[str]:
     """Every date that currently has a published report, oldest first.
 
-    Used to re-render every past report after grading, since stats like a
-    team's all-time ATS record (see :func:`team_ats_records`) change for
-    *every* report that ever featured that team, not just the date that was
-    just graded.
+    Used by run_daily.py to re-render every past report after grading --
+    each date's own cells are self-contained once that date is graded, but
+    the full-history refresh is kept as a cheap, idempotent safety net
+    rather than narrowed to just the newly-graded date.
 
     :returns: Dates with at least one picks_log row, as YYYY-MM-DD, sorted ascending.
     """
