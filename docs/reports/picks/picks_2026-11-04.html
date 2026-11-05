@@ -167,9 +167,9 @@ see policy_backtest.py)</span>
             <td><strong class="pick">O 5.5 -142 (56.3%)</strong></td>
             <td>+210 (30.9%)</td>
             <td class="edge" rowspan="2">1.876</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">3&ndash;5 <span class="notes">(Over)</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
             <td class="notes" rowspan="2">CHI: Patrick Kane (RW) - Out</td>
         </tr>
@@ -187,9 +187,9 @@ see policy_backtest.py)</span>
             <td><strong class="pick">O 6.5 +102 (47.4%)</strong></td>
             <td><strong class="pick">+110 (45.7%)</strong></td>
             <td class="edge" rowspan="2">0.877</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">1&ndash;2 <span class="notes">(Under)</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><span class="notes">&mdash;</span></td>
             <td class="notes" rowspan="2">SEA: Curtis Douglas (C) - Day-To-Day; CGY: Brennan Othmann (LW) - Out; CGY: Connor Zary (C) - Out; CGY: Devin Cooley (G) - Injured Reserve</td>
         </tr>
@@ -207,9 +207,9 @@ see policy_backtest.py)</span>
             <td>O 6.5 +105 (46.8%)</td>
             <td>+140 (40.0%)</td>
             <td class="edge" rowspan="2">0.655</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">2&ndash;7 <span class="notes">(Over)</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
             <td rowspan="2"><strong class="strategy">LAK</strong> <span class="notes">(ML $10)</span></td>
             <td class="notes" rowspan="2">LAK: Adrian Kempe (RW) - Day-To-Day; SJS: Kyle Keyser (G) - Injured Reserve</td>
         </tr>
@@ -227,9 +227,9 @@ see policy_backtest.py)</span>
             <td><strong class="pick">O 6.5 -122 (52.6%)</strong></td>
             <td>+110 (45.7%)</td>
             <td class="edge" rowspan="2">0.536</td>
-            <td class="edge" rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
-            <td rowspan="2"><span class="notes">&mdash;</span></td>
+            <td class="edge" rowspan="2">2&ndash;1 <span class="notes">(Under)</span></td>
+            <td rowspan="2"><span class="negative">Loss</span></td>
+            <td rowspan="2"><span class="positive">Win</span></td>
             <td rowspan="2"><strong class="strategy">BUF</strong> <span class="notes">(ML $10)</span></td>
             <td class="notes" rowspan="2">BUF: Konsta Helenius (C) - Out; BUF: Alex Lyon (G) - Injured Reserve; OTT: Tyler Kleven (D) - Out; OTT: Linus Ullmark (G) - Injured Reserve</td>
         </tr>
@@ -247,12 +247,12 @@ see policy_backtest.py)</span>
 <table>
 <thead><tr><th></th><th>Total P&amp;L</th></tr></thead>
 <tbody>
-<tr><td>Money Line ($10/pick)</td><td><span class="notes">Not yet graded</span></td></tr>
-<tr><td>Puck Line ($10/pick)</td><td><span class="notes">Not yet graded</span></td></tr>
-<tr><td>Over/Under ($10/pick)</td><td><span class="notes">Not yet graded</span></td></tr>
+<tr><td>Money Line ($10/pick)</td><td><span class="negative">-10.10</span></td></tr>
+<tr><td>Puck Line ($10/pick)</td><td><span class="positive">+9.29</span></td></tr>
+<tr><td>Over/Under ($10/pick)</td><td><span class="negative">-22.96</span></td></tr>
 <tr><td><strong class="strategy">Strategy</strong>
     (ML $10, disagree games only)</td>
-    <td><span class="notes">Not yet graded</span></td></tr>
+    <td><span class="negative">-3.98</span> (2 of 2 games)</td></tr>
 </tbody>
 </table>
 <p class="legend">
@@ -288,7 +288,7 @@ policy was replayed against the full season history; past that the sample gets t
 Paper-trading analysis only, not betting advice. Scores are a config-driven
 weighted heuristic (see policy.yaml), not a prediction guarantee.
 </p>
-<p class="updated">Last updated November 04, 2026 at 06:39 PM EST</p>
+<p class="updated">Last updated November 05, 2026 at 06:47 PM EST</p>
 
 <script>
 function updateEdgeFilter() {
